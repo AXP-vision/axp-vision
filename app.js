@@ -64,19 +64,17 @@ camera.position.set(0, 0, 100);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
 renderer.setSize(container.clientWidth, container.clientHeight);
-renderer.setPixelRatio(window.devicePixelRatio); // 自動適應 1080P 至 4K Retina
+renderer.setPixelRatio(window.devicePixelRatio);
 container.appendChild(renderer.domElement);
 
-// 💡 核心升級：加入高階光影系統，點亮 3D 實體晶體
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); // 基礎環境光
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); 
 scene.add(ambientLight);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9); // 主光源，製造立體陰影與反光
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9); 
 directionalLight.position.set(0, 0, 200);
 scene.add(directionalLight);
 
 let targetLeft, targetRight;
 
-// === 1. 顏色與平衡 ===
 function getColorsAndOpacity() {
     const r = Math.floor((parseInt(redSlider.value) / 100) * 255);
     const g = Math.floor((parseInt(greenSlider.value) / 100) * 255);
@@ -89,23 +87,42 @@ function getColorsAndOpacity() {
     return { left: colorLeft, right: colorRight, opLeft: opacityLeft, opRight: opacityRight };
 }
 
-// === 2. 幾何重建 ===
+// 💡 記憶體管理：徹底銷毀舊的幾何體與材質
+function clearTargets() {
+    if (targetLeft) {
+        targetLeft.children.forEach(mesh => { 
+            if(mesh.geometry) mesh.geometry.dispose(); 
+            if(mesh.material) mesh.material.dispose(); 
+        });
+        scene.remove(targetLeft);
+    }
+    if (targetRight) {
+        targetRight.children.forEach(mesh => { 
+            if(mesh.geometry) mesh.geometry.dispose(); 
+            if(mesh.material) mesh.material.dispose(); 
+        });
+        scene.remove(targetRight);
+    }
+}
+
+// === 幾何重建 (修復核心) ===
 function buildTargets() {
-    if (targetLeft) scene.remove(targetLeft);
-    if (targetRight) scene.remove(targetRight);
+    clearTargets(); // 必須先清除舊的 3D 網格
 
     textInputGroup.style.display = shapeSelect.value === 'text' ? 'block' : 'none';
     const visualConfig = getColorsAndOpacity();
     
+    // 將最新的 currentThick 傳給工廠
     targetLeft = createTarget(shapeSelect.value, visualConfig.left, isFilled, customTextInput.value, currentThick);
     targetRight = createTarget(shapeSelect.value, visualConfig.right, isFilled, customTextInput.value, currentThick);
     
     targetLeft.children.forEach(mesh => { mesh.material.opacity = visualConfig.opLeft; mesh.material.transparent = true; });
     targetRight.children.forEach(mesh => { mesh.material.opacity = visualConfig.opRight; mesh.material.transparent = true; });
 
-    updateScaleAndThickness();
+    updateScaleAndThickness(); // 處理整體的尺寸縮放
     scene.add(targetLeft); scene.add(targetRight);
     
+    // 如果系統是暫停的，強制渲染一幀讓畫面更新
     if (!isRunning) renderer.render(scene, camera);
 }
 
@@ -117,7 +134,6 @@ function updateScaleAndThickness(dynamicSize = currentSize) {
     }
 }
 
-// === 3. 空間動態與真實立體視 ===
 function updatePositions(phaseVal) {
     let pxLeftX = 0, pxRightX = 0, pxLeftY = 0, pxRightY = 0;
     const mode = modeSelect.value, axis = axisSelect.value;
@@ -148,7 +164,6 @@ function updatePositions(phaseVal) {
     sepVal.innerText = (Math.abs(targetLeft.position.x - targetRight.position.x)).toFixed(1) + 'px';
 }
 
-// === 4. UI 邏輯與滑桿綁定 ===
 function updateGlassesUI() {
     if (glassesSelect.value === 'rc') {
         greenSlider.style.display = 'none'; blueChannelBox.style.display = 'block';
@@ -181,6 +196,7 @@ function updateUIValues() {
     thickSlider.value = currentThick; stereoSlider.value = currentStereo;
 }
 
+// 💡 綁定滑鼠操作：當拉動粗細滑桿時，觸發 buildTargets() 重建 3D 實體
 sizeSlider.addEventListener('input', (e) => { currentSize = parseFloat(e.target.value); updateUIValues(); updateScaleAndThickness(); if (!isRunning) renderer.render(scene, camera); disableAI(); });
 distSlider.addEventListener('input', (e) => { currentDist = parseFloat(e.target.value); updateUIValues(); if (!isRunning) updatePositions(0); disableAI(); });
 speedSlider.addEventListener('input', (e) => { currentSpeed = parseFloat(e.target.value); updateUIValues(); disableAI(); });
@@ -213,7 +229,6 @@ function loadMatrixStage(protocol, stage) {
     currentSaccadeX = 0; currentSaccadeY = 0; saccadeTimer = 0; currentRoamX = 0; currentRoamY = 0;
 }
 
-// === 5. 核心渲染微循環 ===
 function animate(time) {
     if (!isRunning) return;
     if (!lastTime) lastTime = time;
@@ -257,7 +272,6 @@ function animate(time) {
         if (protocolTime > 60000) { protocolStage = (protocolStage + 1) % 10; loadMatrixStage(activeProtocol, protocolStage); }
     }
 
-    // 將晶體加入自體三維旋轉，立體感爆棚
     if(targetLeft && targetRight) {
         targetLeft.children.forEach((mesh, index) => {
             if (shapeSelect.value.includes('crystal') && isRotating) {
@@ -279,7 +293,6 @@ function animate(time) {
     animationId = requestAnimationFrame(animate);
 }
 
-// === 6. 重置與全螢幕 API 跨瀏覽器修復 ===
 function toggleTraining() {
     isRunning = !isRunning;
     if (isRunning) {
@@ -291,6 +304,7 @@ function toggleTraining() {
         statusText.innerText = "PAUSED"; statusText.style.color = '#FCE473'; cancelAnimationFrame(animationId);
     }
 }
+
 function executeReset() {
     isRunning = false; cancelAnimationFrame(animationId);
     startBtn.innerText = "開始 [ Space ]"; startBtn.classList.remove('active');
@@ -308,14 +322,13 @@ function executeReset() {
 startBtn.addEventListener('click', toggleTraining);
 resetBtn.addEventListener('click', executeReset);
 
-// 💡 跨瀏覽器全螢幕修復
 fullscreenBtn.addEventListener('click', () => {
     const elem = document.getElementById('fv-fusion-app');
     if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
         if (elem.requestFullscreen) { elem.requestFullscreen(); }
-        else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } // Safari
-        else if (elem.mozRequestFullScreen) { elem.mozRequestFullScreen(); } // Firefox
-        else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); } // IE/Edge
+        else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } 
+        else if (elem.mozRequestFullScreen) { elem.mozRequestFullScreen(); } 
+        else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); } 
     } else {
         if (document.exitFullscreen) { document.exitFullscreen(); }
         else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
@@ -324,11 +337,11 @@ fullscreenBtn.addEventListener('click', () => {
     }
 });
 
-// 🕹️ 全域快捷鍵監聽 
+// 💡 綁定鍵盤快捷鍵：加入 KeyD (變粗) 與 KeyA (變細)，並觸發 buildTargets()
 document.addEventListener('keydown', (e) => {
     if (document.activeElement.tagName === 'INPUT' && document.activeElement.type !== 'range' && document.activeElement.type !== 'checkbox') return;
     const code = e.code;
-    const shortcuts = ['Space', 'Enter', 'KeyE', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyF', 'KeyR', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP'];
+    const shortcuts = ['Space', 'Enter', 'KeyE', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyD', 'KeyA', 'KeyF', 'KeyR', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP'];
     
     if (shortcuts.includes(code)) {
         e.preventDefault(); if (document.activeElement) document.activeElement.blur(); 
@@ -342,6 +355,12 @@ document.addEventListener('keydown', (e) => {
             case 'ArrowRight': speedSlider.value = Math.min(100, parseFloat(speedSlider.value) + (e.shiftKey ? 10 : 1)); speedSlider.dispatchEvent(new Event('input')); break;
             case 'KeyW': sizeSlider.value = Math.min(600, parseFloat(sizeSlider.value) + 10); sizeSlider.dispatchEvent(new Event('input')); break;
             case 'KeyS': sizeSlider.value = Math.max(50, parseFloat(sizeSlider.value) - 10); sizeSlider.dispatchEvent(new Event('input')); break;
+            case 'KeyD': // 快捷鍵：變粗
+                currentThick = Math.min(25, currentThick + 1.0);
+                updateUIValues(); buildTargets(); disableAI(); break;
+            case 'KeyA': // 快捷鍵：變細
+                currentThick = Math.max(2, currentThick - 1.0);
+                updateUIValues(); buildTargets(); disableAI(); break;
             case 'KeyF': fillCheckbox.checked = !fillCheckbox.checked; fillCheckbox.dispatchEvent(new Event('change')); break;
             case 'KeyR': rotateCheckbox.checked = !rotateCheckbox.checked; rotateCheckbox.dispatchEvent(new Event('change')); break;
             case 'KeyY': case 'KeyU': case 'KeyI': case 'KeyO': case 'KeyP':
