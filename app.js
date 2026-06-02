@@ -87,50 +87,48 @@ function getColorsAndOpacity() {
     return { left: colorLeft, right: colorRight, opLeft: opacityLeft, opRight: opacityRight };
 }
 
-// 💡 記憶體管理：徹底銷毀舊的幾何體與材質
 function clearTargets() {
     if (targetLeft) {
-        targetLeft.children.forEach(mesh => { 
-            if(mesh.geometry) mesh.geometry.dispose(); 
-            if(mesh.material) mesh.material.dispose(); 
+        targetLeft.traverse(child => { 
+            if(child.isMesh) {
+                if(child.geometry) child.geometry.dispose(); 
+                if(child.material) child.material.dispose(); 
+            }
         });
         scene.remove(targetLeft);
     }
     if (targetRight) {
-        targetRight.children.forEach(mesh => { 
-            if(mesh.geometry) mesh.geometry.dispose(); 
-            if(mesh.material) mesh.material.dispose(); 
+        targetRight.traverse(child => { 
+            if(child.isMesh) {
+                if(child.geometry) child.geometry.dispose(); 
+                if(child.material) child.material.dispose(); 
+            }
         });
         scene.remove(targetRight);
     }
 }
 
-// === 幾何重建 (修復核心) ===
 function buildTargets() {
-    clearTargets(); // 必須先清除舊的 3D 網格
-
+    clearTargets(); 
     textInputGroup.style.display = shapeSelect.value === 'text' ? 'block' : 'none';
     const visualConfig = getColorsAndOpacity();
     
-    // 將最新的 currentThick 傳給工廠
     targetLeft = createTarget(shapeSelect.value, visualConfig.left, isFilled, customTextInput.value, currentThick);
     targetRight = createTarget(shapeSelect.value, visualConfig.right, isFilled, customTextInput.value, currentThick);
     
-    targetLeft.children.forEach(mesh => { mesh.material.opacity = visualConfig.opLeft; mesh.material.transparent = true; });
-    targetRight.children.forEach(mesh => { mesh.material.opacity = visualConfig.opRight; mesh.material.transparent = true; });
+    targetLeft.traverse(child => { if(child.isMesh) { child.material.opacity = visualConfig.opLeft; child.material.transparent = true; } });
+    targetRight.traverse(child => { if(child.isMesh) { child.material.opacity = visualConfig.opRight; child.material.transparent = true; } });
 
-    updateScaleAndThickness(); // 處理整體的尺寸縮放
+    updateScaleAndThickness(); 
     scene.add(targetLeft); scene.add(targetRight);
-    
-    // 如果系統是暫停的，強制渲染一幀讓畫面更新
     if (!isRunning) renderer.render(scene, camera);
 }
 
 function updateScaleAndThickness(dynamicSize = currentSize) {
     const scaleFactor = dynamicSize / 200;
     if(targetLeft && targetRight) {
-        targetLeft.scale.set(scaleFactor, scaleFactor, 1);
-        targetRight.scale.set(scaleFactor, scaleFactor, 1);
+        targetLeft.scale.set(scaleFactor, scaleFactor, scaleFactor);
+        targetRight.scale.set(scaleFactor, scaleFactor, scaleFactor);
     }
 }
 
@@ -156,8 +154,8 @@ function updatePositions(phaseVal) {
     const finalRightY = pxRightY + currentRoamY + currentSaccadeY;
 
     if(targetLeft && targetRight) {
-        targetLeft.children.forEach((mesh, i) => { mesh.position.x = -(i * 15) * currentStereo; });
-        targetRight.children.forEach((mesh, i) => { mesh.position.x = (i * 15) * currentStereo; });
+        targetLeft.children.forEach((layer, i) => { layer.position.x = -(i * 15) * currentStereo; });
+        targetRight.children.forEach((layer, i) => { layer.position.x = (i * 15) * currentStereo; });
     }
 
     targetLeft.position.set(finalLeftX, finalLeftY, 0); targetRight.position.set(finalRightX, finalRightY, 0);
@@ -196,7 +194,6 @@ function updateUIValues() {
     thickSlider.value = currentThick; stereoSlider.value = currentStereo;
 }
 
-// 💡 綁定滑鼠操作：當拉動粗細滑桿時，觸發 buildTargets() 重建 3D 實體
 sizeSlider.addEventListener('input', (e) => { currentSize = parseFloat(e.target.value); updateUIValues(); updateScaleAndThickness(); if (!isRunning) renderer.render(scene, camera); disableAI(); });
 distSlider.addEventListener('input', (e) => { currentDist = parseFloat(e.target.value); updateUIValues(); if (!isRunning) updatePositions(0); disableAI(); });
 speedSlider.addEventListener('input', (e) => { currentSpeed = parseFloat(e.target.value); updateUIValues(); disableAI(); });
@@ -256,7 +253,8 @@ function animate(time) {
         if (anim.includes('flipStereo_hard')) { currentStereo = Math.sin(protocolTime / 1000) * 0.4; stereoSlider.value = currentStereo; stereoLabel.innerText = currentStereo.toFixed(2); }
         if (anim.includes('rivalry') || anim.includes('flicker')) {
             let isRedTurn = Math.floor(protocolTime / (anim.includes('flicker') ? 100 : 500)) % 2 === 0;
-            targetLeft.children.forEach(c => c.material.opacity = isRedTurn ? 1 : 0.05); targetRight.children.forEach(c => c.material.opacity = isRedTurn ? 0.05 : 1);
+            targetLeft.traverse(c => { if(c.isMesh) c.material.opacity = isRedTurn ? 1 : 0.05; });
+            targetRight.traverse(c => { if(c.isMesh) c.material.opacity = isRedTurn ? 0.05 : 1; });
         }
         if (anim === 'chaos') {
             aiChaosTimer += dt;
@@ -273,16 +271,16 @@ function animate(time) {
     }
 
     if(targetLeft && targetRight) {
-        targetLeft.children.forEach((mesh, index) => {
+        targetLeft.children.forEach((layer, index) => {
             if (shapeSelect.value.includes('crystal') && isRotating) {
-                mesh.rotation.x += (index % 2 === 0 ? 0.01 : -0.01);
-                mesh.rotation.y += 0.015;
+                layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01);
+                layer.rotation.y += 0.015;
             }
         });
-        targetRight.children.forEach((mesh, index) => {
+        targetRight.children.forEach((layer, index) => {
             if (shapeSelect.value.includes('crystal') && isRotating) {
-                mesh.rotation.x += (index % 2 === 0 ? 0.01 : -0.01);
-                mesh.rotation.y += 0.015;
+                layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01);
+                layer.rotation.y += 0.015;
             }
         });
     }
@@ -337,7 +335,6 @@ fullscreenBtn.addEventListener('click', () => {
     }
 });
 
-// 💡 綁定鍵盤快捷鍵：加入 KeyD (變粗) 與 KeyA (變細)，並觸發 buildTargets()
 document.addEventListener('keydown', (e) => {
     if (document.activeElement.tagName === 'INPUT' && document.activeElement.type !== 'range' && document.activeElement.type !== 'checkbox') return;
     const code = e.code;
@@ -353,12 +350,28 @@ document.addEventListener('keydown', (e) => {
             case 'ArrowDown': stereoSlider.value = Math.max(-0.5, parseFloat(stereoSlider.value) - 0.01).toFixed(2); stereoSlider.dispatchEvent(new Event('input')); break;
             case 'ArrowLeft': speedSlider.value = Math.max(1, parseFloat(speedSlider.value) - (e.shiftKey ? 10 : 1)); speedSlider.dispatchEvent(new Event('input')); break;
             case 'ArrowRight': speedSlider.value = Math.min(100, parseFloat(speedSlider.value) + (e.shiftKey ? 10 : 1)); speedSlider.dispatchEvent(new Event('input')); break;
-            case 'KeyW': sizeSlider.value = Math.min(600, parseFloat(sizeSlider.value) + 10); sizeSlider.dispatchEvent(new Event('input')); break;
-            case 'KeyS': sizeSlider.value = Math.max(50, parseFloat(sizeSlider.value) - 10); sizeSlider.dispatchEvent(new Event('input')); break;
-            case 'KeyD': // 快捷鍵：變粗
+            
+            // 💡 解除滑桿衝突，直攻變數：按 W 放大尺寸 (+10) 並加粗厚度 (+0.5)
+            case 'KeyW': 
+                currentSize = Math.min(600, currentSize + 10);
+                currentThick = Math.min(25, currentThick + 0.5);
+                updateUIValues(); 
+                buildTargets(); // 觸發實體鋼管重新計算
+                disableAI(); 
+                break;
+            // 💡 按 S 縮小尺寸 (-10) 並減細厚度 (-0.5)
+            case 'KeyS': 
+                currentSize = Math.max(50, currentSize - 10);
+                currentThick = Math.max(2, currentThick - 0.5);
+                updateUIValues(); 
+                buildTargets(); 
+                disableAI(); 
+                break;
+
+            case 'KeyD': 
                 currentThick = Math.min(25, currentThick + 1.0);
                 updateUIValues(); buildTargets(); disableAI(); break;
-            case 'KeyA': // 快捷鍵：變細
+            case 'KeyA': 
                 currentThick = Math.max(2, currentThick - 1.0);
                 updateUIValues(); buildTargets(); disableAI(); break;
             case 'KeyF': fillCheckbox.checked = !fillCheckbox.checked; fillCheckbox.dispatchEvent(new Event('change')); break;

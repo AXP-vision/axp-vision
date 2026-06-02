@@ -1,42 +1,58 @@
-// shapes.js - AXP Fusion Dynamics: 3D 實體幾何工廠 (v3.0 黑科技版)
+// shapes.js - AXP Fusion Dynamics: 3D 真實物理鋼管架構 (v4.0 終極美學版)
 
-// 非同步預先載入字體庫
 let loadedFont = null;
 const loader = new THREE.FontLoader();
 loader.load('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/fonts/helvetiker_bold.typeface.json', function (font) {
     loadedFont = font;
 });
 
-// 幾何定義：3D 稜鏡晶體 (Prismatic Crystal) 頂點定義
-const CRYSTAL_RADIUS = 10;
-const CRYSTAL_HEIGHT = 20;
+// 💡 核心黑科技：將 1px 線框轉化為「真實 3D 物理圓柱鋼管」
+function createThickWireframe(geometry, material, thickness) {
+    const edgeGroup = new THREE.Group();
+    // 抓取幾何體的所有邊緣
+    const edges = new THREE.EdgesGeometry(geometry, 1); 
+    const pos = edges.attributes.position;
+    if (!pos) return edgeGroup;
 
-/**
- * 建立具備高度空間特徵的 3D 實體目標
- * @param {string} type - 項目種類 (circle, star, crystal, text)
- * @param {number} colorHex - 頻譜顏色
- * @param {boolean} isFilled - 是否填滿實體
- * @param {string} customText - 客製文字
- * @param {number} thickness - 實體線條粗細 (2.0 - 25.0)
- */
+    // 將 UI 的粗細數值轉換為鋼管半徑
+    const radius = thickness * 0.15; 
+
+    // 建立一根基礎鋼管 (節省 GPU 記憶體)
+    const cylinderGeo = new THREE.CylinderGeometry(radius, radius, 1, 6);
+    cylinderGeo.translate(0, 0.5, 0); 
+    cylinderGeo.rotateX(Math.PI / 2);
+
+    for (let i = 0; i < pos.count; i += 2) {
+        const v1 = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
+        const v2 = new THREE.Vector3(pos.getX(i+1), pos.getY(i+1), pos.getZ(i+1));
+        
+        const distance = v1.distanceTo(v2);
+        if(distance === 0) continue;
+
+        // 生成實體鋼管並對齊端點
+        const cylinder = new THREE.Mesh(cylinderGeo, material);
+        cylinder.position.copy(v1);
+        cylinder.scale.z = distance; 
+        cylinder.lookAt(v2);         
+
+        edgeGroup.add(cylinder);
+    }
+    return edgeGroup;
+}
+
 export function createTarget(type, colorHex, isFilled = false, customText = 'Dodge', thickness = 9.0) {
     const group = new THREE.Group();
     
-    // 高階物理質感材質 (MeshStandardMaterial 需要光源，這裡使用 MeshLambert 兼顧效能與陰影)
+    // WebGL 物理反光材質
     const material = new THREE.MeshLambertMaterial({
         color: colorHex,
         emissive: colorHex,
-        emissiveIntensity: 0.3, // 微弱自發光，增加科技質感
+        emissiveIntensity: 0.4, // 高科技微發光
         transparent: true,
         opacity: 1.0,
-        side: THREE.DoubleSide,
-        wireframe: !isFilled // 依據 F 鍵切換「實體切割」或「線框網格」
+        side: THREE.DoubleSide
     });
 
-    // 換算物理半徑：讓滑桿真正控制 3D 物體的「胖瘦」
-    const tubeRadius = (thickness / 9.0) * 2.5;
-
-    // === 1. 處理 3D 浮雕文字 (Text) ===
     if (type === 'text') {
         if (!loadedFont) return group;
         const textGeo = new THREE.TextGeometry(customText || ' ', {
@@ -50,7 +66,6 @@ export function createTarget(type, colorHex, isFilled = false, customText = 'Dod
         return group;
     }
 
-    // === 2. 處理 3D 多層實體幾何 (Circle / Star / Crystal) ===
     let layers = 1;
     if (type.includes('3')) layers = 3;
     if (type.includes('5')) layers = 5;
@@ -58,15 +73,13 @@ export function createTarget(type, colorHex, isFilled = false, customText = 'Dod
     for (let i = 0; i < layers; i++) {
         let geometry;
         const scale = 1 - (i * 0.15); 
-        const zPos = -(i * 50); // 增加層級間距，強化漏斗隧道感
+        const zPos = -(i * 50); 
 
         if (type.includes('circle')) {
-            // 從平面 Ring 進化為立體 Torus (圓環管)
-            const radius = 60 * scale;
-            geometry = new THREE.TorusGeometry(radius, tubeRadius, 16, 64);
+            // 適度減少分段數以確保鋼管架構的效能
+            geometry = new THREE.TorusGeometry(60 * scale, 15 * scale, isFilled ? 16 : 6, isFilled ? 64 : 24);
         } 
         else if (type.includes('star')) {
-            // 星形進化：具有擠壓厚度的實體五角星
             const starShape = new THREE.Shape();
             const outer = 60 * scale;
             const inner = 30 * scale;
@@ -77,19 +90,24 @@ export function createTarget(type, colorHex, isFilled = false, customText = 'Dod
                 else starShape.lineTo(Math.cos(angle) * rad, Math.sin(angle) * rad);
             }
             starShape.closePath();
-            geometry = new THREE.ExtrudeGeometry(starShape, { depth: isFilled ? 10 : tubeRadius * 1.5, bevelEnabled: false });
+            geometry = new THREE.ExtrudeGeometry(starShape, { depth: isFilled ? 10 : 8, bevelEnabled: false });
         }
         else {
-            // 🆕 旗艦款：3D 稜鏡晶體 (Prismatic Crystal)
-            // 取代原本的十字與卍字，具備多面反射特性
-            geometry = new THREE.OctahedronGeometry(60 * scale, 0); // 八面晶體，最具空間感
+            geometry = new THREE.OctahedronGeometry(60 * scale, 0); 
             if (!isFilled) {
-                // 如果是空心模式，將晶體改為管狀框架 (使用抽象連線)
                 geometry = new THREE.IcosahedronGeometry(60 * scale, 1);
             }
         }
 
-        const mesh = new THREE.Mesh(geometry, material);
+        let mesh;
+        if (isFilled) {
+            // 實心模式：正常渲染 3D 幾何塊
+            mesh = new THREE.Mesh(geometry, material);
+        } else {
+            // 空心模式：觸發黑科技，生成「可調粗細的實體鋼管」
+            mesh = createThickWireframe(geometry, material, thickness * scale);
+        }
+        
         mesh.position.z = zPos;
         group.add(mesh);
     }
