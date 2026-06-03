@@ -1,4 +1,4 @@
-// shapes.js - AXP Fusion Dynamics: 3D 真實物理鋼管架構 (v4.0 終極美學版)
+// shapes.js - AXP Fusion Dynamics: 3D 真實物理鋼管架構 (v5.0 終極美學升級版)
 
 let loadedFont = null;
 const loader = new THREE.FontLoader();
@@ -14,11 +14,11 @@ function createThickWireframe(geometry, material, thickness) {
     const pos = edges.attributes.position;
     if (!pos) return edgeGroup;
 
-    // 將 UI 的粗細數值轉換為鋼管半徑
-    const radius = thickness * 0.15; 
+    // 將 UI 的粗細數值轉換為鋼管半徑 (微調比例讓高階圖形更精緻)
+    const radius = thickness * 0.12; 
 
     // 建立一根基礎鋼管 (節省 GPU 記憶體)
-    const cylinderGeo = new THREE.CylinderGeometry(radius, radius, 1, 6);
+    const cylinderGeo = new THREE.CylinderGeometry(radius, radius, 1, 8); // 提升精細度至 8 面
     cylinderGeo.translate(0, 0.5, 0); 
     cylinderGeo.rotateX(Math.PI / 2);
 
@@ -43,11 +43,12 @@ function createThickWireframe(geometry, material, thickness) {
 export function createTarget(type, colorHex, isFilled = false, customText = 'Dodge', thickness = 9.0) {
     const group = new THREE.Group();
     
-    // WebGL 物理反光材質
-    const material = new THREE.MeshLambertMaterial({
+    // 🚀 視覺饗宴升級：改用高階光照材質 (MeshPhongMaterial) 增加立體金屬反光感
+    const material = new THREE.MeshPhongMaterial({
         color: colorHex,
         emissive: colorHex,
-        emissiveIntensity: 0.4, // 高科技微發光
+        emissiveIntensity: 0.5, // 增強賽博龐克微發光感
+        shininess: 80,          // 高光反射度
         transparent: true,
         opacity: 1.0,
         side: THREE.DoubleSide
@@ -76,10 +77,11 @@ export function createTarget(type, colorHex, isFilled = false, customText = 'Dod
         const zPos = -(i * 50); 
 
         if (type.includes('circle')) {
-            // 適度減少分段數以確保鋼管架構的效能
-            geometry = new THREE.TorusGeometry(60 * scale, 15 * scale, isFilled ? 16 : 6, isFilled ? 64 : 24);
+            // 圓環 (Rings)
+            geometry = new THREE.TorusGeometry(60 * scale, 15 * scale, isFilled ? 16 : 6, isFilled ? 64 : 32);
         } 
         else if (type.includes('star')) {
+            // 星星 (Stars)
             const starShape = new THREE.Shape();
             const outer = 60 * scale;
             const inner = 30 * scale;
@@ -90,9 +92,33 @@ export function createTarget(type, colorHex, isFilled = false, customText = 'Dod
                 else starShape.lineTo(Math.cos(angle) * rad, Math.sin(angle) * rad);
             }
             starShape.closePath();
-            geometry = new THREE.ExtrudeGeometry(starShape, { depth: isFilled ? 10 : 8, bevelEnabled: false });
+            geometry = new THREE.ExtrudeGeometry(starShape, { depth: isFilled ? 10 : 6, bevelEnabled: false });
+        }
+        else if (type.includes('wan')) {
+            // 🚀 視覺饗宴升級：真實的十字形 (Cross) 演算法
+            const crossShape = new THREE.Shape();
+            const w = 18 * scale; // 十字臂寬
+            const l = 60 * scale; // 十字臂長
+            
+            // 繪製十字輪廓
+            crossShape.moveTo(-w, l);
+            crossShape.lineTo(w, l);
+            crossShape.lineTo(w, w);
+            crossShape.lineTo(l, w);
+            crossShape.lineTo(l, -w);
+            crossShape.lineTo(w, -w);
+            crossShape.lineTo(w, -l);
+            crossShape.lineTo(-w, -l);
+            crossShape.lineTo(-w, -w);
+            crossShape.lineTo(-l, -w);
+            crossShape.lineTo(-l, w);
+            crossShape.lineTo(-w, w);
+            crossShape.closePath();
+            
+            geometry = new THREE.ExtrudeGeometry(crossShape, { depth: isFilled ? 10 : 6, bevelEnabled: false });
         }
         else {
+            // 防呆預設幾何體
             geometry = new THREE.OctahedronGeometry(60 * scale, 0); 
             if (!isFilled) {
                 geometry = new THREE.IcosahedronGeometry(60 * scale, 1);
@@ -108,7 +134,11 @@ export function createTarget(type, colorHex, isFilled = false, customText = 'Dod
             mesh = createThickWireframe(geometry, material, thickness * scale);
         }
         
-        mesh.position.z = zPos;
+        // 確保幾何體中心點對齊
+        geometry.computeBoundingBox();
+        const centerOffset = -0.5 * (geometry.boundingBox.max.z - geometry.boundingBox.min.z);
+        mesh.position.set(0, 0, zPos + centerOffset);
+        
         group.add(mesh);
     }
 

@@ -1,36 +1,47 @@
-// app.js - AXP Fusion Dynamics: 雲端大腦串接版 (v5.0 Supabase SaaS MVP)
+// app.js - AXP Fusion Dynamics: 雲端大腦串接版 (v11.6 立體視精準鎖定版)
 import { AIM_MATRIX, PROTOCOL_NAMES } from './matrix.js';
 import { createTarget } from './shapes.js';
 // 🚀 1. 引入 Supabase 官方模組
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-// 🚀 2. 設定您的雲端大腦鑰匙 (請替換下方金鑰)
+// 🚀 2. 設定您的雲端大腦鑰匙
 const supabaseUrl = 'https://wvholwcyrldixlsgoege.supabase.co';
-const supabaseKey = 'sb_publishable_BozJ84tPQF-jBHGKtXKqgw_ELodM54e'; // <--- ⚠️ 執行長，請把您的 sb_publishable... 金鑰貼在這裡！
+const supabaseKey = 'sb_publishable_BozJ84tPQF-jBHGKtXKqgw_ELodM54e';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // === 🚀 3. 動態生成 SaaS 強制登入介面 ===
-let currentPatientCode = 'GUEST'; // 預設訪客
+let currentPatientCode = 'GUEST';
 const loginOverlay = document.createElement('div');
-loginOverlay.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:sans-serif;";
+loginOverlay.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(243, 244, 246, 0.95); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; font-family:sans-serif;";
 loginOverlay.innerHTML = `
-    <h1 style="color:#deff9a; letter-spacing:2px; margin-bottom:10px;">AXP FUSION DYNAMICS</h1>
-    <p style="color:#94a3b8; margin-bottom:30px;">企業級雙眼視覺雲端診療系統</p>
-    <div style="background:#1e293b; padding:30px; border-radius:12px; text-align:center; border:1px solid #334155;">
-        <p style="margin-bottom:15px; font-size:14px; color:#cbd5e1;">請輸入驗光師配發的病患代碼</p>
-        <input type="text" id="patient-code-input" placeholder="例如: AXP-001" style="padding:10px; width:200px; text-align:center; border-radius:6px; border:none; margin-bottom:20px; font-size:16px; font-weight:bold; color:#0f172a;">
+    <h1 style="color:#0f172a; letter-spacing:2px; margin-bottom:10px;">AXP FUSION DYNAMICS</h1>
+    <p style="color:#475569; margin-bottom:30px; font-weight:bold;">企業級雙眼視覺雲端診療系統</p>
+    <div style="background:#ffffff; padding:40px; border-radius:12px; text-align:center; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
+        <p style="margin-bottom:15px; font-size:14px; font-weight:bold; color:#64748b;">請輸入驗光師配發的病患代碼</p>
+        <input type="text" id="patient-code-input" placeholder="例如: AXP-001" style="background-color:#f1f5f9; padding:12px; width:220px; text-align:center; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:25px; font-size:16px; font-weight:bold; color:#475569; outline:none; transition:0.2s;">
         <br>
-        <button id="login-btn" style="background:#2563eb; color:white; border:none; padding:12px 30px; border-radius:6px; font-size:16px; cursor:pointer; font-weight:bold; transition:0.3s;">登入並開始訓練</button>
+        <button id="login-btn" style="background:#2563eb; color:white; border:none; padding:12px 30px; border-radius:6px; font-size:16px; cursor:pointer; font-weight:bold; transition:0.3s; box-shadow: 0 4px 6px rgba(37,99,235,0.2);">登入並開始訓練</button>
     </div>
 `;
 document.body.appendChild(loginOverlay);
 
-// 登入按鈕邏輯
-document.getElementById('login-btn').addEventListener('click', () => {
+function performLogin() {
     const code = document.getElementById('patient-code-input').value.trim();
     if(!code) return alert("請輸入病患代碼！");
-    currentPatientCode = code; // 記住登入的病患代碼
-    loginOverlay.style.display = 'none'; // 隱藏登入畫面，進入 3D 訓練
+    currentPatientCode = code; 
+    loginOverlay.style.display = 'none'; 
+}
+
+document.getElementById('login-btn').addEventListener('click', performLogin);
+
+const inputField = document.getElementById('patient-code-input');
+inputField.addEventListener('focus', () => { inputField.style.borderColor = '#2563eb'; inputField.style.backgroundColor = '#ffffff'; });
+inputField.addEventListener('blur', () => { inputField.style.borderColor = '#cbd5e1'; inputField.style.backgroundColor = '#f1f5f9'; });
+inputField.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        performLogin();
+    }
 });
 
 // === DOM 元素綁定 ===
@@ -61,8 +72,13 @@ const modeSelect = document.getElementById('mode-select');
 const stereoSlider = document.getElementById('stereo-slider');
 const stereoLabel = document.getElementById('stereo-label');
 const sepVal = document.getElementById('sep-val');
+const prismValEl = document.getElementById('prism-val'); 
 
-stereoSlider.min = "-0.3"; stereoSlider.max = "0.3"; // 絕對深度鎖定
+const screenSpecSelect = document.getElementById('screen-spec');
+const viewDistInput = document.getElementById('view-dist');
+
+// 🚀 強制將立體視拉桿鎖定在 -0.1 到 0.1
+stereoSlider.min = "-0.1"; stereoSlider.max = "0.1"; 
 
 const glassesSelect = document.getElementById('glasses-select');
 const balanceSlider = document.getElementById('balance-slider');
@@ -95,6 +111,10 @@ let timeSinceLastTask = 0;
 let nextTaskInterval = 3000; 
 let statusTimeout = null;
 
+// 🚀 $T_0$ 計量級追蹤變數
+let taskInitialSep = "";
+let taskInitialPrism = "";
+
 // Three.js 初始化
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#000000');
@@ -114,6 +134,45 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
 directionalLight.position.set(0, 0, 200);
 scene.add(directionalLight);
 
+// === 🌌 精緻深度立體星空背景 (放大4.5 + 同步非交叉視差) ===
+const starCanvas = document.createElement('canvas');
+starCanvas.width = 32; starCanvas.height = 32;
+const starCtx = starCanvas.getContext('2d');
+starCtx.beginPath();
+starCtx.arc(16, 16, 14, 0, Math.PI * 2);
+starCtx.fillStyle = 'white';
+starCtx.fill();
+const starTexture = new THREE.CanvasTexture(starCanvas);
+
+const starsCount = 200; 
+const posArrayLeft = new Float32Array(starsCount * 3);
+const posArrayRight = new Float32Array(starsCount * 3);
+
+for(let i=0; i < starsCount; i++) {
+    const baseX = (Math.random() - 0.5) * 1600; 
+    const baseY = (Math.random() - 0.5) * 1400; 
+    const depthFactor = Math.random(); 
+    const baseZ = -200 - depthFactor * 800; 
+    const parallax = 3 + depthFactor * 25; 
+    
+    // 非交叉視差：左眼(-)往左，右眼(+)往右，星空陷進螢幕內
+    posArrayLeft[i*3] = baseX - parallax; posArrayLeft[i*3+1] = baseY; posArrayLeft[i*3+2] = baseZ;
+    posArrayRight[i*3] = baseX + parallax; posArrayRight[i*3+1] = baseY; posArrayRight[i*3+2] = baseZ;
+}
+
+const starsGeoLeft = new THREE.BufferGeometry();
+starsGeoLeft.setAttribute('position', new THREE.BufferAttribute(posArrayLeft, 3));
+const starsGeoRight = new THREE.BufferGeometry();
+starsGeoRight.setAttribute('position', new THREE.BufferAttribute(posArrayRight, 3));
+
+const starMatLeft = new THREE.PointsMaterial({ size: 4.5, map: starTexture, transparent: true, alphaTest: 0.1, sizeAttenuation: true, blending: THREE.NormalBlending, depthWrite: false });
+const starMatRight = new THREE.PointsMaterial({ size: 4.5, map: starTexture, transparent: true, alphaTest: 0.1, sizeAttenuation: true, blending: THREE.NormalBlending, depthWrite: false });
+
+const starsLeft = new THREE.Points(starsGeoLeft, starMatLeft);
+const starsRight = new THREE.Points(starsGeoRight, starMatRight);
+
+scene.add(starsLeft); scene.add(starsRight);
+
 let targetLeft, targetRight;
 
 const cueGeo = new THREE.CircleGeometry(1, 32); 
@@ -128,8 +187,8 @@ function getColorsAndOpacity() {
     const r = Math.floor((parseInt(redSlider.value) / 100) * 255);
     const g = Math.floor((parseInt(greenSlider.value) / 100) * 255);
     const b = Math.floor((parseInt(blueSlider.value) / 100) * 255);
-    const colorLeft = glassesSelect.value === 'rc' ? ((b << 8) | b) : (g << 8); // 左眼藍綠
-    const colorRight = (r << 16); // 右眼紅
+    const colorLeft = glassesSelect.value === 'rc' ? ((0 << 16) | (0 << 8) | b) : (g << 8); // 修正藍色通道
+    const colorRight = (r << 16); 
     let balance = parseInt(balanceSlider.value);
     let opacityLeft = balance < 50 ? (balance / 50) : 1;
     let opacityRight = balance > 50 ? ((100 - balance) / 50) : 1;
@@ -141,48 +200,162 @@ function clearTargets() {
     if (targetRight) { targetRight.traverse(child => { if(child.isMesh) { child.geometry.dispose(); child.material.dispose(); }}); scene.remove(targetRight); }
 }
 
+function updateColorsFromUI() {
+    if (document.getElementById('r-val')) document.getElementById('r-val').innerText = redSlider.value + '%';
+    if (document.getElementById('g-val')) document.getElementById('g-val').innerText = greenSlider.value + '%';
+    if (document.getElementById('b-val')) document.getElementById('b-val').innerText = blueSlider.value + '%';
+    
+    const visualConfig = getColorsAndOpacity();
+    
+    if (targetLeft) {
+        targetLeft.traverse(child => { 
+            if(child.isMesh) { 
+                child.material = new THREE.MeshBasicMaterial({
+                    color: visualConfig.left,
+                    transparent: true,
+                    opacity: visualConfig.opLeft,
+                    blending: THREE.NormalBlending, 
+                    depthWrite: false
+                });
+            } 
+        });
+    }
+    if (targetRight) {
+        targetRight.traverse(child => { 
+            if(child.isMesh) { 
+                child.material = new THREE.MeshBasicMaterial({
+                    color: visualConfig.right,
+                    transparent: true,
+                    opacity: visualConfig.opRight,
+                    blending: THREE.NormalBlending,
+                    depthWrite: false
+                });
+            } 
+        });
+    }
+    
+    starMatLeft.color.setHex(visualConfig.left);
+    starMatLeft.opacity = visualConfig.opLeft; 
+    starMatRight.color.setHex(visualConfig.right);
+    starMatRight.opacity = visualConfig.opRight; 
+
+    cueLeft.material.color.setHex(visualConfig.left); 
+    cueRight.material.color.setHex(visualConfig.right);
+    
+    if (!isRunning) renderer.render(scene, camera);
+}
+
 function buildTargets() {
     clearTargets(); 
     textInputGroup.style.display = shapeSelect.value === 'text' ? 'block' : 'none';
-    const visualConfig = getColorsAndOpacity();
-    targetLeft = createTarget(shapeSelect.value, visualConfig.left, isFilled, customTextInput.value, currentThick);
-    targetRight = createTarget(shapeSelect.value, visualConfig.right, isFilled, customTextInput.value, currentThick);
-    targetLeft.traverse(child => { if(child.isMesh) { child.material.opacity = visualConfig.opLeft; child.material.transparent = true; } });
-    targetRight.traverse(child => { if(child.isMesh) { child.material.opacity = visualConfig.opRight; child.material.transparent = true; } });
-    cueLeft.material.color.setHex(visualConfig.left); cueRight.material.color.setHex(visualConfig.right);
-    updateScaleAndThickness(); scene.add(targetLeft); scene.add(targetRight);
-    if (!isRunning) renderer.render(scene, camera);
+    
+    targetLeft = createTarget(shapeSelect.value, 0xffffff, isFilled, customTextInput.value, currentThick);
+    targetRight = createTarget(shapeSelect.value, 0xffffff, isFilled, customTextInput.value, currentThick);
+    
+    updateScaleAndThickness(); 
+    scene.add(targetLeft); scene.add(targetRight);
+    
+    updateColorsFromUI(); 
 }
 
 function updateScaleAndThickness(dynamicSize = currentSize) {
     const scaleFactor = dynamicSize / 200;
-    if(targetLeft && targetRight) { targetLeft.scale.set(scaleFactor, scaleFactor, scaleFactor); targetRight.scale.set(scaleFactor, scaleFactor, scaleFactor); }
-    const cueScale = dynamicSize * 0.05; cueLeft.scale.set(cueScale, cueScale, 1); cueRight.scale.set(cueScale, cueScale, 1);
+    
+    if(targetLeft && targetRight) { 
+        targetLeft.scale.set(scaleFactor, scaleFactor, scaleFactor); 
+        targetRight.scale.set(scaleFactor, scaleFactor, scaleFactor); 
+        
+        const thicknessScale = 1 + (scaleFactor - 1) * 0.35; 
+        const correctionScale = thicknessScale / scaleFactor;
+
+        targetLeft.traverse(child => {
+            if(child.isMesh && child.geometry.type === 'CylinderGeometry') {
+                child.scale.x = correctionScale;
+                child.scale.y = correctionScale;
+            }
+        });
+        targetRight.traverse(child => {
+            if(child.isMesh && child.geometry.type === 'CylinderGeometry') {
+                child.scale.x = correctionScale;
+                child.scale.y = correctionScale;
+            }
+        });
+    }
+    // 提示球脫鉤 (最小 15px)
+    const cueScale = Math.max(15, dynamicSize * 0.05); 
+    cueLeft.scale.set(cueScale, cueScale, 1); 
+    cueRight.scale.set(cueScale, cueScale, 1);
 }
 
 function updatePositions(phaseVal) {
     let pxLeftX = 0, pxRightX = 0, pxLeftY = 0, pxRightY = 0;
     const mode = modeSelect.value, axis = axisSelect.value;
-    let distance = 0;
-    if (mode === 'oneway_bo') distance = (Math.sin(phaseVal - Math.PI/2) + 1) / 2 * currentDist; 
-    else if (mode === 'oneway_bi') distance = -(Math.sin(phaseVal - Math.PI/2) + 1) / 2 * currentDist; 
-    else distance = Math.sin(phaseVal) * currentDist; 
+    
+    let disp = 0;
+    if (mode === 'oneway_bo') disp = ((Math.sin(phaseVal - Math.PI/2) + 1) / 2) * currentDist; 
+    else if (mode === 'oneway_bi') disp = -((Math.sin(phaseVal - Math.PI/2) + 1) / 2) * currentDist; 
+    else disp = Math.sin(phaseVal) * currentDist; 
 
-    if (axis === 'horizontal') { pxLeftX = -distance; pxRightX = distance; } 
-    else if (axis === 'vertical') { pxLeftY = -distance; pxRightY = distance; } 
-    else if (axis === 'circular') {
-        pxLeftX = -Math.cos(phaseVal) * Math.abs(distance); pxRightX = Math.cos(phaseVal) * Math.abs(distance);
-        pxLeftY = -Math.sin(phaseVal) * Math.abs(distance); pxRightY = Math.sin(phaseVal) * Math.abs(distance);
+    const spec = screenSpecSelect ? screenSpecSelect.value : 'generic';
+    let pixelToCm = 2.54 / 96; 
+    if (spec === 'retina16') pixelToCm = 34.5 / window.screen.width; 
+    else if (spec === 'ipad13') pixelToCm = 2.54 / 132; 
+    const viewDistM = (parseFloat(viewDistInput ? viewDistInput.value : 40) || 40) / 100;
+
+    // 開散鎖定 2.0 Δ
+    const maxBIPx = (2.0 * viewDistM) / pixelToCm;
+    if (disp < 0 && Math.abs(disp * 2) > maxBIPx) {
+        disp = -(maxBIPx / 2);
     }
-    const finalLeftX = pxLeftX + currentRoamX + currentSaccadeX; const finalLeftY = pxLeftY + currentRoamY + currentSaccadeY;
-    const finalRightX = pxRightX + currentRoamX + currentSaccadeX; const finalRightY = pxRightY + currentRoamY + currentSaccadeY;
+
+    // 完美物理方向 (BO = 紅左綠右)
+    if (axis === 'horizontal') { 
+        pxLeftX = disp; pxRightX = -disp; 
+    } 
+    else if (axis === 'vertical') { 
+        pxLeftY = disp; pxRightY = -disp; 
+    } 
+    else if (axis === 'circular') {
+        const orbitX = Math.cos(phaseVal) * Math.abs(currentDist * 0.5);
+        const orbitY = Math.sin(phaseVal) * Math.abs(currentDist * 0.5);
+        pxLeftX = disp + orbitX; pxRightX = -disp + orbitX;
+        pxLeftY = orbitY; pxRightY = orbitY;
+    } 
+    else {
+        pxLeftX = disp; pxRightX = -disp;
+    }
+
+    let finalLeftX = pxLeftX + currentRoamX + currentSaccadeX; 
+    let finalLeftY = pxLeftY + currentRoamY + currentSaccadeY;
+    let finalRightX = pxRightX + currentRoamX + currentSaccadeX; 
+    let finalRightY = pxRightY + currentRoamY + currentSaccadeY;
+
+    // 垂直鉗制 (1.5Δ / 5.0Δ)
+    const maxVerticalPrism = isTestModeActive ? 1.5 : 5.0;
+    const maxVerticalPx = (maxVerticalPrism * viewDistM) / pixelToCm;
+    let currentVerticalSep = Math.abs(finalLeftY - finalRightY);
+    if (currentVerticalSep > maxVerticalPx) {
+        const scale = maxVerticalPx / currentVerticalSep;
+        finalLeftY *= scale; finalRightY *= scale;
+    }
 
     if(targetLeft && targetRight) {
         targetLeft.children.forEach((layer, i) => { layer.position.x = -(i * 15) * currentStereo; });
         targetRight.children.forEach((layer, i) => { layer.position.x = (i * 15) * currentStereo; });
+        
+        targetLeft.position.set(finalLeftX, finalLeftY, 0); 
+        targetRight.position.set(finalRightX, finalRightY, 0);
+        
+        const sepPx = Math.abs(targetLeft.position.x - targetRight.position.x);
+        sepVal.innerText = sepPx.toFixed(1) + 'px';
+
+        const sepCm = sepPx * pixelToCm;
+        const prismDiopter = sepCm / viewDistM;
+        
+        let prismDir = "";
+        if (sepPx > 0.1) prismDir = targetRight.position.x < targetLeft.position.x ? " BO" : " BI"; 
+        prismValEl.innerText = prismDiopter.toFixed(1) + ' Δ' + prismDir;
     }
-    targetLeft.position.set(finalLeftX, finalLeftY, 0); targetRight.position.set(finalRightX, finalRightY, 0);
-    sepVal.innerText = (Math.abs(targetLeft.position.x - targetRight.position.x)).toFixed(1) + 'px';
 
     if (taskActive && isTestModeActive) {
         const offsetDist = currentSize * 0.65; let dx = 0, dy = 0;
@@ -195,6 +368,10 @@ function updatePositions(phaseVal) {
 function spawnTask() {
     if (!isTestModeActive || !isTestModeAllowed) return;
     taskActive = true; taskSpawnTime = performance.now();
+    
+    taskInitialSep = sepVal.innerText.replace('px', '');
+    taskInitialPrism = prismValEl.innerText;
+
     const dirs = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']; taskDirection = dirs[Math.floor(Math.random() * dirs.length)];
     const eyes = ['both', 'both', 'left', 'right']; taskEye = eyes[Math.floor(Math.random() * eyes.length)];
     cueLeft.visible = (taskEye === 'both' || taskEye === 'left'); cueRight.visible = (taskEye === 'both' || taskEye === 'right');
@@ -202,18 +379,46 @@ function spawnTask() {
 
 function handleTaskResult(result, rt = 0) {
     taskActive = false; cueLeft.visible = false; cueRight.visible = false; timeSinceLastTask = 0; nextTaskInterval = 2000 + Math.random() * 3000; 
-    let logMsg = "", statusLabel = ""; const currentSepStr = sepVal.innerText.replace('px', '');
+    let logMsg = "", statusLabel = ""; 
+    
+    const currentSepStr = sepVal.innerText.replace('px', '');
+    const currentPrismStr = prismValEl.innerText;
+    const dx = targetRight.position.x - targetLeft.position.x; 
+    const dy = targetRight.position.y - targetLeft.position.y;
 
-    if (result === 'hit') { logMsg = `🟢 完美融像 (反應 ${rt}s) | SEP: ${sepVal.innerText}`; statusLabel = "融像穩定(FUSION)"; statusText.style.color = '#4ade80'; } 
-    else if (result === 'wrong') { logMsg = `🔴 複視破裂 (按錯) | SEP: ${sepVal.innerText}`; statusLabel = "複視破裂(BREAK_WRONG)"; statusText.style.color = '#f87171'; } 
-    else if (result === 'miss') {
-        if (taskEye === 'both') { logMsg = `🔴 複視破裂 (超時) | SEP: ${sepVal.innerText}`; statusLabel = "複視破裂(BREAK_TIMEOUT)"; } 
-        else { logMsg = `⚫ 單眼抑制 (${taskEye === 'left' ? '左眼' : '右眼'}) | SEP: ${sepVal.innerText}`; statusLabel = `單眼抑制(SUPPRESSION_${taskEye.toUpperCase()})`; }
-        statusText.style.color = '#facc15';
+    if (taskEye === 'both') {
+        if (result === 'hit') { 
+            logMsg = `🟢 完美融像 (反應 ${rt}s) | 稜鏡: ${currentPrismStr}`; 
+            statusLabel = "完美融像(FUSION)"; 
+            statusText.style.color = '#4ade80'; 
+        } else {
+            let failType = "";
+            let reason = result === 'wrong' ? "按錯方向" : "超時未答";
+            if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 5) {
+                failType = "垂直融像破裂"; statusLabel = "垂直破裂(VERT_FAIL)";
+            } else {
+                if (dx < 0) { failType = "聚合不足"; statusLabel = "聚合不足(BO_FAIL)"; } 
+                else { failType = "開散不足"; statusLabel = "開散不足(BI_FAIL)"; }
+            }
+            logMsg = `🔴 ${failType} (${reason}) | 稜鏡: ${currentPrismStr}`; 
+            statusText.style.color = '#f87171';
+        }
+    } else {
+        const eyeName = taskEye === 'left' ? '左眼' : '右眼';
+        if (result === 'hit') {
+            logMsg = `🟢 ${eyeName}去抑制 (反應 ${rt}s)`; statusLabel = `${eyeName}去抑制(ANTI_SUPP_${taskEye.toUpperCase()})`; statusText.style.color = '#4ade80';
+        } else {
+            let reason = result === 'wrong' ? "按錯方向" : "超時未答";
+            logMsg = `⚫ ${eyeName}抑制 (${reason})`; statusLabel = `${eyeName}抑制(SUPP_${taskEye.toUpperCase()})`; statusText.style.color = '#facc15';
+        }
     }
     statusText.innerText = logMsg;
 
-    sessionLogs.push({ time: totalTimerSec.toString(), sep: currentSepStr, stereo: currentStereo.toFixed(2), size: currentSize.toFixed(1), status: statusLabel, eye: taskEye });
+    sessionLogs.push({ 
+        time: totalTimerSec.toString(), initial_sep: taskInitialSep, initial_prism: taskInitialPrism, 
+        response_sep: currentSepStr, response_prism: currentPrismStr, reaction_time: rt,
+        stereo: currentStereo.toFixed(2), size: currentSize.toFixed(1), status: statusLabel, eye: taskEye 
+    });
 
     if(statusTimeout) clearTimeout(statusTimeout);
     statusTimeout = setTimeout(() => {
@@ -221,38 +426,123 @@ function handleTaskResult(result, rt = 0) {
     }, 2000);
 }
 
-// === 🚀 4. API 雲端資料回傳函數 (取代原本的下載 CSV) ===
+function showClinicalReport(logs, totalTime, protocolName) {
+    let fusionCount = 0, suppCount = 0, antiSuppCount = 0, boFail = 0, biFail = 0, vertFail = 0;
+    
+    let tableRowsHTML = "";
+    logs.forEach(log => {
+        if(log.status.includes('FUSION')) fusionCount++;
+        if(log.status.includes('SUPP_') && !log.status.includes('ANTI')) suppCount++;
+        if(log.status.includes('ANTI_SUPP')) antiSuppCount++;
+        if(log.status.includes('BO_FAIL')) boFail++;
+        if(log.status.includes('BI_FAIL')) biFail++;
+        if(log.status.includes('VERT_FAIL')) vertFail++;
+        
+        let statusColor = log.status.includes('FUSION') || log.status.includes('ANTI') ? '#10b981' : (log.status.includes('SUPP') ? '#f59e0b' : '#ef4444');
+        
+        tableRowsHTML += `
+            <tr style="border-bottom: 1px solid #e2e8f0; font-size:13px; text-align:center;">
+                <td style="padding: 8px;">${log.time}s</td>
+                <td style="padding: 8px; font-weight:bold; color:${statusColor};">${log.status.split('(')[0]}</td>
+                <td style="padding: 8px; font-size:12px; color:#64748b;">${log.initial_prism}</td>
+                <td style="padding: 8px; font-weight:bold; color:#0f172a;">${log.response_prism}</td>
+                <td style="padding: 8px; font-family:monospace;">${log.reaction_time}s</td>
+            </tr>
+        `;
+    });
+
+    const reportOverlay = document.createElement('div');
+    reportOverlay.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15, 23, 42, 0.8); backdrop-filter:blur(5px); z-index:10000; display:flex; justify-content:center; align-items:center; font-family:sans-serif;";
+    
+    reportOverlay.innerHTML = `
+        <div style="background:#ffffff; width: 650px; max-height: 85vh; border-radius:12px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); display:flex; flex-direction:column; overflow:hidden;">
+            <div style="background:#4A90E2; color:white; padding: 20px; text-align:center;">
+                <h2 style="margin:0; font-size:22px; letter-spacing:1px;">AXP 臨床視覺診療報告</h2>
+                <p style="margin:5px 0 0 0; opacity:0.8; font-size:14px;">病患代碼: ${currentPatientCode}</p>
+            </div>
+            
+            <div style="padding: 20px; overflow-y:auto; flex-grow:1; color:#334155;">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 20px; background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
+                    <div>
+                        <p style="margin:0 0 5px 0; font-size:12px; color:#64748b; font-weight:bold;">訓練總時長</p>
+                        <p style="margin:0; font-size:18px; font-weight:bold; color:#0f172a;">${Math.floor(totalTime / 60)}分 ${totalTime % 60}秒</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <p style="margin:0 0 5px 0; font-size:12px; color:#64748b; font-weight:bold;">訓練模組</p>
+                        <p style="margin:0; font-size:14px; font-weight:bold; color:#0f172a;">${protocolName.split(' ')[0]}</p>
+                    </div>
+                </div>
+
+                <h3 style="font-size:15px; margin-bottom:10px; color:#4A90E2; border-bottom:1px solid #e2e8f0; padding-bottom:5px;">📊 綜合表現分析</h3>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
+                    <div style="background:#ecfdf5; padding:10px; border-radius:6px; border:1px solid #a7f3d0;">
+                        <span style="font-size:12px; color:#059669; font-weight:bold;">🟢 完美融像次數</span><br><span style="font-size:20px; font-weight:bold; color:#065f46;">${fusionCount}</span>
+                    </div>
+                    <div style="background:#ecfdf5; padding:10px; border-radius:6px; border:1px solid #a7f3d0;">
+                        <span style="font-size:12px; color:#059669; font-weight:bold;">🟢 去抑制成功</span><br><span style="font-size:20px; font-weight:bold; color:#065f46;">${antiSuppCount}</span>
+                    </div>
+                    <div style="background:#fef2f2; padding:10px; border-radius:6px; border:1px solid #fecaca;">
+                        <span style="font-size:12px; color:#dc2626; font-weight:bold;">🔴 聚合不足 (BO 破裂)</span><br><span style="font-size:20px; font-weight:bold; color:#991b1b;">${boFail}</span>
+                    </div>
+                    <div style="background:#fef2f2; padding:10px; border-radius:6px; border:1px solid #fecaca;">
+                        <span style="font-size:12px; color:#dc2626; font-weight:bold;">🔴 開散不足 (BI 破裂)</span><br><span style="font-size:20px; font-weight:bold; color:#991b1b;">${biFail}</span>
+                    </div>
+                    <div style="background:#fffbeb; padding:10px; border-radius:6px; border:1px solid #fde68a;">
+                        <span style="font-size:12px; color:#d97706; font-weight:bold;">⚫ 單眼抑制發生</span><br><span style="font-size:20px; font-weight:bold; color:#b45309;">${suppCount}</span>
+                    </div>
+                    <div style="background:#fef2f2; padding:10px; border-radius:6px; border:1px solid #fecaca;">
+                        <span style="font-size:12px; color:#dc2626; font-weight:bold;">🔴 垂直融像破裂</span><br><span style="font-size:20px; font-weight:bold; color:#991b1b;">${vertFail}</span>
+                    </div>
+                </div>
+
+                <h3 style="font-size:15px; margin-bottom:10px; color:#4A90E2; border-bottom:1px solid #e2e8f0; padding-bottom:5px;">📋 計量級測驗明細</h3>
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background:#f1f5f9; font-size:12px; color:#64748b;">
+                            <th style="padding:8px; text-align:center;">時間點</th>
+                            <th style="padding:8px; text-align:center;">判定狀態</th>
+                            <th style="padding:8px; text-align:center;">出現時稜鏡($T_0$)</th>
+                            <th style="padding:8px; text-align:center;">按下時稜鏡($T_{resp}$)</th>
+                            <th style="padding:8px; text-align:center;">反應時間</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRowsHTML || '<tr><td colspan="5" style="text-align:center; padding:10px; color:#94a3b8;">無測驗紀錄</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="padding: 15px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; text-align:center;">
+                <button id="close-report-btn" style="background:#D4AF37; color:white; border:none; padding:10px 25px; border-radius:6px; font-size:15px; cursor:pointer; font-weight:bold; transition:0.2s;">關閉並初始化系統</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(reportOverlay);
+    document.getElementById('close-report-btn').addEventListener('click', () => { document.body.removeChild(reportOverlay); executeReset(); });
+}
+
 async function uploadToSupabase() {
-    if (sessionLogs.length === 0) return alert("尚無測驗數據可供上傳！");
-    statusText.innerText = "UPLOADING TO SUPABASE...";
-    statusText.style.color = "#38bdf8";
+    if (sessionLogs.length === 0) return alert("尚無測驗數據可供上傳與產生報告！");
+    
+    const logsCopy = [...sessionLogs]; 
+    const finalTime = totalTimerSec;
+    const finalProtocol = activeProtocol ? PROTOCOL_NAMES[activeProtocol] : 'MANUAL_MODE';
+
+    isRunning = false; cancelAnimationFrame(animationId); startBtn.innerText = "開始 [ Space ]"; startBtn.classList.remove('active');
+    statusText.innerText = "UPLOADING TO SUPABASE..."; statusText.style.color = "#38bdf8";
     
     try {
-        // 使用 Supabase client 將記憶體陣列直接 POST 到資料表
-        const { data, error } = await supabase
-            .from('training_sessions')
-            .insert([
-                {
-                    duration_sec: totalTimerSec,
-                    protocol_name: activeProtocol ? PROTOCOL_NAMES[activeProtocol] : 'MANUAL_MODE',
-                    raw_data: sessionLogs,
-                    // 為了初期快速 MVP，clinic_id 和 patient_id 允許為 null。
-                    // 未來這裡會接上真實的患者 UUID。
-                }
-            ]);
-
+        const { data, error } = await supabase.from('training_sessions').insert([{ duration_sec: finalTime, protocol_name: finalProtocol, raw_data: logsCopy }]);
         if (error) throw error;
         
-        alert(`上傳成功！\n病患 [${currentPatientCode}] 的訓練紀錄已寫入雲端資料庫。`);
-        statusText.innerText = "UPLOAD SUCCESSFUL";
-        statusText.style.color = "#4ade80";
-        sessionLogs = []; // 上傳成功後清空陣列
+        statusText.innerText = "UPLOAD SUCCESSFUL"; statusText.style.color = "#4ade80";
+        showClinicalReport(logsCopy, finalTime, finalProtocol);
+        sessionLogs = []; 
 
     } catch (err) {
-        console.error("Supabase 上傳錯誤:", err);
-        alert("資料上傳失敗，請檢查金鑰或網路連線。\n錯誤訊息: " + err.message);
-        statusText.innerText = "UPLOAD FAILED";
-        statusText.style.color = "#f87171";
+        console.error("Supabase 上傳錯誤:", err); alert("資料上傳失敗。\n錯誤訊息: " + err.message);
+        statusText.innerText = "UPLOAD FAILED"; statusText.style.color = "#f87171";
     }
 }
 
@@ -272,13 +562,6 @@ function updateGlassesUI() {
     buildTargets();
 }
 
-function updateColorsFromUI() {
-    if (document.getElementById('r-val')) document.getElementById('r-val').innerText = redSlider.value + '%';
-    if (document.getElementById('g-val')) document.getElementById('g-val').innerText = greenSlider.value + '%';
-    if (document.getElementById('b-val')) document.getElementById('b-val').innerText = blueSlider.value + '%';
-    buildTargets();
-}
-
 glassesSelect.addEventListener('change', updateGlassesUI);
 [redSlider, greenSlider, blueSlider].forEach(slider => slider.addEventListener('input', updateColorsFromUI));
 
@@ -291,28 +574,41 @@ function updateUIValues() {
     sizeSlider.value = currentSize; distSlider.value = currentDist; speedSlider.value = currentSpeed; thickSlider.value = currentThick; stereoSlider.value = currentStereo;
 }
 
+if (screenSpecSelect) screenSpecSelect.addEventListener('change', () => { if (!isRunning) updatePositions(phase); });
+if (viewDistInput) viewDistInput.addEventListener('input', () => { if (!isRunning) updatePositions(phase); });
+
 sizeSlider.addEventListener('input', (e) => { currentSize = parseFloat(e.target.value); updateUIValues(); updateScaleAndThickness(); if (!isRunning) renderer.render(scene, camera); disableAI(); });
 distSlider.addEventListener('input', (e) => { currentDist = parseFloat(e.target.value); updateUIValues(); if (!isRunning) updatePositions(0); disableAI(); });
 speedSlider.addEventListener('input', (e) => { currentSpeed = parseFloat(e.target.value); updateUIValues(); disableAI(); });
 thickSlider.addEventListener('input', (e) => { currentThick = parseFloat(e.target.value); updateUIValues(); buildTargets(); disableAI(); });
-stereoSlider.addEventListener('input', (e) => { currentStereo = Math.max(-0.3, Math.min(0.3, parseFloat(e.target.value))); e.target.value = currentStereo; updateUIValues(); if (!isRunning) updatePositions(0); disableAI(); });
-balanceSlider.addEventListener('input', () => { updateUIValues(); buildTargets(); disableAI(); });
+
+// 🚀 強制將手動調整限制在 -0.1 到 0.1
+stereoSlider.addEventListener('input', (e) => { currentStereo = Math.max(-0.1, Math.min(0.1, parseFloat(e.target.value))); e.target.value = currentStereo; updateUIValues(); if (!isRunning) updatePositions(0); disableAI(); });
+
+balanceSlider.addEventListener('input', () => { updateUIValues(); updateColorsFromUI(); disableAI(); });
 rotateCheckbox.addEventListener('change', (e) => { isRotating = e.target.checked; disableAI(); });
-shapeSelect.addEventListener('change', buildTargets);
-customTextInput.addEventListener('input', buildTargets); 
+shapeSelect.addEventListener('change', buildTargets); customTextInput.addEventListener('input', buildTargets); 
 fillCheckbox.addEventListener('change', (e) => { isFilled = e.target.checked; buildTargets(); });
 
 function disableAI() {
-    if (aiToggle.checked) { aiToggle.checked = false; dynamicModeTag.innerText = "AXP FUSION DYNAMICS (手動模式)"; dynamicModeTag.style.color = '#f8fafc'; activeProtocol = null; isTestModeAllowed = true; }
+    if (aiToggle.checked) { 
+        aiToggle.checked = false; dynamicModeTag.innerText = "AXP FUSION DYNAMICS (手動模式)"; dynamicModeTag.style.color = '#f8fafc'; 
+        activeProtocol = null; isTestModeAllowed = true; 
+    }
 }
 
+// 🚀 1~6 階循環隔離保護
 function loadMatrixStage(protocol, stage) {
     const config = AIM_MATRIX[protocol][stage]; if (!config) return;
     shapeSelect.value = config.shape; axisSelect.value = config.axis; modeSelect.value = config.mode; fillCheckbox.checked = config.fill; isFilled = config.fill;
-    currentStereo = Math.max(-0.3, Math.min(0.3, config.stereo)); 
+    
+    // 🚀 強制將矩陣載入的立體視限制在 0.1 內
+    currentStereo = Math.max(-0.1, Math.min(0.1, config.stereo)); 
     currentSize = config.size; currentDist = config.dist * 0.3; currentSpeed = config.speed; currentThick = config.thick;
     isRotating = !config.anim.includes('none'); rotateCheckbox.checked = isRotating; updateUIValues(); buildTargets();
-    dynamicModeTag.innerText = `[ ${PROTOCOL_NAMES[protocol].split(' ')[0]} ] Stage ${stage + 1}/10 : ${config.name}`;
+    
+    const stageMaxStr = isTestModeActive ? '6 (TEST)' : '10';
+    dynamicModeTag.innerText = `[ ${PROTOCOL_NAMES[protocol].split(' ')[0]} ] Stage ${stage + 1}/${stageMaxStr} : ${config.name}`;
     dynamicModeTag.style.color = '#deff9a'; protocolTime = 0; aiChaosTimer = 0; currentSaccadeX = 0; currentSaccadeY = 0; saccadeTimer = 0; currentRoamX = 0; currentRoamY = 0;
 }
 
@@ -326,33 +622,52 @@ function animate(time) {
 
     if (isTestModeActive && isTestModeAllowed) {
         if (!taskActive) { timeSinceLastTask += dt; if (timeSinceLastTask > nextTaskInterval) spawnTask(); } 
-        else { if (performance.now() - taskSpawnTime > 2500) handleTaskResult('miss'); }
+        // 🚀 延長超時判定至 8 秒
+        else { if (performance.now() - taskSpawnTime > 8000) handleTaskResult('miss'); }
     }
 
     if (aiToggle.checked && activeProtocol) {
-        protocolTime += dt; const config = AIM_MATRIX[activeProtocol][protocolStage]; const anim = config.anim; const progress = protocolTime / 60000;
+        protocolTime += dt; const config = AIM_MATRIX[activeProtocol][protocolStage]; const anim = config.anim || ''; const progress = protocolTime / 60000;
         currentDist = config.dist * (0.3 + 0.7 * Math.sin(progress * (Math.PI / 2))); distSlider.value = currentDist; distLabel.innerText = currentDist.toFixed(1) + 'px';
+        
         if (anim.includes('roam') || config.axis === 'roam') { currentRoamX = Math.sin(protocolTime / 3000) * 200; currentRoamY = Math.cos(protocolTime / 2100) * 120; }
         if (anim.includes('saccade') || config.axis === 'saccade') { saccadeTimer += dt; if (saccadeTimer > 1500) { saccadeTimer = 0; currentSaccadeX = (Math.random() > 0.5 ? 1 : -1) * (50 + Math.random() * 150); currentSaccadeY = (Math.random() > 0.5 ? 1 : -1) * (30 + Math.random() * 100); }}
+        
+        // 🚀 AI 運行中的立體視動畫強制鎖定在 0.1 內
         if (anim.includes('breathSize')) updateScaleAndThickness(currentSize + (currentSize * 0.15 * Math.sin(protocolTime / 1500)));
-        if (anim.includes('pulseZ_in')) currentStereo = Math.max(-0.3, Math.min(0.3, config.stereo + (Math.sin(protocolTime / 1000) + 1) / 2 * 0.2));
-        if (anim.includes('pulseZ_out')) currentStereo = Math.max(-0.3, Math.min(0.3, config.stereo - (Math.sin(protocolTime / 1000) + 1) / 2 * 0.2));
-        if (anim.includes('flipStereo_hard')) currentStereo = Math.max(-0.3, Math.min(0.3, Math.sin(protocolTime / 1000) * 0.3));
-        if (anim === 'chaos') {
+        if (anim.includes('pulseZ_in')) currentStereo = Math.max(-0.1, Math.min(0.1, config.stereo + (Math.sin(protocolTime / 1000) + 1) / 2 * 0.2));
+        if (anim.includes('pulseZ_out')) currentStereo = Math.max(-0.1, Math.min(0.1, config.stereo - (Math.sin(protocolTime / 1000) + 1) / 2 * 0.2));
+        if (anim.includes('flipStereo_hard')) currentStereo = Math.max(-0.1, Math.min(0.1, Math.sin(protocolTime / 1000) * 0.3));
+        
+        if (anim.includes('chaos')) {
             aiChaosTimer += dt;
             if (aiChaosTimer > 2000) {
                 aiChaosTimer = 0; currentSpeed = Math.max(10, Math.min(100, config.speed + (Math.random() * 60 - 30))); speedSlider.value = currentSpeed; speedLabel.innerText = currentSpeed.toFixed(1);
                 currentThick = Math.max(2, Math.min(20, config.thick + (Math.random() * 10 - 5))); thickSlider.value = currentThick; thickLabel.innerText = currentThick.toFixed(1); buildTargets();
             }
-            currentStereo = Math.max(-0.3, Math.min(0.3, Math.sin(protocolTime / 500) * 0.3)); updateScaleAndThickness(currentSize + (currentSize * 0.3 * Math.sin(protocolTime / 200)));
+            currentStereo = Math.max(-0.1, Math.min(0.1, Math.sin(protocolTime / 500) * 0.3)); updateScaleAndThickness(currentSize + (currentSize * 0.3 * Math.sin(protocolTime / 200)));
         }
+
+        if (anim.includes('balanceDrift')) {
+            const drift = Math.sin(protocolTime / 1000) * 0.4 + 0.6; 
+            targetLeft.traverse(c => { if(c.isMesh) c.material.opacity = drift; }); targetRight.traverse(c => { if(c.isMesh) c.material.opacity = 1.2 - drift; });
+        }
+        if (anim.includes('sensoryOverload')) {
+            const flash = Math.floor(protocolTime / 150) % 2 === 0;
+            targetLeft.traverse(c => { if(c.isMesh) c.material.opacity = flash ? 1 : 0.1; }); targetRight.traverse(c => { if(c.isMesh) c.material.opacity = flash ? 0.1 : 1; });
+            updateScaleAndThickness(currentSize + (Math.random() * 40 - 20));
+        }
+
         stereoSlider.value = currentStereo; stereoLabel.innerText = currentStereo.toFixed(2);
+        
         if (anim.includes('rivalry') || anim.includes('flicker')) {
             let isRedTurn = Math.floor(protocolTime / (anim.includes('flicker') ? 100 : 500)) % 2 === 0;
             targetLeft.traverse(c => { if(c.isMesh) c.material.opacity = isRedTurn ? 1 : 0.05; });
             targetRight.traverse(c => { if(c.isMesh) c.material.opacity = isRedTurn ? 0.05 : 1; });
         }
-        if (protocolTime > 60000) { protocolStage = (protocolStage + 1) % 10; loadMatrixStage(activeProtocol, protocolStage); }
+        
+        const maxStages = isTestModeActive ? 6 : 10;
+        if (protocolTime > 60000) { protocolStage = (protocolStage + 1) % maxStages; loadMatrixStage(activeProtocol, protocolStage); }
     }
 
     if(targetLeft && targetRight) {
@@ -364,7 +679,7 @@ function animate(time) {
 }
 
 function toggleTraining() {
-    if(loginOverlay.style.display !== 'none') return; // 如果登入畫面還在，禁止開始
+    if(loginOverlay.style.display !== 'none') return; 
     isRunning = !isRunning;
     if (isRunning) {
         startBtn.innerText = "暫停 [ Space ]"; startBtn.classList.add('active'); statusText.innerText = isTestModeActive ? "TEST MODE ACTIVE" : "TRAINING"; statusText.style.color = isTestModeActive ? "#deff9a" : '#e11d48';
@@ -379,23 +694,33 @@ function executeReset() {
     isRunning = false; cancelAnimationFrame(animationId); startBtn.innerText = "開始 [ Space ]"; startBtn.classList.remove('active');
     statusText.innerText = "IDLE"; statusText.style.color = '#f8fafc'; totalTimerSec = 0; timerDisplay.innerText = "00:00"; disableAI();
     taskActive = false; isTestModeActive = false; cueLeft.visible = false; cueRight.visible = false;
-    currentSaccadeX = 0; currentSaccadeY = 0; currentRoamX = 0; currentRoamY = 0; currentDist = 120; currentSize = 200; currentSpeed = 20; currentStereo = 0; currentThick = 9.0;
-    sessionLogs = []; updateUIValues(); updatePositions(0);
+    
+    currentSize = 200; currentDist = 120; currentSpeed = 20; currentStereo = 0; currentThick = 9.0;
+    currentSaccadeX = 0; currentSaccadeY = 0; currentRoamX = 0; currentRoamY = 0; phase = 0;
+    isRotating = true; isFilled = false; sessionLogs = [];
+    
+    shapeSelect.value = 'star5'; axisSelect.value = 'horizontal'; modeSelect.value = 'crossover';
+    rotateCheckbox.checked = true; fillCheckbox.checked = false; balanceSlider.value = 50;
+    
+    // 初始化時 RGB 滑桿歸位 50%
+    redSlider.value = 50; greenSlider.value = 50; blueSlider.value = 50;
+    
+    updateUIValues(); updateColorsFromUI(); buildTargets(); updatePositions(0);
 }
 
 startBtn.addEventListener('click', toggleTraining); resetBtn.addEventListener('click', executeReset);
 
 fullscreenBtn.addEventListener('click', () => {
     const elem = document.getElementById('fv-fusion-app');
-    if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
-        if (elem.requestFullscreen) { elem.requestFullscreen(); } else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } else if (elem.mozRequestFullScreen) { elem.mozRequestFullScreen(); } else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); } 
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (elem.requestFullscreen) { elem.requestFullscreen(); } else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } 
     } else {
-        if (document.exitFullscreen) { document.exitFullscreen(); } else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); } else if (document.mozCancelFullScreen) { document.mozCancelFullScreen(); } else if (document.msExitFullscreen) { document.msExitFullscreen(); }
+        if (document.exitFullscreen) { document.exitFullscreen(); } else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
     }
 });
 
 document.addEventListener('keydown', (e) => {
-    if(loginOverlay.style.display !== 'none') return; // 登入畫面還在時，封鎖所有快捷鍵
+    if(loginOverlay.style.display !== 'none') return; 
     if (document.activeElement.tagName === 'INPUT' && document.activeElement.type !== 'range' && document.activeElement.type !== 'checkbox') return;
     const code = e.code;
     
@@ -405,24 +730,24 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    const shortcuts = ['Space', 'Enter', 'KeyE', 'KeyW', 'KeyS', 'KeyD', 'KeyA', 'KeyF', 'KeyR', 'KeyG', 'Digit0', 'Numpad0', 'BracketLeft', 'BracketRight', 'Comma', 'Period', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP'];
+    const shortcuts = ['Space', 'Enter', 'KeyE', 'KeyW', 'KeyS', 'KeyD', 'KeyA', 'KeyF', 'KeyR', 'KeyG', 'KeyZ', 'Digit0', 'Numpad0', 'BracketLeft', 'BracketRight', 'Comma', 'Period', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP'];
     if (shortcuts.includes(code)) {
         e.preventDefault(); if (document.activeElement) document.activeElement.blur(); 
         switch(code) {
-            case 'Space': toggleTraining(); break; case 'Enter': executeReset(); break; 
+            case 'Space': toggleTraining(); break; 
+            case 'Enter': executeReset(); break; 
             case 'KeyE': controlPanel.style.display = controlPanel.style.display === 'none' ? 'flex' : 'none'; setTimeout(onWindowResize, 50); break;
-            
-            // 🚀 改寫原本的 [ G ] 鍵：不再下載，改為將資料 POST 上傳！
             case 'KeyG': uploadToSupabase(); break; 
-
+            case 'KeyZ': aiToggle.checked = !aiToggle.checked; if (!aiToggle.checked) disableAI(); break;
             case 'Digit0': case 'Numpad0':
                 if (!isTestModeAllowed) { alert("當前訓練 Program 限制進行測驗。"); break; }
                 isTestModeActive = !isTestModeActive;
                 if (!isTestModeActive) { taskActive = false; cueLeft.visible = false; cueRight.visible = false; if (isRunning) { statusText.innerText = "TRAINING"; statusText.style.color = '#e11d48'; } } 
                 else { if (isRunning) { statusText.innerText = "TEST MODE ACTIVE"; statusText.style.color = '#deff9a'; } }
                 break;
-            case 'BracketRight': stereoSlider.value = Math.min(0.3, parseFloat(stereoSlider.value) + 0.01).toFixed(2); stereoSlider.dispatchEvent(new Event('input')); break;
-            case 'BracketLeft': stereoSlider.value = Math.max(-0.3, parseFloat(stereoSlider.value) - 0.01).toFixed(2); stereoSlider.dispatchEvent(new Event('input')); break;
+            // 🚀 快捷鍵調整立體視也嚴格限制在 0.1 內
+            case 'BracketRight': stereoSlider.value = Math.min(0.1, parseFloat(stereoSlider.value) + 0.01).toFixed(2); stereoSlider.dispatchEvent(new Event('input')); break;
+            case 'BracketLeft': stereoSlider.value = Math.max(-0.1, parseFloat(stereoSlider.value) - 0.01).toFixed(2); stereoSlider.dispatchEvent(new Event('input')); break;
             case 'Period': speedSlider.value = Math.min(100, parseFloat(speedSlider.value) + (e.shiftKey ? 10 : 1)); speedSlider.dispatchEvent(new Event('input')); break;
             case 'Comma': speedSlider.value = Math.max(1, parseFloat(speedSlider.value) - (e.shiftKey ? 10 : 1)); speedSlider.dispatchEvent(new Event('input')); break;
             case 'KeyW': currentSize = Math.min(600, currentSize + 10); currentThick = Math.min(25, currentThick + 0.5); updateUIValues(); buildTargets(); disableAI(); break;
@@ -433,13 +758,20 @@ document.addEventListener('keydown', (e) => {
             case 'KeyR': rotateCheckbox.checked = !rotateCheckbox.checked; rotateCheckbox.dispatchEvent(new Event('change')); break;
             case 'KeyY': case 'KeyU': case 'KeyI': case 'KeyO': case 'KeyP':
                 aiToggle.checked = true; checkProtocolTestAllowance(code); 
-                if (activeProtocol === code && isRunning) { protocolStage = (protocolStage + 1) % 10; } else { activeProtocol = code; protocolStage = 0; }
+                const maxStages = isTestModeActive ? 6 : 10;
+                if (activeProtocol === code && isRunning) { protocolStage = (protocolStage + 1) % maxStages; } else { activeProtocol = code; protocolStage = 0; }
                 loadMatrixStage(activeProtocol, protocolStage); if (!isRunning) toggleTraining(); break;
         }
     }
 });
 
-updateGlassesUI(); updateUIValues();
+// 強制初始化色彩滑桿為 50%
+redSlider.value = 50; greenSlider.value = 50; blueSlider.value = 50;
+
+updateGlassesUI(); 
+updateUIValues();
+updateColorsFromUI(); 
+
 function onWindowResize() {
     const width = container.clientWidth; const height = container.clientHeight;
     camera.left = -d * (width / height); camera.right = d * (width / height); camera.updateProjectionMatrix();

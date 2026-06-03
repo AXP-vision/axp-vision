@@ -22,30 +22,29 @@
         </div>
         
         <div id="webgl-container" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;"></div>
-        
         <div class="breathe-reminder">💡 訓練中請保持平穩呼吸，勿憋氣</div>
     </div>
 
     <div class="control-panel" style="z-index: 20;">
-        <div class="app-title">AXP FUSION DYNAMICS</div>
+        <div class="app-title">AXP FUSION 9.5.52</div>
 
         <div class="panel-section">
             <div class="section-title">🎨 視覺與形體</div>
             <div class="control-group">
                 <select id="shape-select">
-                    <optgroup label="3D 實體晶體 (稜鏡)">
-                        <option value="crystal1">單層稜鏡晶體 ( 1-Crystal )</option>
-                        <option value="crystal3">三層稜鏡晶體 ( 3-Crystal )</option>
-                        <option value="crystal5">五層稜鏡晶體 ( 5-Crystal )</option>
-                    </optgroup>
-                    <optgroup label="3D 幾何隧道">
-                        <option value="circle3">三層同心圓環 ( 3-Rings )</option>
-                        <option value="circle5">五層同心隧道 ( 5-Rings )</option>
+                    <optgroup label="基礎對焦 (單層 / 三層)">
+                        <option value="circle3">三層同心圓 ( 3-Rings )</option>
                         <option value="star3">三層星形漏斗 ( 3-Stars )</option>
-                        <option value="star5" selected>五層星形隧道 ( 5-Stars )</option>
+                        <option value="wan1">單層銳利十字 ( 1-Cross )</option>
+                        <option value="wan3">三層空心十字 ( 3-Cross )</option> 
                     </optgroup>
-                    <optgroup label="3D 客製化">
-                        <option value="text">客製化文字 ( TEXT )</option>
+                    <optgroup label="高階干擾 (五層深淵)">
+                        <option value="circle5">五層同心圓 ( 5-Rings )</option>
+                        <option value="star5" selected>五層星形隧道 ( 5-Stars )</option>
+                        <option value="wan5">五層空心十字 ( 5-Cross )</option> 
+                    </optgroup>
+                    <optgroup label="客製化">
+                        <option value="text">客製文字 ( TEXT )</option>
                     </optgroup>
                 </select>
             </div>
@@ -60,7 +59,7 @@
             </div>
             <div class="control-group">
                 <label style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>3D 實體厚度 [ D / A ] <span class="val-display" id="thick-label">9.0</span></span>
+                    <span>線條粗細 [ D / A ] <span class="val-display" id="thick-label">9.0</span></span>
                     <div style="display:flex; gap:8px;">
                         <label class="checkbox-wrapper"><input type="checkbox" id="rotate-checkbox" checked> 轉 [R]</label>
                         <label class="checkbox-wrapper"><input type="checkbox" id="fill-checkbox"> 滿 [F]</label>
@@ -72,8 +71,8 @@
 
         <div class="panel-section">
             <div class="section-title">
-                <span>🚀 AI 託管矩陣 ( Y U I O P )</span>
-                <label class="checkbox-wrapper" id="ai-toggle-wrapper" title="Z 鍵切換"><input type="checkbox" id="ai-toggle"> AI 模式 [ Z ]</label>
+                <span>🚀 空間動態 ( Y U I O P )</span>
+                <label class="checkbox-wrapper" id="ai-toggle-wrapper" title="Z 鍵切換"><input type="checkbox" id="ai-toggle"> AI 託管 [ Z ]</label>
             </div>
             <div class="control-group">
                 <label>最大分離距離 [ 2遠 / 1近 ] <span class="val-display" id="dist-label">120px</span></label>
@@ -86,16 +85,16 @@
             <div class="control-group">
                 <div style="display: flex; gap: 8px;">
                     <select id="axis-select" style="flex: 1;">
-                        <option value="horizontal">↔ 水平模式</option>
-                        <option value="vertical">↕ 垂直模式</option>
-                        <option value="circular">🔄 環形模式</option>
-                        <option value="roam">🌌 全域漫遊</option>
+                        <option value="horizontal">↔ 水平震盪</option>
+                        <option value="vertical">↕ 垂直震盪</option>
+                        <option value="circular">🔄 環形軌跡</option>
+                        <option value="roam">🌌 全螢幕漫遊</option>
                         <option value="saccade">⚡ 隨機跳視</option>
                     </select>
                     <select id="mode-select" style="flex: 1;">
-                        <option value="crossover">交錯 (Cross)</option>
-                        <option value="oneway_bo">內聚 (BO)</option>
-                        <option value="oneway_bi">開散 (BI)</option>
+                        <option value="crossover">交錯穿透 (Cross)</option>
+                        <option value="oneway_bo">單向內聚 (BO)</option>
+                        <option value="oneway_bi">單向開散 (BI)</option>
                     </select>
                 </div>
             </div>
@@ -106,11 +105,11 @@
         </div>
 
         <div class="panel-section">
-            <div class="section-title">🔬 數位光學與視覺平衡</div>
+            <div class="section-title">🔬 數位光學與視覺感知微調</div>
             <div class="control-group">
                 <select id="glasses-select">
-                    <option value="rc" selected>🔴🔵 紅 / 青 (藍) 專業標配</option>
-                    <option value="rg">🔴🟢 紅 / 綠 測試模式</option>
+                    <option value="rc" selected>🔴🔵 紅 / 青 (藍) 旗艦推薦</option>
+                    <option value="rg">🔴🟢 紅 / 綠 眼鏡</option>
                 </select>
             </div>
             <div class="control-group">
@@ -118,11 +117,21 @@
                 <input type="range" id="balance-slider" min="0" max="100" value="50" style="background: linear-gradient(to right, red, green);">
             </div>
             <div class="control-group">
-                <label>鬼影濾除校正 <span class="val-display">R: <span id="r-val">100%</span> | G: <span id="g-val">100%</span><span id="b-val-box"> | B: <span id="b-val">100%</span></span></span></label>
+                <label>雙眼視覺疊影濾除校正 <span class="val-display">R: <span id="r-val">100%</span> | G: <span id="g-val">100%</span><span id="b-val-box"> | B: <span id="b-val">100%</span></span></span></label>
                 <input type="range" id="red-slider" min="5" max="100" value="100" style="accent-color: red;">
                 <input type="range" id="green-slider" min="5" max="100" value="100" style="accent-color: green;">
                 <div id="blue-channel-box" style="display: block;">
                     <input type="range" id="blue-slider" min="5" max="100" value="100" style="accent-color: #0080ff;">
+                </div>
+            </div>
+            <div class="control-group">
+                <div style="display: flex; gap: 8px;">
+                    <select id="screen-spec" style="flex: 2;">
+                        <option value="retina16">MacBook Pro (226 DPI)</option>
+                        <option value="ipad13">iPad Pro (264 DPI)</option>
+                        <option value="generic">一般螢幕 (96 DPI)</option>
+                    </select>
+                    <input type="number" id="view-dist" value="40" min="20" style="flex: 1; text-align: center;" title="觀距(cm)">
                 </div>
             </div>
         </div>
@@ -133,7 +142,7 @@
                 <svg viewBox="0 0 512 512" style="width:18px; fill:currentColor;"><path d="M463.5 224H472c13.3 0 24-10.7 24-24V72c0-9.7-5.8-18.5-14.8-22.2s-19.3-1.7-26.2 5.2L413.4 96.6c-87.6-86.5-228.7-86.2-315.8 1c-87.5 87.5-87.5 229.3 0 316.8s229.3 87.5 316.8 0c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0c-62.5 62.5-163.8 62.5-226.3 0s-62.5-163.8 0-226.3c62.2-62.2 162.7-62.5 225.3-1L327 183c-6.9 6.9-8.9 17.2-5.2 26.2s12.5 14.8 22.2 14.8H463.5z"/></svg>
             </button>
         </div>
-        <button class="btn-fullscreen" id="fullscreen-btn">進入全螢幕沉浸訓練模式</button>
+        <button class="btn-fullscreen" id="fullscreen-btn">進入全螢幕沉浸模式</button>
     </div>
 </div>
 
