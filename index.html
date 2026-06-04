@@ -32,19 +32,19 @@
             <div class="section-title">🎨 視覺與形體</div>
             <div class="control-group">
                 <select id="shape-select">
-                    <optgroup label="基礎對焦 (單層 / 三層)">
+                    <optgroup label="經典平面對焦 (Classic)">
                         <option value="circle3">三層同心圓 ( 3-Rings )</option>
-                        <option value="star3">三層星形漏斗 ( 3-Stars )</option>
-                        <option value="wan1">單層銳利十字 ( 1-Cross )</option>
-                        <option value="wan3">三層空心十字 ( 3-Cross )</option> 
-                    </optgroup>
-                    <optgroup label="高階干擾 (五層深淵)">
                         <option value="circle5">五層同心圓 ( 5-Rings )</option>
-                        <option value="star5" selected>五層星形隧道 ( 5-Stars )</option>
-                        <option value="wan5">五層空心十字 ( 5-Cross )</option> 
+                        <option value="star3">三層扁平星芒 ( 3-Stars )</option>
+                        <option value="star5">五層扁平星芒 ( 5-Stars )</option>
+                    </optgroup>
+                    <optgroup label="高階 3D 幾何 (WebGL 3D)">
+                        <option value="sphere5" selected>3D 網格地球儀 ( 5-Sphere )</option>
+                        <option value="rock3">3D 多邊形隕石 ( 3-LowPoly Rock )</option>
+                        <option value="startunnel5">3D 扭曲星系隧道 ( 5-Star Tunnel )</option>
                     </optgroup>
                     <optgroup label="客製化">
-                        <option value="text">客製文字 ( TEXT )</option>
+                        <option value="text">全息粒子文字 ( TEXT )</option>
                     </optgroup>
                 </select>
             </div>
@@ -100,7 +100,7 @@
             </div>
             <div class="control-group">
                 <label>立體視深度 [ ↑凸出 / ↓凹陷 ] <span class="val-display" id="stereo-label">0.00</span></label>
-                <input type="range" id="stereo-slider" min="-0.5" max="0.5" step="0.01" value="0">
+                <input type="range" id="stereo-slider" min="-0.15" max="0.15" step="0.01" value="0">
             </div>
         </div>
 
