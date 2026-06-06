@@ -42,16 +42,15 @@
                         <option value="sphere5" selected>3D 網格地球儀 ( 5-Sphere )</option>
                         <option value="glossysphere">高光實體晶球 ( Glossy Sphere )</option>
                         <option value="rock3">3D 多邊形隕石 ( 3-LowPoly Rock )</option>
-                        <option value="torusknot">無限立體扭結 ( Torus Knot )</option>
                     </optgroup>
                     <optgroup label="客製化">
-                        <option value="text">全息粒子文字 ( TEXT )</option>
+                        <option value="text">粒子文字 ( TEXT )</option>
                     </optgroup>
                 </select>
             </div>
             
             <div class="control-group" id="text-input-group" style="display: none; margin-top: 4px;">
-                <input type="text" id="custom-text" value="Dodge" placeholder="輸入文字..." style="text-align: center; font-weight: bold; font-size: 16px; letter-spacing: 2px;">
+                <input type="text" id="custom-text" value="AXP" placeholder="輸入文字..." style="text-align: center; font-weight: bold; font-size: 16px; letter-spacing: 2px;">
             </div>
 
             <div class="control-group" style="margin-top: 8px;">
@@ -60,13 +59,13 @@
             </div>
             <div class="control-group">
                 <label style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>線條粗細 [ D / A ] <span class="val-display" id="thick-label">9.0</span></span>
+                    <span>線條粗細 [ A / D ] <span class="val-display" id="thick-label">9.0</span></span>
                     <div style="display:flex; gap:8px;">
                         <label class="checkbox-wrapper"><input type="checkbox" id="rotate-checkbox" checked> 轉 [R]</label>
                         <label class="checkbox-wrapper"><input type="checkbox" id="fill-checkbox"> 滿 [F]</label>
                     </div>
                 </label>
-                <input type="range" id="thick-slider" min="2" max="25" step="0.1" value="9">
+                <input type="range" id="thick-slider" min="1" max="10" step="0.1" value="9">
             </div>
         </div>
 
@@ -76,10 +75,10 @@
                 <label class="checkbox-wrapper" id="ai-toggle-wrapper" title="Z 鍵切換"><input type="checkbox" id="ai-toggle"> AI 託管 [ Z ]</label>
             </div>
             
-            <div class="control-group" style="background: rgba(59, 130, 246, 0.15); padding: 10px; border-radius: 6px; border-left: 3px solid #3b82f6; margin-bottom: 12px;">
+            <div class="control-group" style="background: rgba(59, 130, 246, 0.15); padding: 10px; border-radius: 6px; border-left: 3px solid #3b82f6; margin-bottom: 8px;">
                 <label style="color: #60a5fa; margin-bottom: 8px; display: flex; justify-content: space-between;">
-                    <span>稜鏡需求量 [ 2遠 / 1近 ]</span>
-                    <span class="val-display" id="prism-label" style="font-weight: bold; color: #fff;">0.0 Δ (平光)</span>
+                    <span>稜鏡需求量 [ 1 BI / 2 BO ]</span>
+                    <span class="val-display" id="prism-label">0.0 Δ (平光)</span>
                 </label>
                 <div style="display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; margin-bottom: 4px;">
                     <span>BI (-6)</span>
@@ -90,27 +89,12 @@
             </div>
 
             <div class="control-group">
-                <label>運動速度 [ ← / → / Shift ] <span class="val-display" id="speed-label">20</span></label>
+                <label>運動速度 [ , 慢 / . 快 ] <span class="val-display" id="speed-label">20</span></label>
                 <input type="range" id="speed-slider" min="1" max="100" step="0.1" value="20">
             </div>
-            <div class="control-group">
-                <div style="display: flex; gap: 8px;">
-                    <select id="axis-select" style="flex: 1;">
-                        <option value="horizontal">↔ 水平震盪</option>
-                        <option value="vertical">↕ 垂直震盪</option>
-                        <option value="circular">🔄 環形軌跡</option>
-                        <option value="roam">🌌 全螢幕漫遊</option>
-                        <option value="saccade">⚡ 隨機跳視</option>
-                    </select>
-                    <select id="mode-select" style="flex: 1;">
-                        <option value="crossover">交錯穿透 (Cross)</option>
-                        <option value="oneway_bo">單向內聚 (BO)</option>
-                        <option value="oneway_bi">單向開散 (BI)</option>
-                    </select>
-                </div>
-            </div>
-            <div class="control-group">
-                <label>立體視深度 [ ↑凸出 / ↓凹陷 ] <span class="val-display" id="stereo-label">0.00</span></label>
+            
+            <div class="control-group" style="margin-top: 4px;">
+                <label>立體視深度 [ [ 凹陷 / ] 凸出 ] <span class="val-display" id="stereo-label">0.00</span></label>
                 <input type="range" id="stereo-slider" min="-0.15" max="0.15" step="0.01" value="0">
             </div>
         </div>

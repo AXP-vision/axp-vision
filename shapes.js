@@ -1,15 +1,19 @@
-// shapes.js - AXP Fusion Dynamics: WebGL 3D 臨床高階醫療版 (v17.0)
-// 移除非生理性隧道，導入立體扭結 (Torus Knot) 與高光實體晶球 (Glossy Sphere)
+// shapes.js - AXP Fusion Dynamics: WebGL 3D 臨床高階醫療版 (v20.0 - Performance Optimized)
+// 徹底移除不必要的複雜干擾圖形，極致優化 3D 幾何記憶體佔用與粒子文字共用材質
 
-// 建立具有物理粗細的實體線框管
+import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
+// 備註：若使用 CDN r128，全域已有 THREE，此處的 import 在模組化環境中可確保相容性
+// 在你的 index.html 中已經透過 <script> 引入了 THREE，因此也可以直接使用全域的 THREE。
+
+// 🚀 建立具有物理粗細的實體線框管 (突破 WebGL 1px 限制，確保濾光鏡下的最高對比度)
 function createWireframeTubes(geometry, thickness) {
     const edges = new THREE.EdgesGeometry(geometry);
     const pos = edges.attributes.position;
     const group = new THREE.Group();
     
     const size = Math.max(0.5, thickness * 0.15); 
+    // 共用 Geometry 與 Material，大幅減少 WebGL Draw Calls 與記憶體負擔
     const boxGeo = new THREE.BoxGeometry(size, 1, size); 
-    // 線框物體保持純白發光，確保濾光後具備最高對比度
     const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
     const v1 = new THREE.Vector3();
@@ -147,52 +151,40 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness) 
             rootGroup.add(layerMesh);
         }
     }
-    else if (shapeType === 'torusknot') {
-        // 🚀 臨床升級：莫比烏斯無限立體扭結 ( 3 層漸進嵌套，動態視覺效果極佳 )
-        for (let i = 0; i < 3; i++) {
-            const radius = 45 + i * 35;
-            const tubeRadius = Math.max(2.0, thickness * 0.5) + i * 1.5;
-            // p=2, q=3 創造最經典的無限流動交錯扭結
-            const geo = new THREE.TorusKnotGeometry(radius, tubeRadius, 120, 16, 2, 3);
-            let layerMesh;
-
-            if (isFilled) {
-                layerMesh = new THREE.Mesh(geo, solidMaterial);
-            } else {
-                layerMesh = createWireframeTubes(geo, thickness);
-            }
-            layerMesh.position.z = -i * 10; 
-            rootGroup.add(layerMesh);
-        }
-    }
     else if (shapeType === 'text') {
+        // 🚀 高解析度立體文字 (256x64)：支援 12 字元長字串渲染與隨機動態字庫
         const canvas = document.createElement('canvas');
-        canvas.width = 64; canvas.height = 32;
+        canvas.width = 256; 
+        canvas.height = 64; 
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'black'; ctx.fillRect(0, 0, 64, 32);
+        ctx.fillStyle = 'black'; ctx.fillRect(0, 0, 256, 64);
         ctx.fillStyle = 'white'; 
-        ctx.font = 'bold 22px monospace';
-        ctx.textAngle = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold 36px monospace';
+        ctx.textBaseline = 'middle';
         ctx.textAlign = 'center';
-        ctx.fillText((textStr || 'AXP').substring(0, 4), 32, 16); 
         
-        const imgData = ctx.getImageData(0, 0, 64, 32).data;
+        ctx.fillText((textStr || 'AXP').substring(0, 12), 128, 32); 
+        
+        const imgData = ctx.getImageData(0, 0, 256, 64).data;
         const radius = Math.max(1.0, thickness * 0.25);
+        
+        // 粒子共用幾何與材質，避免 Memory Leak
         const boxGeo = new THREE.BoxGeometry(radius*2, radius*2, radius*5); 
 
         const textGroup = new THREE.Group(); 
-        for (let y = 0; y < 32; y += 2) {
-            for (let x = 0; x < 64; x += 2) {
-                const i = (y * 64 + x) * 4;
+        for (let y = 0; y < 64; y += 2) {
+            for (let x = 0; x < 256; x += 2) {
+                const i = (y * 256 + x) * 4;
                 if (imgData[i] > 128) {
                     const mesh = new THREE.Mesh(boxGeo, lineMaterial);
                     const depth = (Math.random() - 0.5) * 15; 
-                    mesh.position.set((x - 32) * 2.5, (16 - y) * 2.5, depth);
+                    // 粒子原點置中對齊
+                    mesh.position.set((x - 128) * 1.2, (32 - y) * 1.2, depth);
                     textGroup.add(mesh);
                 }
             }
         }
-        textGroup.scale.set(1.5, 1.5, 1.5);
+        textGroup.scale.set(1.0, 1.0, 1.0);
         rootGroup.add(textGroup);
     }
 

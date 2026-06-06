@@ -1,5 +1,5 @@
-// app.js - AXP Fusion Dynamics (v17.0 - Clinical Matrix, SILO HUD & Safety Limits)
-// 邏輯規範: 實體眼鏡 [左藍/綠, 右紅] | 極限鎖定: BO 40Δ / BI 8Δ / Vert 1.5Δ
+// app.js - AXP Fusion Dynamics (v20.6 - Fullscreen Q-Key Unlock)
+// 修正：新增 Q 鍵一鍵全螢幕/退出全螢幕快捷功能
 
 import { AIM_MATRIX, PROTOCOL_NAMES } from './matrix.js';
 import { createTarget } from './shapes.js';
@@ -17,8 +17,8 @@ loginOverlay.innerHTML = `
     <h1 style="color:#0f172a; letter-spacing:2px; margin-bottom:10px;">AXP FUSION DYNAMICS</h1>
     <p style="color:#475569; margin-bottom:30px; font-weight:bold;">企業級雙眼視覺雲端診療系統</p>
     <div style="background:#ffffff; padding:40px; border-radius:12px; text-align:center; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
-        <p style="margin-bottom:15px; font-size:14px; font-weight:bold; color:#64748b;">請輸入驗光師配發的病患代碼</p>
-        <input type="text" id="patient-code-input" placeholder="例如: AXP-001" style="background-color:#f1f5f9; padding:12px; width:220px; text-align:center; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:25px; font-size:16px; font-weight:bold; color:#475569; outline:none; transition:0.2s;">
+        <p style="margin-bottom:15px; font-size:14px; font-weight:bold; color:#64748b;">請輸入姓名加生日</p>
+        <input type="text" id="patient-code-input" placeholder="例如: 凡特錫0123" style="background-color:#f1f5f9; padding:12px; width:220px; text-align:center; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:25px; font-size:16px; font-weight:bold; color:#475569; outline:none; transition:0.2s;">
         <br>
         <button id="login-btn" style="background:#2563eb; color:white; border:none; padding:12px 30px; border-radius:6px; font-size:16px; cursor:pointer; font-weight:bold; transition:0.3s; box-shadow: 0 4px 6px rgba(37,99,235,0.2);">登入並開始訓練</button>
     </div>
@@ -27,7 +27,7 @@ document.body.appendChild(loginOverlay);
 
 function performLogin() {
     const code = document.getElementById('patient-code-input')?.value.trim();
-    if(!code) return alert("請輸入病患代碼！");
+    if(!code) return alert("請輸入姓名與生日！");
     currentPatientCode = code; 
     loginOverlay.style.display = 'none'; 
 }
@@ -58,12 +58,8 @@ const thickLabel = document.getElementById('thick-label');
 const fillCheckbox = document.getElementById('fill-checkbox');
 const rotateCheckbox = document.getElementById('rotate-checkbox');
 const aiToggle = document.getElementById('ai-toggle');
-const distSlider = document.getElementById('dist-slider');
-const distLabel = document.getElementById('dist-label');
 const speedSlider = document.getElementById('speed-slider');
 const speedLabel = document.getElementById('speed-label');
-const axisSelect = document.getElementById('axis-select');
-const modeSelect = document.getElementById('mode-select');
 const stereoSlider = document.getElementById('stereo-slider');
 const stereoLabel = document.getElementById('stereo-label');
 
@@ -73,8 +69,6 @@ const prismValHud = document.getElementById('prism-val-hud');
 
 const screenSpecSelect = document.getElementById('screen-spec');
 const viewDistInput = document.getElementById('view-dist');
-
-if(stereoSlider) { stereoSlider.min = "-0.15"; stereoSlider.max = "0.15"; }
 
 const glassesSelect = document.getElementById('glasses-select');
 const balanceSlider = document.getElementById('balance-slider');
@@ -86,35 +80,45 @@ const blueSlider = document.getElementById('blue-slider');
 const timerDisplay = document.getElementById('timer-val');
 const dynamicModeTag = document.getElementById('dynamic-mode-tag');
 
-// 🚀 動態建立 SILO 全息認知字幕 HUD
 const siloPrompt = document.createElement('div');
 siloPrompt.id = 'silo-prompt';
 siloPrompt.style.cssText = "position:absolute; bottom:80px; left:50%; transform:translateX(-50%); font-size:18px; font-weight:bold; letter-spacing:2px; background:rgba(15, 23, 42, 0.85); backdrop-filter:blur(8px); padding:12px 24px; border-radius:12px; border:2px solid #4ade80; z-index:100; display:none; text-shadow: 0 0 10px rgba(0,0,0,0.5); text-align:center; transition: 0.3s; pointer-events:none;";
 document.getElementById('arena').appendChild(siloPrompt);
 
-// 引擎與狀態變數
+// 引擎與臨床全域狀態變數
 let isRunning = false, animationId;
-let currentSize = 200, currentDist = 120, currentSpeed = 20, currentStereo = 0, currentThick = 9.0;
+let currentSize = 200, currentSpeed = 20, currentStereo = 0, currentThick = 9.0;
 let isRotating = true, isFilled = false;
 let activeProtocol = null, protocolStage = 0, protocolTime = 0, totalTimerSec = 0, lastTime = 0, phase = 0;
 let currentSaccadeX = 0, currentSaccadeY = 0, saccadeTimer = 0, currentRoamX = 0, currentRoamY = 0;
 
+// 內部隱藏的軌跡與模式變數
+let currentAxis = 'horizontal';
+let currentMode = 'crossover';
+
 let sessionLogs = [];
-let isTestModeAllowed = true, isTestModeActive = false, taskActive = false;
+let isTestModeActive = false, taskActive = false;
 let taskDirection = '', taskEye = 'both', taskSpawnTime = 0, timeSinceLastTask = 0, nextTaskInterval = 3000, statusTimeout = null;
 let taskInitialPrism = "";
+
+let consecutiveHits = 0;
+let consecutiveMisses = 0;
 
 let isAIRescueActive = false;
 let aiRescueStartTime = 0;
 let originalSizeBeforeRescue = 200;
-let originalDistBeforeRescue = 120;
+let originalPrismBeforeRescue = 0; 
 let protocolTimePausedVal = 0;
 
 let flipperTimer = 0;
-let flipperState = true; // true = BO, false = BI
+let flipperState = true; 
+
+const AXP_WORDS = ['GUCCI', 'PRADA', 'FERRARI', 'CHANEL', 'HERMES', 'ROLEX', 'CARTIER', 'DIOR'];
+let currentWordIndex = 0;
+let lastWordChangeTime = 0;
 
 // ==========================================
-// 核心圖學升級：Layer Masking 雙渲染引擎
+// 核心圖學：Layer Masking 雙渲染引擎
 // ==========================================
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#000000');
@@ -148,7 +152,7 @@ const anaglyphShader = {
         "colorRight": { value: new THREE.Color(1.0, 0.0, 0.0) }, 
         "intensityLeft": { value: 1.0 },
         "intensityRight": { value: 1.0 },
-        "prismOffset": { value: 0.0 }
+        "prismOffset": { value: 0.0 } 
     },
     vertexShader: ` varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); } `,
     fragmentShader: `
@@ -158,17 +162,10 @@ const anaglyphShader = {
         uniform vec3 colorRight;
         uniform float intensityLeft;
         uniform float intensityRight;
-        uniform float prismOffset;
         varying vec2 vUv;
         void main() {
-            vec2 uvL = vUv - vec2(prismOffset, 0.0);
-            vec2 uvR = vUv + vec2(prismOffset, 0.0);
-            
-            if(uvL.x < 0.0 || uvL.x > 1.0 || uvR.x < 0.0 || uvR.x > 1.0) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
-
-            vec4 texelLeft = texture2D(mapLeft, uvL);
-            vec4 texelRight = texture2D(mapRight, uvR);
-            
+            vec4 texelLeft = texture2D(mapLeft, vUv);
+            vec4 texelRight = texture2D(mapRight, vUv);
             float lumLeft = dot(texelLeft.rgb, vec3(0.299, 0.587, 0.114));
             float lumRight = dot(texelRight.rgb, vec3(0.299, 0.587, 0.114));
             vec3 finalColor = (vec3(lumLeft) * colorLeft * intensityLeft) + 
@@ -210,20 +207,46 @@ const starMatRight = new THREE.PointsMaterial({ size: 5.85, map: starTexture, tr
 const starsLeft = new THREE.Points(starsGeoLeft, starMatLeft);
 const starsRight = new THREE.Points(starsGeoRight, starMatRight);
 
-starsLeft.layers.set(1);  
-starsRight.layers.set(2); 
+starsLeft.layers.set(1); starsRight.layers.set(2); 
 scene.add(starsLeft); scene.add(starsRight);
 
 let targetLeft, targetRight;
-const cueGeo = new THREE.CircleGeometry(1, 32); 
-const cueMatLeft = new THREE.MeshBasicMaterial({ color: 0xffffff, blending: THREE.NormalBlending, depthWrite: false }); 
-const cueMatRight = new THREE.MeshBasicMaterial({ color: 0xffffff, blending: THREE.NormalBlending, depthWrite: false });
-const cueLeft = new THREE.Mesh(cueGeo, cueMatLeft); const cueRight = new THREE.Mesh(cueGeo, cueMatRight);
 
-cueLeft.layers.set(1); cueRight.layers.set(2);
-cueLeft.visible = false; cueRight.visible = false; scene.add(cueLeft); scene.add(cueRight);
+// 測驗原點修正 (高對比黑圈底 + 無視深度)
+const cueGroupLeft = new THREE.Group();
+const cueGroupRight = new THREE.Group();
 
-// 光學計算整合
+const cueOutlineGeo = new THREE.CircleGeometry(1.4, 32);
+const cueOutlineMatLeft = new THREE.MeshBasicMaterial({ color: 0x000000, depthTest: false, depthWrite: false });
+const cueOutlineMatRight = new THREE.MeshBasicMaterial({ color: 0x000000, depthTest: false, depthWrite: false });
+const outlineLeft = new THREE.Mesh(cueOutlineGeo, cueOutlineMatLeft);
+const outlineRight = new THREE.Mesh(cueOutlineGeo, cueOutlineMatRight);
+
+const cueDotGeo = new THREE.CircleGeometry(1, 32); 
+const cueDotMatLeft = new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, depthWrite: false }); 
+const cueDotMatRight = new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, depthWrite: false });
+const dotLeft = new THREE.Mesh(cueDotGeo, cueDotMatLeft); 
+const dotRight = new THREE.Mesh(cueDotGeo, cueDotMatRight);
+
+outlineLeft.renderOrder = 998; outlineRight.renderOrder = 998;
+dotLeft.renderOrder = 999; dotRight.renderOrder = 999;
+
+outlineLeft.layers.set(1); dotLeft.layers.set(1);
+outlineRight.layers.set(2); dotRight.layers.set(2);
+
+cueGroupLeft.add(outlineLeft); cueGroupLeft.add(dotLeft);
+cueGroupRight.add(outlineRight); cueGroupRight.add(dotRight);
+
+cueGroupLeft.visible = false; cueGroupRight.visible = false; 
+scene.add(cueGroupLeft); scene.add(cueGroupRight);
+
+function forceRenderFrame() {
+    if (isRunning) return; 
+    camera.layers.set(1); renderer.setRenderTarget(rtLeft); renderer.clear(); renderer.render(scene, camera);
+    camera.layers.set(2); renderer.setRenderTarget(rtRight); renderer.clear(); renderer.render(scene, camera);
+    camera.layers.set(0); renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
+}
+
 function updateOpticsFromUI() {
     const rVal = redSlider ? parseInt(redSlider.value) : 100;
     const gVal = greenSlider ? parseInt(greenSlider.value) : 100;
@@ -234,7 +257,6 @@ function updateOpticsFromUI() {
     let opacityRight = balance > 50 ? ((100 - balance) / 50) : 1;
     
     postMaterial.uniforms.intensityRight.value = (rVal / 100.0) * opacityRight;
-    postMaterial.uniforms.colorRight.value.setRGB(1.0, 0.0, 0.0);
     if(document.getElementById('r-val')) document.getElementById('r-val').innerText = rVal + '%';
     
     let leftColor = new THREE.Color();
@@ -251,23 +273,14 @@ function updateOpticsFromUI() {
 
     if (prismSlider) {
         const prismVal = parseFloat(prismSlider.value);
-        const spec = screenSpecSelect ? screenSpecSelect.value : 'generic';
-        let pixelToCm = 2.54 / 96; 
-        if (spec === 'retina16') pixelToCm = 34.5 / window.screen.width; 
-        else if (spec === 'ipad13') pixelToCm = 2.54 / 132; 
-        
-        const viewDistM = (parseFloat(viewDistInput ? viewDistInput.value : 50) || 50) / 100;
-        const screenWidthCm = container.clientWidth * pixelToCm;
-        const physicalShiftCm = prismVal * viewDistM; 
-        const totalUvShift = physicalShiftCm / screenWidthCm;
-        
-        postMaterial.uniforms.prismOffset.value = totalUvShift / 2.0;
-
         const pText = prismVal > 0 ? `${prismVal.toFixed(1)} Δ (BO)` : prismVal < 0 ? `${Math.abs(prismVal).toFixed(1)} Δ (BI)` : `0.0 Δ (平光)`;
         if(prismLabel) prismLabel.innerText = pText;
         if(prismValHud && !isRunning) prismValHud.innerText = pText;
     }
-    if (!isRunning) renderer.render(scene, camera);
+    
+    if (!isRunning) {
+        updatePositions(phase, ''); 
+    }
 }
 
 function clearTargets() {
@@ -307,126 +320,118 @@ function updateScaleAndThickness(dynamicSize = currentSize) {
             });
         });
     }
-    const cueScale = Math.max(15, dynamicSize * 0.05); 
-    cueLeft.scale.set(cueScale, cueScale, 1); cueRight.scale.set(cueScale, cueScale, 1);
+    const cueScale = Math.max(12, dynamicSize * 0.04); 
+    cueGroupLeft.scale.set(cueScale, cueScale, 1); 
+    cueGroupRight.scale.set(cueScale, cueScale, 1);
+    forceRenderFrame();
 }
 
-// 🚀 核心升級：生理極限鎖與複雜軌跡 (Lissajous, Flipper)
 function updatePositions(phaseVal, currentAnim = '') {
-    let pxLeftX = 0, pxRightX = 0, pxLeftY = 0, pxRightY = 0;
-    const mode = modeSelect ? modeSelect.value : 'crossover';
-    const axis = axisSelect ? axisSelect.value : 'horizontal';
-    
-    let disp = 0;
-    let vertDisp = 0;
+    const maxPrismLoad = parseFloat(prismSlider ? prismSlider.value : 0);
+    let targetPrismDemand = maxPrismLoad;
 
-    // 1. 動態軌跡判定
-    if (currentAnim.includes('flipper')) {
-        // Flipper 階躍翻轉：BO (currentDist) 與 BI (反向 20%) 之間瞬間跳轉
-        disp = flipperState ? currentDist : -currentDist * 0.2;
-    } else {
-        if (mode === 'oneway_bo') disp = ((Math.sin(phaseVal - Math.PI/2) + 1) / 2) * currentDist; 
-        else if (mode === 'oneway_bi') disp = -((Math.sin(phaseVal - Math.PI/2) + 1) / 2) * currentDist; 
-        else disp = Math.sin(phaseVal) * currentDist; 
+    // 支援波形運算
+    if (isRunning) {
+        if (aiToggle && aiToggle.checked && currentAnim.includes('flipper')) {
+            targetPrismDemand = flipperState ? maxPrismLoad : -maxPrismLoad * 0.2;
+        } else {
+            const wave = (Math.sin(phaseVal - Math.PI/2) + 1) / 2; 
+            if (currentMode === 'oneway_bo') targetPrismDemand = wave * Math.max(0, maxPrismLoad);
+            else if (currentMode === 'oneway_bi') targetPrismDemand = wave * Math.min(0, maxPrismLoad);
+            else targetPrismDemand = Math.sin(phaseVal) * maxPrismLoad; 
+        }
     }
 
-    // 2. 空間軸向分配
-    if (axis === 'lissajous') {
-        // ∞ 無限大軌跡 (Lissajous Sweep)
-        pxLeftX = disp; pxRightX = -disp;
-        let lissajousY = Math.sin(phaseVal * 2) * currentDist * 0.6;
-        pxLeftY = lissajousY; pxRightY = lissajousY;
-    }
-    else if (axis === 'horizontal') { pxLeftX = disp; pxRightX = -disp; } 
-    else if (axis === 'vertical') { pxLeftY = disp; pxRightY = -disp; } 
-    else if (axis === 'circular') {
-        const orbitX = Math.cos(phaseVal) * Math.abs(currentDist * 0.5); const orbitY = Math.sin(phaseVal) * Math.abs(currentDist * 0.5);
-        pxLeftX = disp + orbitX; pxRightX = -disp + orbitX; pxLeftY = orbitY; pxRightY = orbitY;
-    } else { pxLeftX = disp; pxRightX = -disp; }
-
-    // 3. 全域漫遊與跳視疊加
-    let finalLeftX = pxLeftX + currentRoamX + currentSaccadeX; let finalLeftY = pxLeftY + currentRoamY + currentSaccadeY;
-    let finalRightX = pxRightX + currentRoamX + currentSaccadeX; let finalRightY = pxRightY + currentRoamY + currentSaccadeY;
-
-    // 4. 垂直 Prism 微調
     const spec = screenSpecSelect ? screenSpecSelect.value : 'generic';
     let pixelToCm = 2.54 / 96; 
     if (spec === 'retina16') pixelToCm = 34.5 / window.screen.width; 
     else if (spec === 'ipad13') pixelToCm = 2.54 / 132; 
     const viewDistM = (parseFloat(viewDistInput ? viewDistInput.value : 50) || 50) / 100;
 
-    const maxBOPx = (40 * viewDistM) / pixelToCm;
-    const maxBIPx = (6 * viewDistM) / pixelToCm;
-    const maxVertPx = (1.5 * viewDistM) / pixelToCm;
+    const requiredSeparationCm = targetPrismDemand * viewDistM;
+    const totalSeparationPx = requiredSeparationCm / pixelToCm;
+    let disp = totalSeparationPx / 2;
 
+    let pxLeftX = 0, pxRightX = 0, pxLeftY = 0, pxRightY = 0;
+    let vertDisp = 0;
+
+    if (currentAxis === 'lissajous') {
+        pxLeftX = disp; pxRightX = -disp;
+        pxLeftY = Math.sin(phaseVal * 2) * (totalSeparationPx * 0.3);
+        pxRightY = pxLeftY;
+    }
+    else if (currentAxis === 'vertical') { pxLeftY = disp; pxRightY = -disp; } 
+    else if (currentAxis === 'circular') {
+        const orbitX = Math.cos(phaseVal) * Math.abs(totalSeparationPx * 0.25); 
+        const orbitY = Math.sin(phaseVal) * Math.abs(totalSeparationPx * 0.25);
+        pxLeftX = disp + orbitX; pxRightX = -disp + orbitX; pxLeftY = orbitY; pxRightY = orbitY;
+    } 
+    else { pxLeftX = disp; pxRightX = -disp; } // horizontal
+
+    let finalLeftX = pxLeftX + currentRoamX + currentSaccadeX; let finalLeftY = pxLeftY + currentRoamY + currentSaccadeY;
+    let finalRightX = pxRightX + currentRoamX + currentSaccadeX; let finalRightY = pxRightY + currentRoamY + currentSaccadeY;
+
+    const maxVertPx = (1.5 * viewDistM) / pixelToCm;
     if (currentAnim.includes('vertical_tune')) {
         let vFactor = currentAnim.includes('heavy') ? 1.0 : (currentAnim.includes('medium') ? 0.6 : 0.3);
         vertDisp = Math.sin(protocolTime / 2000) * (maxVertPx / 2) * vFactor;
         finalLeftY += vertDisp; finalRightY -= vertDisp;
     }
 
-    // 5. 🚀 絕對生理極限鎖死保護機制 (Guardrails)
-    let dx = finalLeftX - finalRightX; // 左藍減右紅，dx > 0 代表藍在右紅在左 -> BO
-    if (dx > maxBOPx) {
-        let scale = maxBOPx / dx; finalLeftX *= scale; finalRightX *= scale;
-    } else if (dx < -maxBIPx) {
-        let scale = -maxBIPx / dx; finalLeftX *= scale; finalRightX *= scale;
-    }
+    const maxBOPx = (40 * viewDistM) / pixelToCm;
+    const maxBIPx = (6 * viewDistM) / pixelToCm; 
+
+    let dx = finalLeftX - finalRightX; 
+    if (dx > maxBOPx) { let scale = maxBOPx / dx; finalLeftX *= scale; finalRightX *= scale; } 
+    else if (dx < -maxBIPx) { let scale = -maxBIPx / dx; finalLeftX *= scale; finalRightX *= scale; }
 
     let dy = finalLeftY - finalRightY;
-    if (Math.abs(dy) > maxVertPx) {
-        let scale = maxVertPx / Math.abs(dy); finalLeftY *= scale; finalRightY *= scale;
-    }
+    if (Math.abs(dy) > maxVertPx) { let scale = maxVertPx / Math.abs(dy); finalLeftY *= scale; finalRightY *= scale; }
 
-    // 套用最終座標與 3D 深度
     if(targetLeft && targetRight) {
         targetLeft.children.forEach((layer, i) => { layer.position.x = -(i * 15) * currentStereo; });
         targetRight.children.forEach((layer, i) => { layer.position.x = (i * 15) * currentStereo; });
         targetLeft.position.set(finalLeftX, finalLeftY, 0); targetRight.position.set(finalRightX, finalRightY, 0);
         
-        // 6. 即時動態 HUD 稜鏡偵測器
         const currentSepX = targetLeft.position.x - targetRight.position.x;
         const currentSepY = targetLeft.position.y - targetRight.position.y;
         
-        const horizontalPx = Math.abs(currentSepX);
-        const horizontalPrism = (horizontalPx * pixelToCm) / viewDistM;
+        const horizontalPrism = (Math.abs(currentSepX) * pixelToCm) / viewDistM;
         let hPrismDir = currentSepX >= 0 ? "BO" : "BI";
+        const verticalPrism = (Math.abs(currentSepY) * pixelToCm) / viewDistM;
         
-        const verticalPx = Math.abs(currentSepY);
-        const verticalPrism = (verticalPx * pixelToCm) / viewDistM;
-        
-        const basePrism = parseFloat(prismSlider ? prismSlider.value : 0);
-
         if (prismValHud) {
-            let hudText = "";
-            if (horizontalPx > 0.5) { hudText += `${horizontalPrism.toFixed(1)} Δ (${hPrismDir})`; } 
-            else if (basePrism !== 0) { const bDir = basePrism > 0 ? "BO" : "BI"; hudText += `${Math.abs(basePrism).toFixed(1)} Δ (${bDir})`; } 
-            else { hudText += `0.0 Δ`; }
-            if (verticalPx > 0.5) { hudText += ` | ↕ ${verticalPrism.toFixed(1)} Δ`; }
+            let hudText = `${horizontalPrism.toFixed(1)} Δ (${hPrismDir})`;
+            if (Math.abs(currentSepY) > 0.5) { hudText += ` | ↕ ${verticalPrism.toFixed(1)} Δ`; }
             prismValHud.innerText = hudText;
         }
     }
 
     if (taskActive && isTestModeActive) {
-        const offsetDist = currentSize * 0.65; let cueDx = 0, cueDy = 0;
+        const offsetDist = Math.min(currentSize * 0.6, 200); 
+        let cueDx = 0, cueDy = 0;
         if (taskDirection === 'ArrowUp') cueDy = offsetDist; if (taskDirection === 'ArrowDown') cueDy = -offsetDist;
         if (taskDirection === 'ArrowLeft') cueDx = -offsetDist; if (taskDirection === 'ArrowRight') cueDx = offsetDist;
-        cueLeft.position.set(finalLeftX + cueDx, finalLeftY + cueDy, 20); cueRight.position.set(finalRightX + cueDx, finalRightY + cueDy, 20);
+        cueGroupLeft.position.set(finalLeftX + cueDx, finalLeftY + cueDy, 20); 
+        cueGroupRight.position.set(finalRightX + cueDx, finalRightY + cueDy, 20);
+        
+        const isBlink = Math.floor(performance.now() / 120) % 2 === 0;
+        cueGroupLeft.visible = isBlink && (taskEye === 'both' || taskEye === 'left');
+        cueGroupRight.visible = isBlink && (taskEye === 'both' || taskEye === 'right');
     }
+    forceRenderFrame();
 }
 
-// ... 測驗與結果回報邏輯 ...
 function spawnTask() {
-    if (!isTestModeActive || !isTestModeAllowed) return;
+    if (!isTestModeActive) return;
     taskActive = true; taskSpawnTime = performance.now();
     taskInitialPrism = prismValHud ? prismValHud.innerText : '0.0';
     const dirs = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']; taskDirection = dirs[Math.floor(Math.random() * dirs.length)];
     const eyes = ['both', 'both', 'left', 'right']; taskEye = eyes[Math.floor(Math.random() * eyes.length)];
-    cueLeft.visible = (taskEye === 'both' || taskEye === 'left'); cueRight.visible = (taskEye === 'both' || taskEye === 'right');
 }
 
 function handleTaskResult(result, rt = 0) {
-    taskActive = false; cueLeft.visible = false; cueRight.visible = false; timeSinceLastTask = 0; nextTaskInterval = 2000 + Math.random() * 3000; 
+    taskActive = false; cueGroupLeft.visible = false; cueGroupRight.visible = false; timeSinceLastTask = 0; nextTaskInterval = 2000 + Math.random() * 3000; 
     let logMsg = "", statusLabel = ""; 
     const currentPrismStr = prismValHud ? prismValHud.innerText : '0.0';
     const dx = targetRight.position.x - targetLeft.position.x; const dy = targetRight.position.y - targetLeft.position.y;
@@ -434,7 +439,17 @@ function handleTaskResult(result, rt = 0) {
     if (taskEye === 'both') {
         if (result === 'hit') { 
             logMsg = `🟢 完美融像 (反應 ${rt}s) | 稜鏡: ${currentPrismStr}`; statusLabel = "完美融像(FUSION)"; 
-            if(!isAIRescueActive && statusText) statusText.style.color = '#4ade80'; 
+            consecutiveHits++; consecutiveMisses = 0;
+            
+            if (aiToggle && aiToggle.checked && consecutiveHits >= 3) {
+                consecutiveHits = 0;
+                const stageMax = AIM_MATRIX[activeProtocol] ? AIM_MATRIX[activeProtocol].length - 1 : 9;
+                if (protocolStage < stageMax) {
+                    protocolStage++; loadMatrixStage(activeProtocol, protocolStage);
+                    logMsg = `🚀 AI 難度升級 | ${logMsg}`; if(statusText) statusText.style.color = '#38bdf8';
+                }
+            } else { if(!isAIRescueActive && statusText) statusText.style.color = '#4ade80'; }
+            
         } else {
             let failType = ""; let reason = result === 'wrong' ? "按錯方向" : "超時未答";
             let triggerRescue = false;
@@ -444,7 +459,16 @@ function handleTaskResult(result, rt = 0) {
                 else { failType = "開散不足"; statusLabel = "開散不足(BI_FAIL)"; triggerRescue = true; }
             }
             logMsg = `🔴 ${failType} (${reason}) | 稜鏡: ${currentPrismStr}`; 
-            if(!isAIRescueActive && statusText) statusText.style.color = '#f87171';
+            consecutiveMisses++; consecutiveHits = 0;
+            
+            if (aiToggle && aiToggle.checked && consecutiveMisses >= 2) {
+                consecutiveMisses = 0;
+                if (protocolStage > 0) {
+                    protocolStage--; loadMatrixStage(activeProtocol, protocolStage);
+                    logMsg = `📉 AI 難度調降 | ${logMsg}`; if(statusText) statusText.style.color = '#facc15';
+                }
+            } else { if(!isAIRescueActive && statusText) statusText.style.color = '#f87171'; }
+            
             if (aiToggle && aiToggle.checked && triggerRescue && !isAIRescueActive && !isTestModeActive) { activateAIRescue(logMsg); }
         }
     } else {
@@ -465,27 +489,28 @@ function handleTaskResult(result, rt = 0) {
 function activateAIRescue(reasonMsg) {
     if (loginOverlay.style.display !== 'none' || !isRunning || isAIRescueActive) return;
     isAIRescueActive = true; aiRescueStartTime = performance.now();
-    originalSizeBeforeRescue = currentSize; originalDistBeforeRescue = currentDist; protocolTimePausedVal = protocolTime; 
-    currentDist = currentDist * 0.6; updateScaleAndThickness(Math.min(600, currentSize * 1.5)); updateUIValues(); protocolTime = -999999; 
-    if(statusText) { statusText.innerText = `⚠️ AI 介入：稜鏡減壓與周邊鎖定啟動 | 原因: ${reasonMsg.split('|')[0].trim()}`; statusText.style.color = '#facc15'; }
+    originalSizeBeforeRescue = currentSize; originalPrismBeforeRescue = parseFloat(prismSlider ? prismSlider.value : 0); protocolTimePausedVal = protocolTime; 
+    if(prismSlider) { prismSlider.value = (originalPrismBeforeRescue * 0.4).toFixed(1); prismSlider.dispatchEvent(new Event('input')); }
+    updateScaleAndThickness(Math.min(600, currentSize * 1.5)); updateUIValues(); protocolTime = -999999; 
+    if(statusText) { statusText.innerText = `⚠️ AI 介入：稜鏡減壓啟動 | 原因: ${reasonMsg.split('|')[0].trim()}`; statusText.style.color = '#facc15'; }
     if(dynamicModeTag) { dynamicModeTag.innerText = `[ AI RESCUE ACTIVE ] Colddown: 15s | Vergence Recovery...`; dynamicModeTag.style.color = '#facc15'; }
 }
 
 function endAIRescue() {
     if (!isAIRescueActive) return;
-    isAIRescueActive = false; protocolTime = protocolTimePausedVal; currentSize = originalSizeBeforeRescue; currentDist = originalDistBeforeRescue;
+    isAIRescueActive = false; protocolTime = protocolTimePausedVal; currentSize = originalSizeBeforeRescue; 
+    if(prismSlider) { prismSlider.value = originalPrismBeforeRescue.toFixed(1); prismSlider.dispatchEvent(new Event('input')); }
     updateScaleAndThickness(); updateUIValues(); 
     if(statusText) { statusText.innerText = isTestModeActive ? "TEST MODE ACTIVE" : "TRAINING"; statusText.style.color = isTestModeActive ? "#deff9a" : '#e11d48'; }
     if(activeProtocol && dynamicModeTag) {
-        const config = AIM_MATRIX[activeProtocol][protocolStage]; const stageMaxStr = isTestModeActive ? '6 (TEST)' : '10';
+        const config = AIM_MATRIX[activeProtocol][protocolStage]; 
+        const stageMaxStr = AIM_MATRIX[activeProtocol] ? AIM_MATRIX[activeProtocol].length : 10;
         dynamicModeTag.innerText = `[ ${PROTOCOL_NAMES[activeProtocol].split(' ')[0]} ] Stage ${protocolStage + 1}/${stageMaxStr} : ${config.name}`;
         dynamicModeTag.style.color = '#deff9a';
     }
 }
 
-// ... 報告介面省略 ...
 function showClinicalReport(logs, totalTime, protocolName) {
-    // 保持不變
     let fusionCount = 0, suppCount = 0, antiSuppCount = 0, boFail = 0, biFail = 0, vertFail = 0;
     let tableRowsHTML = "";
     logs.forEach(log => {
@@ -542,11 +567,6 @@ async function uploadToSupabase() {
     }
 }
 
-function checkProtocolTestAllowance(code) {
-    if (['KeyO', 'KeyP'].includes(code)) { isTestModeAllowed = false; isTestModeActive = false; cueLeft.visible = false; cueRight.visible = false; taskActive = false; } 
-    else { isTestModeAllowed = true; }
-}
-
 function updateGlassesUI() {
     const lLabelText = document.getElementById('l-label-text');
     if (glassesSelect && glassesSelect.value === 'rb') {
@@ -565,7 +585,6 @@ if(prismSlider) prismSlider.addEventListener('input', updateOpticsFromUI);
 
 function updateUIValues() {
     if(sizeLabel) sizeLabel.innerText = currentSize.toFixed(1) + 'px'; 
-    if(distLabel) distLabel.innerText = currentDist.toFixed(1) + 'px';
     if(speedLabel) speedLabel.innerText = currentSpeed.toFixed(1); 
     if(thickLabel) thickLabel.innerText = currentThick.toFixed(1);
     if(stereoLabel) stereoLabel.innerText = (currentStereo > 0 ? '+' : '') + currentStereo.toFixed(2);
@@ -576,16 +595,15 @@ function updateUIValues() {
     let balance = balanceSlider ? parseInt(balanceSlider.value) : 50; 
     if(balanceLabel) balanceLabel.innerText = balance === 50 ? "均衡 50/50" : (balance < 50 ? `副弱 ${balance}%` : `主弱 ${100-balance}%`);
     
-    if(sizeSlider) sizeSlider.value = currentSize; if(distSlider) distSlider.value = currentDist; 
+    if(sizeSlider) sizeSlider.value = currentSize; 
     if(speedSlider) speedSlider.value = currentSpeed; if(thickSlider) thickSlider.value = currentThick; 
     if(stereoSlider) stereoSlider.value = currentStereo;
 }
 
-if (screenSpecSelect) screenSpecSelect.addEventListener('change', () => { updateOpticsFromUI(); if (!isRunning) updatePositions(phase, ''); });
-if (viewDistInput) viewDistInput.addEventListener('input', () => { updateOpticsFromUI(); if (!isRunning) updatePositions(phase, ''); });
+if (screenSpecSelect) screenSpecSelect.addEventListener('change', () => { updateOpticsFromUI(); });
+if (viewDistInput) viewDistInput.addEventListener('input', () => { updateOpticsFromUI(); });
 
 if(sizeSlider) sizeSlider.addEventListener('input', (e) => { currentSize = parseFloat(e.target.value); updateUIValues(); updateScaleAndThickness(); disableAI(); });
-if(distSlider) distSlider.addEventListener('input', (e) => { currentDist = parseFloat(e.target.value); updateUIValues(); if (!isRunning) updatePositions(0, ''); disableAI(); });
 if(speedSlider) speedSlider.addEventListener('input', (e) => { currentSpeed = parseFloat(e.target.value); updateUIValues(); disableAI(); });
 if(thickSlider) thickSlider.addEventListener('input', (e) => { currentThick = parseFloat(e.target.value); updateUIValues(); buildTargets(); disableAI(); });
 if(stereoSlider) stereoSlider.addEventListener('input', (e) => { currentStereo = Math.max(-0.15, Math.min(0.15, parseFloat(e.target.value))); e.target.value = currentStereo; updateUIValues(); if (!isRunning) updatePositions(0, ''); disableAI(); });
@@ -599,8 +617,11 @@ if(fillCheckbox) fillCheckbox.addEventListener('change', (e) => { isFilled = e.t
 function disableAI() {
     if (aiToggle && aiToggle.checked) { aiToggle.checked = false; }
     if(dynamicModeTag) { dynamicModeTag.innerText = "AXP FUSION DYNAMICS (手動模式)"; dynamicModeTag.style.color = '#f8fafc'; }
-    isTestModeAllowed = true; 
-    siloPrompt.style.display = 'none'; // 關閉 SILO 字幕
+    
+    currentAxis = 'horizontal';
+    currentMode = 'crossover';
+    
+    siloPrompt.style.display = 'none'; 
     if(isAIRescueActive) endAIRescue();
 }
 
@@ -609,26 +630,26 @@ function loadMatrixStage(protocol, stage) {
     
     if(shapeSelect) {
         let optionExists = Array.from(shapeSelect.options).some(opt => opt.value === config.shape);
-        if (!optionExists) { const newOpt = new Option(`[AI補齊] ${config.shape}`, config.shape); shapeSelect.add(newOpt); }
+        if (!optionExists) { const newOpt = new Option(`[AI 模式] ${config.shape}`, config.shape); shapeSelect.add(newOpt); }
         shapeSelect.value = config.shape; 
     }
     
-    if(axisSelect) {
-        let axExists = Array.from(axisSelect.options).some(opt => opt.value === config.axis);
-        if (!axExists) { const axOpt = new Option(`[AI軌跡] ${config.axis}`, config.axis); axisSelect.add(axOpt); }
-        axisSelect.value = config.axis; 
-    }
+    currentAxis = config.axis || 'horizontal';
+    currentMode = config.mode || 'crossover';
 
-    if(modeSelect) modeSelect.value = config.mode; 
     if(fillCheckbox) fillCheckbox.checked = config.fill; isFilled = config.fill;
     
     currentStereo = Math.max(-0.15, Math.min(0.15, config.stereo)); 
-    currentSize = config.size; currentDist = config.dist * 0.3; currentSpeed = config.speed; currentThick = config.thick;
+    currentSize = config.size; currentSpeed = config.speed; currentThick = config.thick;
     isRotating = !config.anim.includes('none'); if(rotateCheckbox) rotateCheckbox.checked = isRotating; 
     
+    if(prismSlider) {
+        prismSlider.value = config.dist; 
+    }
+
     updateUIValues(); buildTargets();
     
-    const stageMaxStr = isTestModeActive ? '6 (TEST)' : '10';
+    const stageMaxStr = AIM_MATRIX[protocol] ? AIM_MATRIX[protocol].length : 10;
     if(dynamicModeTag) {
         dynamicModeTag.innerText = `[ ${PROTOCOL_NAMES[protocol].split(' ')[0]} ] Stage ${stage + 1}/${stageMaxStr} : ${config.name}`;
         dynamicModeTag.style.color = '#deff9a'; 
@@ -636,8 +657,21 @@ function loadMatrixStage(protocol, stage) {
     protocolTime = 0; flipperTimer = 0; currentSaccadeX = 0; currentSaccadeY = 0; saccadeTimer = 0; currentRoamX = 0; currentRoamY = 0;
 }
 
+// 🚀 獨立的全螢幕切換函數
+function toggleFullScreen() {
+    const elem = document.getElementById('fv-fusion-app');
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (elem.requestFullscreen) { elem.requestFullscreen(); } else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } 
+    } else {
+        if (document.exitFullscreen) { document.exitFullscreen(); } else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+    }
+}
+
+// 綁定全螢幕按鈕
+if(fullscreenBtn) fullscreenBtn.addEventListener('click', toggleFullScreen);
+
 // ==========================================
-// 🚀 核心動畫與矩陣渲染迴圈
+// 🚀 動態動畫與矩陣渲染迴圈
 // ==========================================
 function animate(time) {
     if (!isRunning) return;
@@ -648,7 +682,7 @@ function animate(time) {
     }
     const speedFactor = 40000 / Math.max(1, currentSpeed); phase += dt / speedFactor; 
 
-    if (isTestModeActive && isTestModeAllowed) {
+    if (isTestModeActive) {
         if (!taskActive) { timeSinceLastTask += dt; if (timeSinceLastTask > nextTaskInterval) spawnTask(); } 
         else { if (performance.now() - taskSpawnTime > 8000) handleTaskResult('miss'); }
     }
@@ -663,45 +697,19 @@ function animate(time) {
 
     if (aiToggle && aiToggle.checked && activeProtocol && !isAIRescueActive) {
         protocolTime += dt; const config = AIM_MATRIX[activeProtocol][protocolStage]; currentAnim = config.anim || ''; 
-        const progress = protocolTime / 60000;
         
-        // 只有非 Flipper 的模式才平滑改變距離
-        if (!currentAnim.includes('flipper')) {
-            currentDist = config.dist * (0.3 + 0.7 * Math.sin(progress * (Math.PI / 2))); 
-            if(distSlider) distSlider.value = currentDist; if(distLabel) distLabel.innerText = currentDist.toFixed(1) + 'px';
-        } else {
-            currentDist = config.dist;
-        }
-        
-        // 1. 漫遊與星空流動
-        if (currentAnim.includes('roam') || config.axis === 'roam') { currentRoamX = Math.sin(protocolTime / 3000) * 350; currentRoamY = Math.cos(protocolTime / 2100) * 250; }
-        if (currentAnim.includes('starfield')) {
-            let starSpeed = currentAnim.includes('fast') ? 0.005 : 0.002;
-            starsLeft.rotation.z += starSpeed; starsRight.rotation.z += starSpeed;
-        } else { starsLeft.rotation.z = 0; starsRight.rotation.z = 0; }
-
-        // 2. 隨機跳視
-        if (currentAnim.includes('saccade') || config.axis === 'saccade') { 
-            saccadeTimer += dt; 
-            if (saccadeTimer > 1500) { saccadeTimer = 0; currentSaccadeX = (Math.random() > 0.5 ? 1 : -1) * (150 + Math.random() * 200); currentSaccadeY = (Math.random() > 0.5 ? 1 : -1) * (100 + Math.random() * 150); }
-        }
-        
-        // 3. 幾何呼吸 Fractal
         if (currentAnim.includes('breathing_fractal')) {
             const breathScale = currentSize + (currentSize * 0.2 * Math.sin(phase));
             updateScaleAndThickness(breathScale);
         }
 
-        // 4. SILO 認知字幕與縮放
         if (currentAnim.includes('silo_text')) {
             siloPrompt.style.display = 'block';
             let sineVal = Math.sin(phase);
             if (sineVal > 0) {
-                // BO 縮小靠近 (吐氣)
                 siloPrompt.innerText = "提示：目標正在變小，代表它正在靠近你！請慢慢吐氣 😮‍💨";
                 siloPrompt.style.color = "#ef4444"; siloPrompt.style.borderColor = "#ef4444";
             } else {
-                // BI 放大遠離 (吸氣)
                 siloPrompt.innerText = "提示：目標正在變大，代表它正在遠離你！請深深吸氣 😌";
                 siloPrompt.style.color = "#3b82f6"; siloPrompt.style.borderColor = "#3b82f6";
             }
@@ -710,7 +718,6 @@ function animate(time) {
             siloPrompt.style.display = 'none';
         }
 
-        // 5. 亮度飄移與閃爍去抑制
         if (currentAnim.includes('balanceDrift')) {
             const drift = Math.sin(protocolTime / 1500) * 0.4 + 0.6; 
             targetLeft.traverse(c => { if(c.isMesh) c.material.opacity = drift; }); targetRight.traverse(c => { if(c.isMesh) c.material.opacity = 1.2 - drift; });
@@ -724,22 +731,61 @@ function animate(time) {
             targetLeft.traverse(c => { if(c.isMesh) c.material.opacity = 1; }); targetRight.traverse(c => { if(c.isMesh) c.material.opacity = 1; });
         }
 
-        // 6. 階躍翻轉潛伏期 (Flipper)
         if (currentAnim.includes('flipper')) {
             let delay = currentAnim.includes('slow') ? 3000 : 1500;
             flipperTimer += dt;
             if (flipperTimer > delay) { flipperState = !flipperState; flipperTimer = 0; }
         }
+        
+        if (currentAnim.includes('text_') && shapeSelect && shapeSelect.value === 'text') {
+            if (time - lastWordChangeTime > 3500) {
+                lastWordChangeTime = time;
+                currentWordIndex = (currentWordIndex + 1) % AXP_WORDS.length;
+                if(customTextInput) customTextInput.value = AXP_WORDS[currentWordIndex];
+                buildTargets(); 
+            }
+        }
 
-        const maxStages = isTestModeActive ? 6 : 10;
+        const maxStages = AIM_MATRIX[activeProtocol] ? AIM_MATRIX[activeProtocol].length : 10;
         if (protocolTime > 60000) { protocolStage = (protocolStage + 1) % maxStages; loadMatrixStage(activeProtocol, protocolStage); }
+    }
+
+    const isRoamActive = currentAnim.includes('roam') || (!aiToggle.checked && currentAxis === 'roam');
+    const isSaccadeActive = currentAnim.includes('saccade') || (!aiToggle.checked && currentAxis === 'saccade');
+
+    if (isRoamActive) {
+        currentRoamX = Math.sin(time / 3000) * 350;
+        currentRoamY = Math.cos(time / 2100) * 250;
+    } else {
+        currentRoamX = 0; currentRoamY = 0;
+    }
+
+    if (currentAnim.includes('starfield')) {
+        let starSpeed = currentAnim.includes('fast') ? 0.005 : 0.002;
+        let rotDir = currentAnim.includes('ccw') ? 1 : -1; 
+        starsLeft.rotation.z += starSpeed * rotDir; starsRight.rotation.z += starSpeed * rotDir;
+    } else { 
+        starsLeft.rotation.z = 0; starsRight.rotation.z = 0; 
+    }
+
+    if (isSaccadeActive) {
+        saccadeTimer += dt; 
+        if (saccadeTimer > 1500) { 
+            saccadeTimer = 0; 
+            currentSaccadeX = (Math.random() > 0.5 ? 1 : -1) * (150 + Math.random() * 200); 
+            currentSaccadeY = (Math.random() > 0.5 ? 1 : -1) * (100 + Math.random() * 150); 
+        }
+    } else {
+        currentSaccadeX = 0; currentSaccadeY = 0;
     }
 
     if(targetLeft && targetRight) {
         targetLeft.children.forEach((layer, index) => { if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere') || shapeSelect.value.includes('rock')) && isRotating) { layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01); layer.rotation.y += 0.015; } });
         targetRight.children.forEach((layer, index) => { if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere') || shapeSelect.value.includes('rock')) && isRotating) { layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01); layer.rotation.y += 0.015; } });
     }
+    
     updatePositions(phase, currentAnim); 
+    
     if (isRotating) { targetLeft.rotation.z = phase * 0.5; targetRight.rotation.z = phase * 0.5; }
 
     camera.layers.set(1); renderer.setRenderTarget(rtLeft); renderer.clear(); renderer.render(scene, camera);
@@ -760,11 +806,8 @@ function toggleTraining() {
         if(startBtn) { startBtn.innerText = "繼續 [ Space ]"; startBtn.classList.remove('active'); }
         if(statusText) { statusText.innerText = "PAUSED"; statusText.style.color = '#FCE473'; }
         cancelAnimationFrame(animationId);
-        taskActive = false; cueLeft.visible = false; cueRight.visible = false;
-        
-        camera.layers.set(1); renderer.setRenderTarget(rtLeft); renderer.clear(); renderer.render(scene, camera);
-        camera.layers.set(2); renderer.setRenderTarget(rtRight); renderer.clear(); renderer.render(scene, camera);
-        camera.layers.set(0); renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
+        taskActive = false; cueGroupLeft.visible = false; cueGroupRight.visible = false;
+        forceRenderFrame();
     }
 }
 
@@ -774,15 +817,14 @@ function executeReset() {
     if(statusText) { statusText.innerText = "IDLE"; statusText.style.color = '#f8fafc'; }
     totalTimerSec = 0; if(timerDisplay) timerDisplay.innerText = "00:00"; 
     disableAI();
-    taskActive = false; isTestModeActive = false; cueLeft.visible = false; cueRight.visible = false;
+    taskActive = false; isTestModeActive = false; cueGroupLeft.visible = false; cueGroupRight.visible = false;
+    consecutiveHits = 0; consecutiveMisses = 0;
     
-    currentSize = 200; currentDist = 120; currentSpeed = 20; currentStereo = 0; currentThick = 9.0;
+    currentSize = 200; currentSpeed = 20; currentStereo = 0; currentThick = 9.0;
     currentSaccadeX = 0; currentSaccadeY = 0; currentRoamX = 0; currentRoamY = 0; phase = 0;
     isRotating = true; isFilled = false; sessionLogs = []; isAIRescueActive = false;
     
     if(shapeSelect) shapeSelect.value = 'sphere5'; 
-    if(axisSelect) axisSelect.value = 'horizontal'; 
-    if(modeSelect) modeSelect.value = 'crossover';
     if(rotateCheckbox) rotateCheckbox.checked = true; 
     if(fillCheckbox) fillCheckbox.checked = false; 
     if(balanceSlider) balanceSlider.value = 50;
@@ -793,27 +835,21 @@ function executeReset() {
     if(blueSlider) blueSlider.value = 100;
     
     updateUIValues(); buildTargets(); updatePositions(0, '');
-    
-    camera.layers.set(1); renderer.setRenderTarget(rtLeft); renderer.clear(); renderer.render(scene, camera);
-    camera.layers.set(2); renderer.setRenderTarget(rtRight); renderer.clear(); renderer.render(scene, camera);
-    camera.layers.set(0); renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
+    forceRenderFrame();
 }
 
 if(startBtn) startBtn.addEventListener('click', toggleTraining); 
 if(resetBtn) resetBtn.addEventListener('click', executeReset);
 
-if(fullscreenBtn) fullscreenBtn.addEventListener('click', () => {
-    const elem = document.getElementById('fv-fusion-app');
-    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        if (elem.requestFullscreen) { elem.requestFullscreen(); } else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); } 
-    } else {
-        if (document.exitFullscreen) { document.exitFullscreen(); } else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
-    }
-});
-
 document.addEventListener('keydown', (e) => {
     if(loginOverlay.style.display !== 'none') return; 
-    if (document.activeElement.tagName === 'INPUT' && document.activeElement.type !== 'range' && document.activeElement.type !== 'checkbox') return;
+
+    const activeTag = document.activeElement ? document.activeElement.tagName : '';
+    const activeType = document.activeElement ? document.activeElement.type : '';
+    if (activeTag === 'INPUT' && (activeType === 'text' || activeType === 'number')) {
+        return;
+    }
+
     const code = e.code;
     
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code)) {
@@ -822,7 +858,8 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    const shortcuts = ['Space', 'Enter', 'KeyE', 'KeyW', 'KeyS', 'KeyD', 'KeyA', 'KeyF', 'KeyR', 'KeyG', 'KeyZ', 'Digit0', 'Numpad0', 'Digit1', 'Digit2', 'Numpad1', 'Numpad2', 'BracketLeft', 'BracketRight', 'Comma', 'Period', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP'];
+    // 🚀 將 KeyQ 加入到快捷鍵陣列中
+    const shortcuts = ['Space', 'Enter', 'KeyE', 'KeyW', 'KeyS', 'KeyD', 'KeyA', 'KeyF', 'KeyR', 'KeyG', 'KeyZ', 'Digit0', 'Numpad0', 'Digit1', 'Digit2', 'Numpad1', 'Numpad2', 'BracketLeft', 'BracketRight', 'Comma', 'Period', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP', 'KeyQ'];
     if (shortcuts.includes(code)) {
         e.preventDefault(); if (document.activeElement) document.activeElement.blur(); 
         switch(code) {
@@ -837,29 +874,48 @@ document.addEventListener('keydown', (e) => {
                     else { if (!activeProtocol) { activeProtocol = 'KeyY'; protocolStage = 0; } loadMatrixStage(activeProtocol, protocolStage); }
                 } 
                 break;
+            case 'KeyQ': toggleFullScreen(); break; // 🚀 一鍵切換全螢幕
             case 'Digit0': case 'Numpad0':
-                if (!isTestModeAllowed) { alert("當前訓練 Program 限制進行測驗。"); break; }
-                if (isAIRescueActive) { alert("AI 急救代管中，無法切換測試模式。"); break; }
+                if (isAIRescueActive) { 
+                    if(statusText) {
+                        statusText.innerText = "急救中禁用測驗"; 
+                        statusText.style.color = "#facc15"; 
+                        setTimeout(() => { if(statusText.innerText === "急救中禁用測驗") { statusText.innerText = isRunning ? "TRAINING" : "IDLE"; statusText.style.color = isRunning ? '#e11d48' : '#f8fafc'; } }, 2000);
+                    }
+                    break; 
+                }
                 isTestModeActive = !isTestModeActive;
-                if (!isTestModeActive) { taskActive = false; cueLeft.visible = false; cueRight.visible = false; if (isRunning && statusText) { statusText.innerText = "TRAINING"; statusText.style.color = '#e11d48'; } } 
-                else { if (isRunning && statusText) { statusText.innerText = "TEST MODE ACTIVE"; statusText.style.color = '#deff9a'; } }
+                if (!isTestModeActive) { 
+                    taskActive = false; cueGroupLeft.visible = false; cueGroupRight.visible = false; 
+                    if (isRunning && statusText) { statusText.innerText = "TRAINING"; statusText.style.color = '#e11d48'; } 
+                } else { 
+                    if (isRunning && statusText) { statusText.innerText = "TEST MODE ACTIVE"; statusText.style.color = '#deff9a'; } 
+                }
                 break;
-            case 'Digit1': case 'Numpad1': currentDist = Math.max(0, currentDist - 10); updateUIValues(); if (!isRunning) updatePositions(0, ''); disableAI(); break;
-            case 'Digit2': case 'Numpad2': currentDist = Math.min(600, currentDist + 10); updateUIValues(); if (!isRunning) updatePositions(0, ''); disableAI(); break;
+            
+            case 'Digit1': case 'Numpad1': 
+                if(prismSlider) { prismSlider.value = Math.max(parseFloat(prismSlider.min), parseFloat(prismSlider.value) - 0.5).toFixed(1); prismSlider.dispatchEvent(new Event('input')); }
+                break;
+            case 'Digit2': case 'Numpad2': 
+                if(prismSlider) { prismSlider.value = Math.min(parseFloat(prismSlider.max), parseFloat(prismSlider.value) + 0.5).toFixed(1); prismSlider.dispatchEvent(new Event('input')); }
+                break;
+                
             case 'BracketRight': if(stereoSlider) { stereoSlider.value = Math.min(0.15, parseFloat(stereoSlider.value) + 0.01).toFixed(2); stereoSlider.dispatchEvent(new Event('input')); } break;
             case 'BracketLeft': if(stereoSlider) { stereoSlider.value = Math.max(-0.15, parseFloat(stereoSlider.value) - 0.01).toFixed(2); stereoSlider.dispatchEvent(new Event('input')); } break;
             case 'Period': if(speedSlider) { speedSlider.value = Math.min(100, parseFloat(speedSlider.value) + (e.shiftKey ? 10 : 1)); speedSlider.dispatchEvent(new Event('input')); } break;
             case 'Comma': if(speedSlider) { speedSlider.value = Math.max(1, parseFloat(speedSlider.value) - (e.shiftKey ? 10 : 1)); speedSlider.dispatchEvent(new Event('input')); } break;
-            case 'KeyW': currentSize = Math.min(600, currentSize + 10); currentThick = Math.min(25, currentThick + 0.5); updateUIValues(); buildTargets(); if(!isAIRescueActive) disableAI(); break;
-            case 'KeyS': currentSize = Math.max(50, currentSize - 10); currentThick = Math.max(2, currentThick - 0.5); updateUIValues(); buildTargets(); if(!isAIRescueActive) disableAI(); break;
-            case 'KeyD': currentThick = Math.min(25, currentThick + 1.0); updateUIValues(); buildTargets(); if(!isAIRescueActive) disableAI(); break;
-            case 'KeyA': currentThick = Math.max(2, currentThick - 1.0); updateUIValues(); buildTargets(); if(!isAIRescueActive) disableAI(); break;
+            
+            case 'KeyW': currentSize = Math.min(600, currentSize + 10); updateUIValues(); buildTargets(); if(!isAIRescueActive) disableAI(); break;
+            case 'KeyS': currentSize = Math.max(50, currentSize - 10); updateUIValues(); buildTargets(); if(!isAIRescueActive) disableAI(); break;
+            
+            case 'KeyD': currentThick = Math.min(10, currentThick + 1.0); updateUIValues(); buildTargets(); if(!isAIRescueActive) disableAI(); break;
+            case 'KeyA': currentThick = Math.max(1, currentThick - 1.0); updateUIValues(); buildTargets(); if(!isAIRescueActive) disableAI(); break;
             case 'KeyF': if(fillCheckbox) { fillCheckbox.checked = !fillCheckbox.checked; fillCheckbox.dispatchEvent(new Event('change')); } break;
             case 'KeyR': if(rotateCheckbox) { rotateCheckbox.checked = !rotateCheckbox.checked; rotateCheckbox.dispatchEvent(new Event('change')); } break;
             case 'KeyY': case 'KeyU': case 'KeyI': case 'KeyO': case 'KeyP':
                 if (isAIRescueActive) { alert("AI 急救代管中，無法切換 Program。"); break; }
-                if(aiToggle) aiToggle.checked = true; checkProtocolTestAllowance(code); 
-                const maxStages = isTestModeActive ? 6 : 10;
+                if(aiToggle) aiToggle.checked = true; 
+                const maxStages = AIM_MATRIX[code] ? AIM_MATRIX[code].length : 10;
                 if (activeProtocol === code && isRunning) { protocolStage = (protocolStage + 1) % maxStages; } else { activeProtocol = code; protocolStage = 0; }
                 loadMatrixStage(activeProtocol, protocolStage); if (!isRunning) toggleTraining(); break;
         }
@@ -872,10 +928,6 @@ function onWindowResize() {
     const width = container.clientWidth; const height = container.clientHeight;
     camera.left = -d * (width / height); camera.right = d * (width / height); camera.updateProjectionMatrix();
     renderer.setSize(width, height); rtLeft.setSize(width, height); rtRight.setSize(width, height);
-    if (!isRunning) {
-        camera.layers.set(1); renderer.setRenderTarget(rtLeft); renderer.clear(); renderer.render(scene, camera);
-        camera.layers.set(2); renderer.setRenderTarget(rtRight); renderer.clear(); renderer.render(scene, camera);
-        camera.layers.set(0); renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
-    }
+    forceRenderFrame();
 }
 window.addEventListener('resize', onWindowResize); setTimeout(onWindowResize, 100);
