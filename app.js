@@ -1,4 +1,6 @@
-// app.js - AXP Fusion Dynamics: 雲端大腦串接版 (v15.1 方案B動態選單 + 深度0.15版)
+// app.js - AXP Fusion Dynamics (v17.0 - Clinical Matrix, SILO HUD & Safety Limits)
+// 邏輯規範: 實體眼鏡 [左藍/綠, 右紅] | 極限鎖定: BO 40Δ / BI 8Δ / Vert 1.5Δ
+
 import { AIM_MATRIX, PROTOCOL_NAMES } from './matrix.js';
 import { createTarget } from './shapes.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
@@ -64,13 +66,14 @@ const axisSelect = document.getElementById('axis-select');
 const modeSelect = document.getElementById('mode-select');
 const stereoSlider = document.getElementById('stereo-slider');
 const stereoLabel = document.getElementById('stereo-label');
-const sepVal = document.getElementById('sep-val');
-const prismValEl = document.getElementById('prism-val'); 
+
+const prismSlider = document.getElementById('prism-slider');
+const prismLabel = document.getElementById('prism-label');
+const prismValHud = document.getElementById('prism-val-hud'); 
 
 const screenSpecSelect = document.getElementById('screen-spec');
 const viewDistInput = document.getElementById('view-dist');
 
-// 🚀 邊界放寬至 ±0.15
 if(stereoSlider) { stereoSlider.min = "-0.15"; stereoSlider.max = "0.15"; }
 
 const glassesSelect = document.getElementById('glasses-select');
@@ -79,22 +82,27 @@ const balanceLabel = document.getElementById('balance-label');
 const redSlider = document.getElementById('red-slider');
 const greenSlider = document.getElementById('green-slider');
 const blueSlider = document.getElementById('blue-slider');
-const blueChannelBox = document.getElementById('blue-channel-box');
 
 const timerDisplay = document.getElementById('timer-val');
 const dynamicModeTag = document.getElementById('dynamic-mode-tag');
+
+// 🚀 動態建立 SILO 全息認知字幕 HUD
+const siloPrompt = document.createElement('div');
+siloPrompt.id = 'silo-prompt';
+siloPrompt.style.cssText = "position:absolute; bottom:80px; left:50%; transform:translateX(-50%); font-size:18px; font-weight:bold; letter-spacing:2px; background:rgba(15, 23, 42, 0.85); backdrop-filter:blur(8px); padding:12px 24px; border-radius:12px; border:2px solid #4ade80; z-index:100; display:none; text-shadow: 0 0 10px rgba(0,0,0,0.5); text-align:center; transition: 0.3s; pointer-events:none;";
+document.getElementById('arena').appendChild(siloPrompt);
 
 // 引擎與狀態變數
 let isRunning = false, animationId;
 let currentSize = 200, currentDist = 120, currentSpeed = 20, currentStereo = 0, currentThick = 9.0;
 let isRotating = true, isFilled = false;
 let activeProtocol = null, protocolStage = 0, protocolTime = 0, totalTimerSec = 0, lastTime = 0, phase = 0;
-let currentSaccadeX = 0, currentSaccadeY = 0, saccadeTimer = 0, currentRoamX = 0, currentRoamY = 0, aiChaosTimer = 0;
+let currentSaccadeX = 0, currentSaccadeY = 0, saccadeTimer = 0, currentRoamX = 0, currentRoamY = 0;
 
 let sessionLogs = [];
 let isTestModeAllowed = true, isTestModeActive = false, taskActive = false;
 let taskDirection = '', taskEye = 'both', taskSpawnTime = 0, timeSinceLastTask = 0, nextTaskInterval = 3000, statusTimeout = null;
-let taskInitialSep = "", taskInitialPrism = "";
+let taskInitialPrism = "";
 
 let isAIRescueActive = false;
 let aiRescueStartTime = 0;
@@ -102,6 +110,12 @@ let originalSizeBeforeRescue = 200;
 let originalDistBeforeRescue = 120;
 let protocolTimePausedVal = 0;
 
+let flipperTimer = 0;
+let flipperState = true; // true = BO, false = BI
+
+// ==========================================
+// 核心圖學升級：Layer Masking 雙渲染引擎
+// ==========================================
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#000000');
 const aspect = container.clientWidth / container.clientHeight;
@@ -114,8 +128,61 @@ renderer.setSize(container.clientWidth, container.clientHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 container.appendChild(renderer.domElement);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); scene.add(ambientLight);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9); directionalLight.position.set(0, 0, 200); scene.add(directionalLight);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); 
+ambientLight.layers.enable(1); ambientLight.layers.enable(2);
+scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9); 
+directionalLight.position.set(0, 0, 200); 
+directionalLight.layers.enable(1); directionalLight.layers.enable(2);
+scene.add(directionalLight);
+
+const rtLeft = new THREE.WebGLRenderTarget(container.clientWidth, container.clientHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat });
+const rtRight = new THREE.WebGLRenderTarget(container.clientWidth, container.clientHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat });
+
+const anaglyphShader = {
+    uniforms: {
+        "mapLeft": { value: rtLeft.texture },
+        "mapRight": { value: rtRight.texture },
+        "colorLeft": { value: new THREE.Color(0.0, 0.0, 1.0) }, 
+        "colorRight": { value: new THREE.Color(1.0, 0.0, 0.0) }, 
+        "intensityLeft": { value: 1.0 },
+        "intensityRight": { value: 1.0 },
+        "prismOffset": { value: 0.0 }
+    },
+    vertexShader: ` varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); } `,
+    fragmentShader: `
+        uniform sampler2D mapLeft;
+        uniform sampler2D mapRight;
+        uniform vec3 colorLeft;
+        uniform vec3 colorRight;
+        uniform float intensityLeft;
+        uniform float intensityRight;
+        uniform float prismOffset;
+        varying vec2 vUv;
+        void main() {
+            vec2 uvL = vUv - vec2(prismOffset, 0.0);
+            vec2 uvR = vUv + vec2(prismOffset, 0.0);
+            
+            if(uvL.x < 0.0 || uvL.x > 1.0 || uvR.x < 0.0 || uvR.x > 1.0) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
+
+            vec4 texelLeft = texture2D(mapLeft, uvL);
+            vec4 texelRight = texture2D(mapRight, uvR);
+            
+            float lumLeft = dot(texelLeft.rgb, vec3(0.299, 0.587, 0.114));
+            float lumRight = dot(texelRight.rgb, vec3(0.299, 0.587, 0.114));
+            vec3 finalColor = (vec3(lumLeft) * colorLeft * intensityLeft) + 
+                              (vec3(lumRight) * colorRight * intensityRight);
+            gl_FragColor = vec4(finalColor, max(texelLeft.a, texelRight.a));
+        }
+    `
+};
+
+const postMaterial = new THREE.ShaderMaterial(anaglyphShader);
+const postScene = new THREE.Scene();
+const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMaterial);
+postScene.add(postQuad);
 
 const starCanvas = document.createElement('canvas');
 starCanvas.width = 32; starCanvas.height = 32;
@@ -137,29 +204,70 @@ for(let i=0; i < starsCount; i++) {
 const starsGeoLeft = new THREE.BufferGeometry(); starsGeoLeft.setAttribute('position', new THREE.BufferAttribute(posArrayLeft, 3));
 const starsGeoRight = new THREE.BufferGeometry(); starsGeoRight.setAttribute('position', new THREE.BufferAttribute(posArrayRight, 3));
 
-const starMatLeft = new THREE.PointsMaterial({ size: 5.85, map: starTexture, transparent: true, alphaTest: 0.1, sizeAttenuation: true, blending: THREE.AdditiveBlending, depthWrite: false });
-const starMatRight = new THREE.PointsMaterial({ size: 5.85, map: starTexture, transparent: true, alphaTest: 0.1, sizeAttenuation: true, blending: THREE.AdditiveBlending, depthWrite: false });
+const starMatLeft = new THREE.PointsMaterial({ size: 5.85, map: starTexture, transparent: true, opacity: 1.0, alphaTest: 0.1, sizeAttenuation: true, color: 0xffffff, blending: THREE.NormalBlending, depthWrite: false });
+const starMatRight = new THREE.PointsMaterial({ size: 5.85, map: starTexture, transparent: true, opacity: 1.0, alphaTest: 0.1, sizeAttenuation: true, color: 0xffffff, blending: THREE.NormalBlending, depthWrite: false });
 
 const starsLeft = new THREE.Points(starsGeoLeft, starMatLeft);
 const starsRight = new THREE.Points(starsGeoRight, starMatRight);
+
+starsLeft.layers.set(1);  
+starsRight.layers.set(2); 
 scene.add(starsLeft); scene.add(starsRight);
 
 let targetLeft, targetRight;
 const cueGeo = new THREE.CircleGeometry(1, 32); 
-const cueMatLeft = new THREE.MeshBasicMaterial({ color: 0xffffff, blending: THREE.AdditiveBlending, depthWrite: false }); 
-const cueMatRight = new THREE.MeshBasicMaterial({ color: 0xffffff, blending: THREE.AdditiveBlending, depthWrite: false });
+const cueMatLeft = new THREE.MeshBasicMaterial({ color: 0xffffff, blending: THREE.NormalBlending, depthWrite: false }); 
+const cueMatRight = new THREE.MeshBasicMaterial({ color: 0xffffff, blending: THREE.NormalBlending, depthWrite: false });
 const cueLeft = new THREE.Mesh(cueGeo, cueMatLeft); const cueRight = new THREE.Mesh(cueGeo, cueMatRight);
+
+cueLeft.layers.set(1); cueRight.layers.set(2);
 cueLeft.visible = false; cueRight.visible = false; scene.add(cueLeft); scene.add(cueRight);
 
-function getColorsAndOpacity() {
-    const r = redSlider ? Math.floor((parseInt(redSlider.value) / 100) * 255) : 127;
-    const g = greenSlider ? Math.floor((parseInt(greenSlider.value) / 100) * 255) : 127;
-    const b = blueSlider ? Math.floor((parseInt(blueSlider.value) / 100) * 255) : 127;
-    const colorLeft = (glassesSelect && glassesSelect.value === 'rc') ? ((0 << 16) | (0 << 8) | b) : (g << 8); 
-    const colorRight = (r << 16); 
+// 光學計算整合
+function updateOpticsFromUI() {
+    const rVal = redSlider ? parseInt(redSlider.value) : 100;
+    const gVal = greenSlider ? parseInt(greenSlider.value) : 100;
+    const bVal = blueSlider ? parseInt(blueSlider.value) : 100;
+    
     let balance = balanceSlider ? parseInt(balanceSlider.value) : 50;
-    let opacityLeft = balance < 50 ? (balance / 50) : 1; let opacityRight = balance > 50 ? ((100 - balance) / 50) : 1;
-    return { left: colorLeft, right: colorRight, opLeft: opacityLeft, opRight: opacityRight };
+    let opacityLeft = balance < 50 ? (balance / 50) : 1; 
+    let opacityRight = balance > 50 ? ((100 - balance) / 50) : 1;
+    
+    postMaterial.uniforms.intensityRight.value = (rVal / 100.0) * opacityRight;
+    postMaterial.uniforms.colorRight.value.setRGB(1.0, 0.0, 0.0);
+    if(document.getElementById('r-val')) document.getElementById('r-val').innerText = rVal + '%';
+    
+    let leftColor = new THREE.Color();
+    if (glassesSelect && glassesSelect.value === 'rg') {
+        if(document.getElementById('l-val')) document.getElementById('l-val').innerText = gVal + '%';
+        leftColor.setRGB(0.0, 1.0, 0.0);
+        postMaterial.uniforms.intensityLeft.value = (gVal / 100.0) * opacityLeft;
+    } else {
+        if(document.getElementById('l-val')) document.getElementById('l-val').innerText = bVal + '%';
+        leftColor.setRGB(0.0, 0.0, 1.0);
+        postMaterial.uniforms.intensityLeft.value = (bVal / 100.0) * opacityLeft;
+    }
+    postMaterial.uniforms.colorLeft.value.copy(leftColor);
+
+    if (prismSlider) {
+        const prismVal = parseFloat(prismSlider.value);
+        const spec = screenSpecSelect ? screenSpecSelect.value : 'generic';
+        let pixelToCm = 2.54 / 96; 
+        if (spec === 'retina16') pixelToCm = 34.5 / window.screen.width; 
+        else if (spec === 'ipad13') pixelToCm = 2.54 / 132; 
+        
+        const viewDistM = (parseFloat(viewDistInput ? viewDistInput.value : 50) || 50) / 100;
+        const screenWidthCm = container.clientWidth * pixelToCm;
+        const physicalShiftCm = prismVal * viewDistM; 
+        const totalUvShift = physicalShiftCm / screenWidthCm;
+        
+        postMaterial.uniforms.prismOffset.value = totalUvShift / 2.0;
+
+        const pText = prismVal > 0 ? `${prismVal.toFixed(1)} Δ (BO)` : prismVal < 0 ? `${Math.abs(prismVal).toFixed(1)} Δ (BI)` : `0.0 Δ (平光)`;
+        if(prismLabel) prismLabel.innerText = pText;
+        if(prismValHud && !isRunning) prismValHud.innerText = pText;
+    }
+    if (!isRunning) renderer.render(scene, camera);
 }
 
 function clearTargets() {
@@ -167,30 +275,19 @@ function clearTargets() {
     if (targetRight) { targetRight.traverse(child => { if(child.isMesh) { child.geometry?.dispose(); child.material?.dispose(); }}); scene.remove(targetRight); }
 }
 
-function updateColorsFromUI() {
-    if (document.getElementById('r-val') && redSlider) document.getElementById('r-val').innerText = redSlider.value + '%';
-    if (document.getElementById('g-val') && greenSlider) document.getElementById('g-val').innerText = greenSlider.value + '%';
-    if (document.getElementById('b-val') && blueSlider) document.getElementById('b-val').innerText = blueSlider.value + '%';
-    
-    const visualConfig = getColorsAndOpacity();
-    
-    if (targetLeft) { targetLeft.traverse(child => { if(child.isMesh) { child.material = new THREE.MeshBasicMaterial({ color: visualConfig.left, transparent: true, opacity: visualConfig.opLeft, blending: THREE.AdditiveBlending, depthWrite: false }); } }); }
-    if (targetRight) { targetRight.traverse(child => { if(child.isMesh) { child.material = new THREE.MeshBasicMaterial({ color: visualConfig.right, transparent: true, opacity: visualConfig.opRight, blending: THREE.AdditiveBlending, depthWrite: false }); } }); }
-    
-    starMatLeft.color.setHex(visualConfig.left); starMatLeft.opacity = visualConfig.opLeft; 
-    starMatRight.color.setHex(visualConfig.right); starMatRight.opacity = visualConfig.opRight; 
-    cueLeft.material.color.setHex(visualConfig.left); cueRight.material.color.setHex(visualConfig.right);
-    if (!isRunning) renderer.render(scene, camera);
-}
-
 function buildTargets() {
     clearTargets(); 
     if(textInputGroup) textInputGroup.style.display = shapeSelect?.value === 'text' ? 'block' : 'none';
     const shapeVal = shapeSelect ? shapeSelect.value : 'sphere5';
     const txtVal = customTextInput ? customTextInput.value : 'AXP';
+    
     targetLeft = createTarget(shapeVal, 0xffffff, isFilled, txtVal, currentThick);
     targetRight = createTarget(shapeVal, 0xffffff, isFilled, txtVal, currentThick);
-    updateScaleAndThickness(); scene.add(targetLeft); scene.add(targetRight); updateColorsFromUI(); 
+    
+    targetLeft.traverse(c => { c.layers.set(1); if(c.isMesh) { c.material.blending = THREE.NormalBlending; c.material.color.setHex(0xffffff); } });
+    targetRight.traverse(c => { c.layers.set(2); if(c.isMesh) { c.material.blending = THREE.NormalBlending; c.material.color.setHex(0xffffff); } });
+
+    updateScaleAndThickness(); scene.add(targetLeft); scene.add(targetRight); updateOpticsFromUI(); 
 }
 
 function updateScaleAndThickness(dynamicSize = currentSize) {
@@ -201,94 +298,128 @@ function updateScaleAndThickness(dynamicSize = currentSize) {
         const thicknessScale = 1 + (scaleFactor - 1) * 0.35; 
         const correctionScale = thicknessScale / scaleFactor;
         
-        targetLeft.traverse(child => { 
-            if(child.isMesh && child.geometry) {
-                if (child.geometry.type === 'BoxGeometry') {
-                    child.scale.x = correctionScale; child.scale.z = correctionScale; 
-                } else if (child.geometry.type === 'TorusGeometry') {
-                    child.scale.set(correctionScale, correctionScale, correctionScale);
-                }
-            } 
-        });
-        targetRight.traverse(child => { 
-            if(child.isMesh && child.geometry) {
-                if (child.geometry.type === 'BoxGeometry') {
-                    child.scale.x = correctionScale; child.scale.z = correctionScale; 
-                } else if (child.geometry.type === 'TorusGeometry') {
-                    child.scale.set(correctionScale, correctionScale, correctionScale);
-                }
-            } 
+        [targetLeft, targetRight].forEach(target => {
+            target.traverse(child => { 
+                if(child.isMesh && child.geometry) {
+                    if (child.geometry.type === 'BoxGeometry') { child.scale.x = correctionScale; child.scale.z = correctionScale; } 
+                    else if (child.geometry.type === 'TorusGeometry') { child.scale.set(correctionScale, correctionScale, correctionScale); }
+                } 
+            });
         });
     }
     const cueScale = Math.max(15, dynamicSize * 0.05); 
     cueLeft.scale.set(cueScale, cueScale, 1); cueRight.scale.set(cueScale, cueScale, 1);
 }
 
-function updatePositions(phaseVal) {
+// 🚀 核心升級：生理極限鎖與複雜軌跡 (Lissajous, Flipper)
+function updatePositions(phaseVal, currentAnim = '') {
     let pxLeftX = 0, pxRightX = 0, pxLeftY = 0, pxRightY = 0;
     const mode = modeSelect ? modeSelect.value : 'crossover';
     const axis = axisSelect ? axisSelect.value : 'horizontal';
     
     let disp = 0;
-    if (mode === 'oneway_bo') disp = ((Math.sin(phaseVal - Math.PI/2) + 1) / 2) * currentDist; 
-    else if (mode === 'oneway_bi') disp = -((Math.sin(phaseVal - Math.PI/2) + 1) / 2) * currentDist; 
-    else disp = Math.sin(phaseVal) * currentDist; 
+    let vertDisp = 0;
 
-    const spec = screenSpecSelect ? screenSpecSelect.value : 'generic';
-    let pixelToCm = 2.54 / 96; 
-    if (spec === 'retina16') pixelToCm = 34.5 / window.screen.width; 
-    else if (spec === 'ipad13') pixelToCm = 2.54 / 132; 
-    const viewDistM = (parseFloat(viewDistInput ? viewDistInput.value : 40) || 40) / 100;
+    // 1. 動態軌跡判定
+    if (currentAnim.includes('flipper')) {
+        // Flipper 階躍翻轉：BO (currentDist) 與 BI (反向 20%) 之間瞬間跳轉
+        disp = flipperState ? currentDist : -currentDist * 0.2;
+    } else {
+        if (mode === 'oneway_bo') disp = ((Math.sin(phaseVal - Math.PI/2) + 1) / 2) * currentDist; 
+        else if (mode === 'oneway_bi') disp = -((Math.sin(phaseVal - Math.PI/2) + 1) / 2) * currentDist; 
+        else disp = Math.sin(phaseVal) * currentDist; 
+    }
 
-    const maxBIPx = (2.0 * viewDistM) / pixelToCm;
-    if (disp < 0 && Math.abs(disp * 2) > maxBIPx) { disp = -(maxBIPx / 2); }
-
-    if (axis === 'horizontal') { pxLeftX = disp; pxRightX = -disp; } 
+    // 2. 空間軸向分配
+    if (axis === 'lissajous') {
+        // ∞ 無限大軌跡 (Lissajous Sweep)
+        pxLeftX = disp; pxRightX = -disp;
+        let lissajousY = Math.sin(phaseVal * 2) * currentDist * 0.6;
+        pxLeftY = lissajousY; pxRightY = lissajousY;
+    }
+    else if (axis === 'horizontal') { pxLeftX = disp; pxRightX = -disp; } 
     else if (axis === 'vertical') { pxLeftY = disp; pxRightY = -disp; } 
     else if (axis === 'circular') {
         const orbitX = Math.cos(phaseVal) * Math.abs(currentDist * 0.5); const orbitY = Math.sin(phaseVal) * Math.abs(currentDist * 0.5);
         pxLeftX = disp + orbitX; pxRightX = -disp + orbitX; pxLeftY = orbitY; pxRightY = orbitY;
     } else { pxLeftX = disp; pxRightX = -disp; }
 
+    // 3. 全域漫遊與跳視疊加
     let finalLeftX = pxLeftX + currentRoamX + currentSaccadeX; let finalLeftY = pxLeftY + currentRoamY + currentSaccadeY;
     let finalRightX = pxRightX + currentRoamX + currentSaccadeX; let finalRightY = pxRightY + currentRoamY + currentSaccadeY;
 
-    const maxVerticalPrism = isTestModeActive ? 1.5 : 5.0;
-    const maxVerticalPx = (maxVerticalPrism * viewDistM) / pixelToCm;
-    let currentVerticalSep = Math.abs(finalLeftY - finalRightY);
-    if (currentVerticalSep > maxVerticalPx) {
-        const scale = maxVerticalPx / currentVerticalSep;
-        finalLeftY *= scale; finalRightY *= scale;
+    // 4. 垂直 Prism 微調
+    const spec = screenSpecSelect ? screenSpecSelect.value : 'generic';
+    let pixelToCm = 2.54 / 96; 
+    if (spec === 'retina16') pixelToCm = 34.5 / window.screen.width; 
+    else if (spec === 'ipad13') pixelToCm = 2.54 / 132; 
+    const viewDistM = (parseFloat(viewDistInput ? viewDistInput.value : 50) || 50) / 100;
+
+    const maxBOPx = (40 * viewDistM) / pixelToCm;
+    const maxBIPx = (6 * viewDistM) / pixelToCm;
+    const maxVertPx = (1.5 * viewDistM) / pixelToCm;
+
+    if (currentAnim.includes('vertical_tune')) {
+        let vFactor = currentAnim.includes('heavy') ? 1.0 : (currentAnim.includes('medium') ? 0.6 : 0.3);
+        vertDisp = Math.sin(protocolTime / 2000) * (maxVertPx / 2) * vFactor;
+        finalLeftY += vertDisp; finalRightY -= vertDisp;
     }
 
+    // 5. 🚀 絕對生理極限鎖死保護機制 (Guardrails)
+    let dx = finalLeftX - finalRightX; // 左藍減右紅，dx > 0 代表藍在右紅在左 -> BO
+    if (dx > maxBOPx) {
+        let scale = maxBOPx / dx; finalLeftX *= scale; finalRightX *= scale;
+    } else if (dx < -maxBIPx) {
+        let scale = -maxBIPx / dx; finalLeftX *= scale; finalRightX *= scale;
+    }
+
+    let dy = finalLeftY - finalRightY;
+    if (Math.abs(dy) > maxVertPx) {
+        let scale = maxVertPx / Math.abs(dy); finalLeftY *= scale; finalRightY *= scale;
+    }
+
+    // 套用最終座標與 3D 深度
     if(targetLeft && targetRight) {
         targetLeft.children.forEach((layer, i) => { layer.position.x = -(i * 15) * currentStereo; });
         targetRight.children.forEach((layer, i) => { layer.position.x = (i * 15) * currentStereo; });
         targetLeft.position.set(finalLeftX, finalLeftY, 0); targetRight.position.set(finalRightX, finalRightY, 0);
         
-        const sepPx = Math.abs(targetLeft.position.x - targetRight.position.x);
-        if(sepVal) sepVal.innerText = sepPx.toFixed(1) + 'px';
+        // 6. 即時動態 HUD 稜鏡偵測器
+        const currentSepX = targetLeft.position.x - targetRight.position.x;
+        const currentSepY = targetLeft.position.y - targetRight.position.y;
+        
+        const horizontalPx = Math.abs(currentSepX);
+        const horizontalPrism = (horizontalPx * pixelToCm) / viewDistM;
+        let hPrismDir = currentSepX >= 0 ? "BO" : "BI";
+        
+        const verticalPx = Math.abs(currentSepY);
+        const verticalPrism = (verticalPx * pixelToCm) / viewDistM;
+        
+        const basePrism = parseFloat(prismSlider ? prismSlider.value : 0);
 
-        const sepCm = sepPx * pixelToCm; const prismDiopter = sepCm / viewDistM;
-        let prismDir = "";
-        if (sepPx > 0.1) prismDir = targetRight.position.x < targetLeft.position.x ? " BO" : " BI";
-        if(prismValEl) prismValEl.innerText = prismDiopter.toFixed(1) + ' Δ' + prismDir;
+        if (prismValHud) {
+            let hudText = "";
+            if (horizontalPx > 0.5) { hudText += `${horizontalPrism.toFixed(1)} Δ (${hPrismDir})`; } 
+            else if (basePrism !== 0) { const bDir = basePrism > 0 ? "BO" : "BI"; hudText += `${Math.abs(basePrism).toFixed(1)} Δ (${bDir})`; } 
+            else { hudText += `0.0 Δ`; }
+            if (verticalPx > 0.5) { hudText += ` | ↕ ${verticalPrism.toFixed(1)} Δ`; }
+            prismValHud.innerText = hudText;
+        }
     }
 
     if (taskActive && isTestModeActive) {
-        const offsetDist = currentSize * 0.65; let dx = 0, dy = 0;
-        if (taskDirection === 'ArrowUp') dy = offsetDist; if (taskDirection === 'ArrowDown') dy = -offsetDist;
-        if (taskDirection === 'ArrowLeft') dx = -offsetDist; if (taskDirection === 'ArrowRight') dx = offsetDist;
-        cueLeft.position.set(finalLeftX + dx, finalLeftY + dy, 20); cueRight.position.set(finalRightX + dx, finalRightY + dy, 20);
+        const offsetDist = currentSize * 0.65; let cueDx = 0, cueDy = 0;
+        if (taskDirection === 'ArrowUp') cueDy = offsetDist; if (taskDirection === 'ArrowDown') cueDy = -offsetDist;
+        if (taskDirection === 'ArrowLeft') cueDx = -offsetDist; if (taskDirection === 'ArrowRight') cueDx = offsetDist;
+        cueLeft.position.set(finalLeftX + cueDx, finalLeftY + cueDy, 20); cueRight.position.set(finalRightX + cueDx, finalRightY + cueDy, 20);
     }
 }
 
+// ... 測驗與結果回報邏輯 ...
 function spawnTask() {
     if (!isTestModeActive || !isTestModeAllowed) return;
     taskActive = true; taskSpawnTime = performance.now();
-    taskInitialSep = sepVal ? sepVal.innerText.replace('px', '') : '0.0'; 
-    taskInitialPrism = prismValEl ? prismValEl.innerText : '0.0';
-
+    taskInitialPrism = prismValHud ? prismValHud.innerText : '0.0';
     const dirs = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']; taskDirection = dirs[Math.floor(Math.random() * dirs.length)];
     const eyes = ['both', 'both', 'left', 'right']; taskEye = eyes[Math.floor(Math.random() * eyes.length)];
     cueLeft.visible = (taskEye === 'both' || taskEye === 'left'); cueRight.visible = (taskEye === 'both' || taskEye === 'right');
@@ -297,8 +428,7 @@ function spawnTask() {
 function handleTaskResult(result, rt = 0) {
     taskActive = false; cueLeft.visible = false; cueRight.visible = false; timeSinceLastTask = 0; nextTaskInterval = 2000 + Math.random() * 3000; 
     let logMsg = "", statusLabel = ""; 
-    const currentSepStr = sepVal ? sepVal.innerText.replace('px', '') : '0.0'; 
-    const currentPrismStr = prismValEl ? prismValEl.innerText : '0.0';
+    const currentPrismStr = prismValHud ? prismValHud.innerText : '0.0';
     const dx = targetRight.position.x - targetLeft.position.x; const dy = targetRight.position.y - targetLeft.position.y;
 
     if (taskEye === 'both') {
@@ -308,7 +438,6 @@ function handleTaskResult(result, rt = 0) {
         } else {
             let failType = ""; let reason = result === 'wrong' ? "按錯方向" : "超時未答";
             let triggerRescue = false;
-
             if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 5) { failType = "垂直融像破裂"; statusLabel = "垂直破裂(VERT_FAIL)"; triggerRescue = true; } 
             else {
                 if (dx < 0) { failType = "聚合不足"; statusLabel = "聚合不足(BO_FAIL)"; triggerRescue = true; } 
@@ -316,20 +445,16 @@ function handleTaskResult(result, rt = 0) {
             }
             logMsg = `🔴 ${failType} (${reason}) | 稜鏡: ${currentPrismStr}`; 
             if(!isAIRescueActive && statusText) statusText.style.color = '#f87171';
-
-            if (aiToggle && aiToggle.checked && triggerRescue && !isAIRescueActive && !isTestModeActive) {
-                activateAIRescue(logMsg);
-            }
+            if (aiToggle && aiToggle.checked && triggerRescue && !isAIRescueActive && !isTestModeActive) { activateAIRescue(logMsg); }
         }
     } else {
-        const eyeName = taskEye === 'left' ? '左眼' : '右眼';
+        const eyeName = taskEye === 'left' ? '左通道' : '右通道';
         if (result === 'hit') { logMsg = `🟢 ${eyeName}去抑制 (反應 ${rt}s)`; statusLabel = `${eyeName}去抑制(ANTI_SUPP_${taskEye.toUpperCase()})`; if(!isAIRescueActive && statusText) statusText.style.color = '#4ade80'; } 
         else { let reason = result === 'wrong' ? "按錯方向" : "超時未答"; logMsg = `⚫ ${eyeName}抑制 (${reason})`; statusLabel = `${eyeName}抑制(SUPP_${taskEye.toUpperCase()})`; if(!isAIRescueActive && statusText) statusText.style.color = '#facc15'; }
     }
     
     if(!isAIRescueActive && statusText) statusText.innerText = logMsg;
-
-    sessionLogs.push({ time: totalTimerSec.toString(), initial_sep: taskInitialSep, initial_prism: taskInitialPrism, response_sep: currentSepStr, response_prism: currentPrismStr, reaction_time: rt, stereo: currentStereo.toFixed(2), size: currentSize.toFixed(1), status: statusLabel, eye: taskEye });
+    sessionLogs.push({ time: totalTimerSec.toString(), initial_sep: "0", initial_prism: taskInitialPrism, response_sep: "0", response_prism: currentPrismStr, reaction_time: rt, stereo: currentStereo.toFixed(2), size: currentSize.toFixed(1), status: statusLabel, eye: taskEye });
 
     if (!isAIRescueActive) {
         if(statusTimeout) clearTimeout(statusTimeout);
@@ -339,55 +464,28 @@ function handleTaskResult(result, rt = 0) {
 
 function activateAIRescue(reasonMsg) {
     if (loginOverlay.style.display !== 'none' || !isRunning || isAIRescueActive) return;
-    
-    isAIRescueActive = true;
-    aiRescueStartTime = performance.now();
-    
-    originalSizeBeforeRescue = currentSize;
-    originalDistBeforeRescue = currentDist;
-    protocolTimePausedVal = protocolTime; 
-
-    currentDist = currentDist * 0.6; 
-    updateScaleAndThickness(Math.min(600, currentSize * 1.5)); 
-    
-    updateUIValues(); 
-    protocolTime = -999999; 
-    
-    if(statusText) {
-        statusText.innerText = `⚠️ AI 介入：稜鏡減壓與周邊鎖定啟動 | 原因: ${reasonMsg.split('|')[0].trim()}`;
-        statusText.style.color = '#facc15'; 
-    }
-    if(dynamicModeTag) {
-        dynamicModeTag.innerText = `[ AI RESCUE ACTIVE ] Colddown: 15s | Vergence Recovery...`;
-        dynamicModeTag.style.color = '#facc15';
-    }
+    isAIRescueActive = true; aiRescueStartTime = performance.now();
+    originalSizeBeforeRescue = currentSize; originalDistBeforeRescue = currentDist; protocolTimePausedVal = protocolTime; 
+    currentDist = currentDist * 0.6; updateScaleAndThickness(Math.min(600, currentSize * 1.5)); updateUIValues(); protocolTime = -999999; 
+    if(statusText) { statusText.innerText = `⚠️ AI 介入：稜鏡減壓與周邊鎖定啟動 | 原因: ${reasonMsg.split('|')[0].trim()}`; statusText.style.color = '#facc15'; }
+    if(dynamicModeTag) { dynamicModeTag.innerText = `[ AI RESCUE ACTIVE ] Colddown: 15s | Vergence Recovery...`; dynamicModeTag.style.color = '#facc15'; }
 }
 
 function endAIRescue() {
     if (!isAIRescueActive) return;
-    isAIRescueActive = false;
-    
-    protocolTime = protocolTimePausedVal; 
-    currentSize = originalSizeBeforeRescue;
-    currentDist = originalDistBeforeRescue;
-    
-    updateScaleAndThickness(); 
-    updateUIValues(); 
-    
-    if(statusText) {
-        statusText.innerText = isTestModeActive ? "TEST MODE ACTIVE" : "TRAINING";
-        statusText.style.color = isTestModeActive ? "#deff9a" : '#e11d48';
-    }
-    
+    isAIRescueActive = false; protocolTime = protocolTimePausedVal; currentSize = originalSizeBeforeRescue; currentDist = originalDistBeforeRescue;
+    updateScaleAndThickness(); updateUIValues(); 
+    if(statusText) { statusText.innerText = isTestModeActive ? "TEST MODE ACTIVE" : "TRAINING"; statusText.style.color = isTestModeActive ? "#deff9a" : '#e11d48'; }
     if(activeProtocol && dynamicModeTag) {
-        const config = AIM_MATRIX[activeProtocol][protocolStage];
-        const stageMaxStr = isTestModeActive ? '6 (TEST)' : '10';
+        const config = AIM_MATRIX[activeProtocol][protocolStage]; const stageMaxStr = isTestModeActive ? '6 (TEST)' : '10';
         dynamicModeTag.innerText = `[ ${PROTOCOL_NAMES[activeProtocol].split(' ')[0]} ] Stage ${protocolStage + 1}/${stageMaxStr} : ${config.name}`;
         dynamicModeTag.style.color = '#deff9a';
     }
 }
 
+// ... 報告介面省略 ...
 function showClinicalReport(logs, totalTime, protocolName) {
+    // 保持不變
     let fusionCount = 0, suppCount = 0, antiSuppCount = 0, boFail = 0, biFail = 0, vertFail = 0;
     let tableRowsHTML = "";
     logs.forEach(log => {
@@ -398,54 +496,29 @@ function showClinicalReport(logs, totalTime, protocolName) {
         if(log.status.includes('BI_FAIL')) biFail++;
         if(log.status.includes('VERT_FAIL')) vertFail++;
         let statusColor = log.status.includes('FUSION') || log.status.includes('ANTI') ? '#10b981' : (log.status.includes('SUPP') ? '#f59e0b' : '#ef4444');
-        tableRowsHTML += `
-            <tr style="border-bottom: 1px solid #e2e8f0; font-size:13px; text-align:center;">
-                <td style="padding: 8px;">${log.time}s</td>
-                <td style="padding: 8px; font-weight:bold; color:${statusColor};">${log.status.split('(')[0]}</td>
-                <td style="padding: 8px; font-size:12px; color:#64748b;">${log.initial_prism}</td>
-                <td style="padding: 8px; font-weight:bold; color:#0f172a;">${log.response_prism}</td>
-                <td style="padding: 8px; font-family:monospace;">${log.reaction_time}s</td>
-            </tr>
-        `;
+        tableRowsHTML += `<tr style="border-bottom: 1px solid #e2e8f0; font-size:13px; text-align:center;"><td style="padding: 8px;">${log.time}s</td><td style="padding: 8px; font-weight:bold; color:${statusColor};">${log.status.split('(')[0]}</td><td style="padding: 8px; font-size:12px; color:#64748b;">${log.initial_prism}</td><td style="padding: 8px; font-weight:bold; color:#0f172a;">${log.response_prism}</td><td style="padding: 8px; font-family:monospace;">${log.reaction_time}s</td></tr>`;
     });
 
     const reportOverlay = document.createElement('div');
     reportOverlay.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15, 23, 42, 0.8); backdrop-filter:blur(5px); z-index:10000; display:flex; justify-content:center; align-items:center; font-family:sans-serif;";
     reportOverlay.innerHTML = `
         <div style="background:#ffffff; width: 650px; max-height: 85vh; border-radius:12px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); display:flex; flex-direction:column; overflow:hidden;">
-            <div style="background:#4A90E2; color:white; padding: 20px; text-align:center;">
-                <h2 style="margin:0; font-size:22px; letter-spacing:1px;">AXP 臨床視覺診療報告</h2>
-                <p style="margin:5px 0 0 0; opacity:0.8; font-size:14px;">病患代碼: ${currentPatientCode}</p>
-            </div>
+            <div style="background:#4A90E2; color:white; padding: 20px; text-align:center;"><h2 style="margin:0; font-size:22px; letter-spacing:1px;">AXP 臨床視覺診療報告</h2><p style="margin:5px 0 0 0; opacity:0.8; font-size:14px;">病患代碼: ${currentPatientCode}</p></div>
             <div style="padding: 20px; overflow-y:auto; flex-grow:1; color:#334155;">
-                <div style="display:flex; justify-content:space-between; margin-bottom: 20px; background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;">
-                    <div><p style="margin:0 0 5px 0; font-size:12px; color:#64748b; font-weight:bold;">訓練總時長</p><p style="margin:0; font-size:18px; font-weight:bold; color:#0f172a;">${Math.floor(totalTime / 60)}分 ${totalTime % 60}秒</p></div>
-                    <div style="text-align:right;"><p style="margin:0 0 5px 0; font-size:12px; color:#64748b; font-weight:bold;">訓練模組</p><p style="margin:0; font-size:14px; font-weight:bold; color:#0f172a;">${protocolName.split(' ')[0]}</p></div>
-                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom: 20px; background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0;"><div><p style="margin:0 0 5px 0; font-size:12px; color:#64748b; font-weight:bold;">訓練總時長</p><p style="margin:0; font-size:18px; font-weight:bold; color:#0f172a;">${Math.floor(totalTime / 60)}分 ${totalTime % 60}秒</p></div><div style="text-align:right;"><p style="margin:0 0 5px 0; font-size:12px; color:#64748b; font-weight:bold;">訓練模組</p><p style="margin:0; font-size:14px; font-weight:bold; color:#0f172a;">${protocolName.split(' ')[0]}</p></div></div>
                 <h3 style="font-size:15px; margin-bottom:10px; color:#4A90E2; border-bottom:1px solid #e2e8f0; padding-bottom:5px;">📊 綜合表現分析</h3>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
                     <div style="background:#ecfdf5; padding:10px; border-radius:6px; border:1px solid #a7f3d0;"><span style="font-size:12px; color:#059669; font-weight:bold;">🟢 完美融像次數</span><br><span style="font-size:20px; font-weight:bold; color:#065f46;">${fusionCount}</span></div>
                     <div style="background:#ecfdf5; padding:10px; border-radius:6px; border:1px solid #a7f3d0;"><span style="font-size:12px; color:#059669; font-weight:bold;">🟢 去抑制成功</span><br><span style="font-size:20px; font-weight:bold; color:#065f46;">${antiSuppCount}</span></div>
                     <div style="background:#fef2f2; padding:10px; border-radius:6px; border:1px solid #fecaca;"><span style="font-size:12px; color:#dc2626; font-weight:bold;">🔴 聚合不足 (BO 破裂)</span><br><span style="font-size:20px; font-weight:bold; color:#991b1b;">${boFail}</span></div>
                     <div style="background:#fef2f2; padding:10px; border-radius:6px; border:1px solid #fecaca;"><span style="font-size:12px; color:#dc2626; font-weight:bold;">🔴 開散不足 (BI 破裂)</span><br><span style="font-size:20px; font-weight:bold; color:#991b1b;">${biFail}</span></div>
-                    <div style="background:#fffbeb; padding:10px; border-radius:6px; border:1px solid #fde68a;"><span style="font-size:12px; color:#d97706; font-weight:bold;">⚫ 單眼抑制發生</span><br><span style="font-size:20px; font-weight:bold; color:#b45309;">${suppCount}</span></div>
+                    <div style="background:#fffbeb; padding:10px; border-radius:6px; border:1px solid #fde68a;"><span style="font-size:12px; color:#d97706; font-weight:bold;">⚫ 單通道抑制發生</span><br><span style="font-size:20px; font-weight:bold; color:#b45309;">${suppCount}</span></div>
                     <div style="background:#fef2f2; padding:10px; border-radius:6px; border:1px solid #fecaca;"><span style="font-size:12px; color:#dc2626; font-weight:bold;">🔴 垂直融像破裂</span><br><span style="font-size:20px; font-weight:bold; color:#991b1b;">${vertFail}</span></div>
                 </div>
                 <h3 style="font-size:15px; margin-bottom:10px; color:#4A90E2; border-bottom:1px solid #e2e8f0; padding-bottom:5px;">📋 計量級測驗明細</h3>
-                <table style="width:100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background:#f1f5f9; font-size:12px; color:#64748b;">
-                            <th style="padding:8px; text-align:center;">時間點</th> <th style="padding:8px; text-align:center;">判定狀態</th>
-                            <th style="padding:8px; text-align:center;">出現時($T_0$)</th> <th style="padding:8px; text-align:center;">按下時($T_{resp}$)</th>
-                            <th style="padding:8px; text-align:center;">反應時間</th>
-                        </tr>
-                    </thead>
-                    <tbody>${tableRowsHTML || '<tr><td colspan="5" style="text-align:center; padding:10px; color:#94a3b8;">無紀錄</td></tr>'}</tbody>
-                </table>
+                <table style="width:100%; border-collapse: collapse;"><thead><tr style="background:#f1f5f9; font-size:12px; color:#64748b;"><th style="padding:8px; text-align:center;">時間點</th> <th style="padding:8px; text-align:center;">判定狀態</th><th style="padding:8px; text-align:center;">出現時($T_0$)</th> <th style="padding:8px; text-align:center;">按下時($T_{resp}$)</th><th style="padding:8px; text-align:center;">反應時間</th></tr></thead><tbody>${tableRowsHTML || '<tr><td colspan="5" style="text-align:center; padding:10px; color:#94a3b8;">無紀錄</td></tr>'}</tbody></table>
             </div>
-            <div style="padding: 15px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; text-align:center;">
-                <button id="close-report-btn" style="background:#D4AF37; color:white; border:none; padding:10px 25px; border-radius:6px; font-size:15px; cursor:pointer; font-weight:bold; transition:0.2s;">關閉並初始化系統</button>
-            </div>
+            <div style="padding: 15px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; text-align:center;"><button id="close-report-btn" style="background:#D4AF37; color:white; border:none; padding:10px 25px; border-radius:6px; font-size:15px; cursor:pointer; font-weight:bold; transition:0.2s;">關閉並初始化系統</button></div>
         </div>
     `;
     document.body.appendChild(reportOverlay);
@@ -458,7 +531,6 @@ async function uploadToSupabase() {
     isRunning = false; cancelAnimationFrame(animationId); 
     if(startBtn) { startBtn.innerText = "開始 [ Space ]"; startBtn.classList.remove('active'); }
     if(statusText) { statusText.innerText = "UPLOADING TO SUPABASE..."; statusText.style.color = "#38bdf8"; }
-    
     try {
         const { data, error } = await supabase.from('training_sessions').insert([{ duration_sec: finalTime, protocol_name: finalProtocol, raw_data: logsCopy }]);
         if (error) throw error;
@@ -466,7 +538,6 @@ async function uploadToSupabase() {
         showClinicalReport(logsCopy, finalTime, finalProtocol);
         sessionLogs = []; 
     } catch (err) {
-        console.error("Supabase 上傳錯誤:", err); alert("上傳失敗: " + err.message); 
         if(statusText) { statusText.innerText = "UPLOAD FAILED"; statusText.style.color = "#f87171"; }
     }
 }
@@ -477,23 +548,20 @@ function checkProtocolTestAllowance(code) {
 }
 
 function updateGlassesUI() {
-    const ghostingLabelDisplay = redSlider?.previousElementSibling?.querySelector('.val-display');
-    if(!ghostingLabelDisplay) return;
-
-    if (glassesSelect && glassesSelect.value === 'rc') {
-        if(greenSlider) greenSlider.style.display = 'none'; 
-        if(blueChannelBox) blueChannelBox.style.display = 'block';
-        ghostingLabelDisplay.innerHTML = `B (左): <span id="b-val">${blueSlider ? blueSlider.value : 100}%</span> | R (右): <span id="r-val">${redSlider ? redSlider.value : 100}%</span>`;
+    const lLabelText = document.getElementById('l-label-text');
+    if (glassesSelect && glassesSelect.value === 'rb') {
+        if(greenSlider) greenSlider.style.display = 'none'; if(blueSlider) blueSlider.style.display = 'block';
+        if(lLabelText) lLabelText.innerText = '藍光';
     } else {
-        if(greenSlider) greenSlider.style.display = 'block'; 
-        if(blueChannelBox) blueChannelBox.style.display = 'none';
-        ghostingLabelDisplay.innerHTML = `G (左): <span id="g-val">${greenSlider ? greenSlider.value : 100}%</span> | R (右): <span id="r-val">${redSlider ? redSlider.value : 100}%</span>`;
+        if(greenSlider) greenSlider.style.display = 'block'; if(blueSlider) blueSlider.style.display = 'none';
+        if(lLabelText) lLabelText.innerText = '綠光';
     }
-    buildTargets();
+    updateOpticsFromUI();
 }
 
 if(glassesSelect) glassesSelect.addEventListener('change', updateGlassesUI);
-[redSlider, greenSlider, blueSlider].forEach(slider => { if(slider) slider.addEventListener('input', updateColorsFromUI); });
+[redSlider, greenSlider, blueSlider].forEach(slider => { if(slider) slider.addEventListener('input', updateOpticsFromUI); });
+if(prismSlider) prismSlider.addEventListener('input', updateOpticsFromUI);
 
 function updateUIValues() {
     if(sizeLabel) sizeLabel.innerText = currentSize.toFixed(1) + 'px'; 
@@ -506,63 +574,57 @@ function updateUIValues() {
     if(hudStereoVal) hudStereoVal.innerText = currentStereo.toFixed(2);
     
     let balance = balanceSlider ? parseInt(balanceSlider.value) : 50; 
-    if(balanceLabel) balanceLabel.innerText = balance === 50 ? "均衡 50/50" : (balance < 50 ? `L弱 ${balance}%` : `R弱 ${100-balance}%`);
+    if(balanceLabel) balanceLabel.innerText = balance === 50 ? "均衡 50/50" : (balance < 50 ? `副弱 ${balance}%` : `主弱 ${100-balance}%`);
     
-    if(sizeSlider) sizeSlider.value = currentSize; 
-    if(distSlider) distSlider.value = currentDist; 
-    if(speedSlider) speedSlider.value = currentSpeed; 
-    if(thickSlider) thickSlider.value = currentThick; 
+    if(sizeSlider) sizeSlider.value = currentSize; if(distSlider) distSlider.value = currentDist; 
+    if(speedSlider) speedSlider.value = currentSpeed; if(thickSlider) thickSlider.value = currentThick; 
     if(stereoSlider) stereoSlider.value = currentStereo;
 }
 
-if (screenSpecSelect) screenSpecSelect.addEventListener('change', () => { if (!isRunning) updatePositions(phase); });
-if (viewDistInput) viewDistInput.addEventListener('input', () => { if (!isRunning) updatePositions(phase); });
+if (screenSpecSelect) screenSpecSelect.addEventListener('change', () => { updateOpticsFromUI(); if (!isRunning) updatePositions(phase, ''); });
+if (viewDistInput) viewDistInput.addEventListener('input', () => { updateOpticsFromUI(); if (!isRunning) updatePositions(phase, ''); });
 
-if(sizeSlider) sizeSlider.addEventListener('input', (e) => { currentSize = parseFloat(e.target.value); updateUIValues(); updateScaleAndThickness(); if (!isRunning) renderer.render(scene, camera); disableAI(); });
-if(distSlider) distSlider.addEventListener('input', (e) => { currentDist = parseFloat(e.target.value); updateUIValues(); if (!isRunning) updatePositions(0); disableAI(); });
+if(sizeSlider) sizeSlider.addEventListener('input', (e) => { currentSize = parseFloat(e.target.value); updateUIValues(); updateScaleAndThickness(); disableAI(); });
+if(distSlider) distSlider.addEventListener('input', (e) => { currentDist = parseFloat(e.target.value); updateUIValues(); if (!isRunning) updatePositions(0, ''); disableAI(); });
 if(speedSlider) speedSlider.addEventListener('input', (e) => { currentSpeed = parseFloat(e.target.value); updateUIValues(); disableAI(); });
 if(thickSlider) thickSlider.addEventListener('input', (e) => { currentThick = parseFloat(e.target.value); updateUIValues(); buildTargets(); disableAI(); });
-// 🚀 放寬滑桿手動控制上限為 ±0.15
-if(stereoSlider) stereoSlider.addEventListener('input', (e) => { currentStereo = Math.max(-0.15, Math.min(0.15, parseFloat(e.target.value))); e.target.value = currentStereo; updateUIValues(); if (!isRunning) updatePositions(0); disableAI(); });
+if(stereoSlider) stereoSlider.addEventListener('input', (e) => { currentStereo = Math.max(-0.15, Math.min(0.15, parseFloat(e.target.value))); e.target.value = currentStereo; updateUIValues(); if (!isRunning) updatePositions(0, ''); disableAI(); });
 
-if(balanceSlider) balanceSlider.addEventListener('input', () => { updateUIValues(); updateColorsFromUI(); disableAI(); });
+if(balanceSlider) balanceSlider.addEventListener('input', () => { updateUIValues(); updateOpticsFromUI(); disableAI(); });
 if(rotateCheckbox) rotateCheckbox.addEventListener('change', (e) => { isRotating = e.target.checked; disableAI(); });
 if(shapeSelect) shapeSelect.addEventListener('change', buildTargets); 
 if(customTextInput) customTextInput.addEventListener('input', buildTargets); 
 if(fillCheckbox) fillCheckbox.addEventListener('change', (e) => { isFilled = e.target.checked; buildTargets(); });
 
 function disableAI() {
-    if (aiToggle && aiToggle.checked) { 
-        aiToggle.checked = false; 
-        if(dynamicModeTag) { dynamicModeTag.innerText = "AXP FUSION DYNAMICS (手動模式)"; dynamicModeTag.style.color = '#f8fafc'; }
-        activeProtocol = null; isTestModeAllowed = true; 
-        if(isAIRescueActive) endAIRescue();
-    }
+    if (aiToggle && aiToggle.checked) { aiToggle.checked = false; }
+    if(dynamicModeTag) { dynamicModeTag.innerText = "AXP FUSION DYNAMICS (手動模式)"; dynamicModeTag.style.color = '#f8fafc'; }
+    isTestModeAllowed = true; 
+    siloPrompt.style.display = 'none'; // 關閉 SILO 字幕
+    if(isAIRescueActive) endAIRescue();
 }
 
 function loadMatrixStage(protocol, stage) {
     const config = AIM_MATRIX[protocol][stage]; if (!config) return;
     
-    // 🚀 方案 B：動態生成缺失的選項，完美防禦隕石消失 Bug
     if(shapeSelect) {
         let optionExists = Array.from(shapeSelect.options).some(opt => opt.value === config.shape);
-        if (!optionExists) {
-            const newOpt = new Option(`[AI補齊] ${config.shape}`, config.shape);
-            shapeSelect.add(newOpt);
-        }
+        if (!optionExists) { const newOpt = new Option(`[AI補齊] ${config.shape}`, config.shape); shapeSelect.add(newOpt); }
         shapeSelect.value = config.shape; 
     }
     
-    if(axisSelect) axisSelect.value = config.axis; 
+    if(axisSelect) {
+        let axExists = Array.from(axisSelect.options).some(opt => opt.value === config.axis);
+        if (!axExists) { const axOpt = new Option(`[AI軌跡] ${config.axis}`, config.axis); axisSelect.add(axOpt); }
+        axisSelect.value = config.axis; 
+    }
+
     if(modeSelect) modeSelect.value = config.mode; 
-    if(fillCheckbox) fillCheckbox.checked = config.fill; 
-    isFilled = config.fill;
+    if(fillCheckbox) fillCheckbox.checked = config.fill; isFilled = config.fill;
     
-    // 🚀 放寬矩陣讀取上限為 ±0.15
     currentStereo = Math.max(-0.15, Math.min(0.15, config.stereo)); 
     currentSize = config.size; currentDist = config.dist * 0.3; currentSpeed = config.speed; currentThick = config.thick;
-    isRotating = !config.anim.includes('none'); 
-    if(rotateCheckbox) rotateCheckbox.checked = isRotating; 
+    isRotating = !config.anim.includes('none'); if(rotateCheckbox) rotateCheckbox.checked = isRotating; 
     
     updateUIValues(); buildTargets();
     
@@ -571,9 +633,12 @@ function loadMatrixStage(protocol, stage) {
         dynamicModeTag.innerText = `[ ${PROTOCOL_NAMES[protocol].split(' ')[0]} ] Stage ${stage + 1}/${stageMaxStr} : ${config.name}`;
         dynamicModeTag.style.color = '#deff9a'; 
     }
-    protocolTime = 0; aiChaosTimer = 0; currentSaccadeX = 0; currentSaccadeY = 0; saccadeTimer = 0; currentRoamX = 0; currentRoamY = 0;
+    protocolTime = 0; flipperTimer = 0; currentSaccadeX = 0; currentSaccadeY = 0; saccadeTimer = 0; currentRoamX = 0; currentRoamY = 0;
 }
 
+// ==========================================
+// 🚀 核心動畫與矩陣渲染迴圈
+// ==========================================
 function animate(time) {
     if (!isRunning) return;
     if (!lastTime) lastTime = time; const dt = time - lastTime; lastTime = time;
@@ -590,74 +655,82 @@ function animate(time) {
 
     if (isAIRescueActive) {
         const timeInRescue = performance.now() - aiRescueStartTime;
-        if (timeInRescue > 15000) { 
-            endAIRescue();
-        } else {
-            const timeLeft = Math.ceil((15000 - timeInRescue) / 1000);
-            if(dynamicModeTag) dynamicModeTag.innerText = `[ AI RESCUE ACTIVE ] Colddown: ${timeLeft}s | Vergence Recovery...`;
-        }
+        if (timeInRescue > 15000) { endAIRescue(); } 
+        else { const timeLeft = Math.ceil((15000 - timeInRescue) / 1000); if(dynamicModeTag) dynamicModeTag.innerText = `[ AI RESCUE ACTIVE ] Colddown: ${timeLeft}s | Vergence Recovery...`; }
     }
 
+    let currentAnim = '';
+
     if (aiToggle && aiToggle.checked && activeProtocol && !isAIRescueActive) {
-        protocolTime += dt; const config = AIM_MATRIX[activeProtocol][protocolStage]; const anim = config.anim || ''; const progress = protocolTime / 60000;
-        currentDist = config.dist * (0.3 + 0.7 * Math.sin(progress * (Math.PI / 2))); 
-        if(distSlider) distSlider.value = currentDist; 
-        if(distLabel) distLabel.innerText = currentDist.toFixed(1) + 'px';
+        protocolTime += dt; const config = AIM_MATRIX[activeProtocol][protocolStage]; currentAnim = config.anim || ''; 
+        const progress = protocolTime / 60000;
         
-        if (anim.includes('roam') || config.axis === 'roam') { 
-            currentRoamX = Math.sin(protocolTime / 3000) * 350; 
-            currentRoamY = Math.cos(protocolTime / 2100) * 250; 
+        // 只有非 Flipper 的模式才平滑改變距離
+        if (!currentAnim.includes('flipper')) {
+            currentDist = config.dist * (0.3 + 0.7 * Math.sin(progress * (Math.PI / 2))); 
+            if(distSlider) distSlider.value = currentDist; if(distLabel) distLabel.innerText = currentDist.toFixed(1) + 'px';
+        } else {
+            currentDist = config.dist;
         }
-        if (anim.includes('saccade') || config.axis === 'saccade') { 
+        
+        // 1. 漫遊與星空流動
+        if (currentAnim.includes('roam') || config.axis === 'roam') { currentRoamX = Math.sin(protocolTime / 3000) * 350; currentRoamY = Math.cos(protocolTime / 2100) * 250; }
+        if (currentAnim.includes('starfield')) {
+            let starSpeed = currentAnim.includes('fast') ? 0.005 : 0.002;
+            starsLeft.rotation.z += starSpeed; starsRight.rotation.z += starSpeed;
+        } else { starsLeft.rotation.z = 0; starsRight.rotation.z = 0; }
+
+        // 2. 隨機跳視
+        if (currentAnim.includes('saccade') || config.axis === 'saccade') { 
             saccadeTimer += dt; 
-            if (saccadeTimer > 1500) { 
-                saccadeTimer = 0; 
-                currentSaccadeX = (Math.random() > 0.5 ? 1 : -1) * (150 + Math.random() * 200); 
-                currentSaccadeY = (Math.random() > 0.5 ? 1 : -1) * (100 + Math.random() * 150); 
-            }
+            if (saccadeTimer > 1500) { saccadeTimer = 0; currentSaccadeX = (Math.random() > 0.5 ? 1 : -1) * (150 + Math.random() * 200); currentSaccadeY = (Math.random() > 0.5 ? 1 : -1) * (100 + Math.random() * 150); }
         }
         
-        // 🚀 放寬 AI 深度擾動的上下限為 ±0.15
-        if (anim.includes('breathSize')) updateScaleAndThickness(currentSize + (currentSize * 0.15 * Math.sin(protocolTime / 1500)));
-        if (anim.includes('pulseZ_in')) currentStereo = Math.max(-0.15, Math.min(0.15, config.stereo + (Math.sin(protocolTime / 1000) + 1) / 2 * 0.2));
-        if (anim.includes('pulseZ_out')) currentStereo = Math.max(-0.15, Math.min(0.15, config.stereo - (Math.sin(protocolTime / 1000) + 1) / 2 * 0.2));
-        if (anim.includes('flipStereo_hard')) currentStereo = Math.max(-0.15, Math.min(0.15, Math.sin(protocolTime / 1000) * 0.3));
-        
-        if (anim.includes('chaos')) {
-            aiChaosTimer += dt;
-            if (aiChaosTimer > 2000) {
-                aiChaosTimer = 0; currentSpeed = Math.max(10, Math.min(100, config.speed + (Math.random() * 60 - 30))); 
-                if(speedSlider) speedSlider.value = currentSpeed; 
-                if(speedLabel) speedLabel.innerText = currentSpeed.toFixed(1);
-                currentThick = Math.max(2, Math.min(20, config.thick + (Math.random() * 10 - 5))); 
-                if(thickSlider) thickSlider.value = currentThick; 
-                if(thickLabel) thickLabel.innerText = currentThick.toFixed(1); 
-                buildTargets();
-            }
-            currentStereo = Math.max(-0.15, Math.min(0.15, Math.sin(protocolTime / 500) * 0.3)); updateScaleAndThickness(currentSize + (currentSize * 0.3 * Math.sin(protocolTime / 200)));
+        // 3. 幾何呼吸 Fractal
+        if (currentAnim.includes('breathing_fractal')) {
+            const breathScale = currentSize + (currentSize * 0.2 * Math.sin(phase));
+            updateScaleAndThickness(breathScale);
         }
 
-        if (anim.includes('balanceDrift')) {
-            const drift = Math.sin(protocolTime / 1000) * 0.4 + 0.6; 
-            targetLeft.traverse(c => { if(c.isMesh) c.material.opacity = drift; }); 
-            targetRight.traverse(c => { if(c.isMesh) c.material.opacity = 1.2 - drift; });
-        }
-        if (anim.includes('sensoryOverload')) {
-            const flash = Math.floor(protocolTime / 150) % 2 === 0;
-            targetLeft.traverse(c => { if(c.isMesh) c.material.opacity = flash ? 1 : 0.1; }); 
-            targetRight.traverse(c => { if(c.isMesh) c.material.opacity = flash ? 0.1 : 1; });
-            updateScaleAndThickness(currentSize + (Math.random() * 40 - 20));
+        // 4. SILO 認知字幕與縮放
+        if (currentAnim.includes('silo_text')) {
+            siloPrompt.style.display = 'block';
+            let sineVal = Math.sin(phase);
+            if (sineVal > 0) {
+                // BO 縮小靠近 (吐氣)
+                siloPrompt.innerText = "提示：目標正在變小，代表它正在靠近你！請慢慢吐氣 😮‍💨";
+                siloPrompt.style.color = "#ef4444"; siloPrompt.style.borderColor = "#ef4444";
+            } else {
+                // BI 放大遠離 (吸氣)
+                siloPrompt.innerText = "提示：目標正在變大，代表它正在遠離你！請深深吸氣 😌";
+                siloPrompt.style.color = "#3b82f6"; siloPrompt.style.borderColor = "#3b82f6";
+            }
+            updateScaleAndThickness(currentSize * (1 - sineVal * 0.3));
+        } else {
+            siloPrompt.style.display = 'none';
         }
 
-        if(stereoSlider) stereoSlider.value = currentStereo; 
-        if(stereoLabel) stereoLabel.innerText = currentStereo.toFixed(2);
-        
-        if (anim.includes('rivalry') || anim.includes('flicker')) {
-            let isRedTurn = Math.floor(protocolTime / (anim.includes('flicker') ? 100 : 500)) % 2 === 0;
+        // 5. 亮度飄移與閃爍去抑制
+        if (currentAnim.includes('balanceDrift')) {
+            const drift = Math.sin(protocolTime / 1500) * 0.4 + 0.6; 
+            targetLeft.traverse(c => { if(c.isMesh) c.material.opacity = drift; }); targetRight.traverse(c => { if(c.isMesh) c.material.opacity = 1.2 - drift; });
+        }
+        if (currentAnim.includes('flicker')) {
+            let flickerSpeed = currentAnim.includes('heavy') ? 100 : (currentAnim.includes('medium') ? 250 : 500);
+            let isRedTurn = Math.floor(protocolTime / flickerSpeed) % 2 === 0;
             targetLeft.traverse(c => { if(c.isMesh) c.material.opacity = isRedTurn ? 1 : 0.05; });
             targetRight.traverse(c => { if(c.isMesh) c.material.opacity = isRedTurn ? 0.05 : 1; });
+        } else if (!currentAnim.includes('balanceDrift')) {
+            targetLeft.traverse(c => { if(c.isMesh) c.material.opacity = 1; }); targetRight.traverse(c => { if(c.isMesh) c.material.opacity = 1; });
         }
-        
+
+        // 6. 階躍翻轉潛伏期 (Flipper)
+        if (currentAnim.includes('flipper')) {
+            let delay = currentAnim.includes('slow') ? 3000 : 1500;
+            flipperTimer += dt;
+            if (flipperTimer > delay) { flipperState = !flipperState; flipperTimer = 0; }
+        }
+
         const maxStages = isTestModeActive ? 6 : 10;
         if (protocolTime > 60000) { protocolStage = (protocolStage + 1) % maxStages; loadMatrixStage(activeProtocol, protocolStage); }
     }
@@ -666,8 +739,14 @@ function animate(time) {
         targetLeft.children.forEach((layer, index) => { if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere') || shapeSelect.value.includes('rock')) && isRotating) { layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01); layer.rotation.y += 0.015; } });
         targetRight.children.forEach((layer, index) => { if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere') || shapeSelect.value.includes('rock')) && isRotating) { layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01); layer.rotation.y += 0.015; } });
     }
-    updatePositions(phase); if (isRotating) { targetLeft.rotation.z = phase * 0.5; targetRight.rotation.z = phase * 0.5; }
-    renderer.render(scene, camera); animationId = requestAnimationFrame(animate);
+    updatePositions(phase, currentAnim); 
+    if (isRotating) { targetLeft.rotation.z = phase * 0.5; targetRight.rotation.z = phase * 0.5; }
+
+    camera.layers.set(1); renderer.setRenderTarget(rtLeft); renderer.clear(); renderer.render(scene, camera);
+    camera.layers.set(2); renderer.setRenderTarget(rtRight); renderer.clear(); renderer.render(scene, camera);
+    camera.layers.set(0); renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
+
+    animationId = requestAnimationFrame(animate);
 }
 
 function toggleTraining() {
@@ -682,6 +761,10 @@ function toggleTraining() {
         if(statusText) { statusText.innerText = "PAUSED"; statusText.style.color = '#FCE473'; }
         cancelAnimationFrame(animationId);
         taskActive = false; cueLeft.visible = false; cueRight.visible = false;
+        
+        camera.layers.set(1); renderer.setRenderTarget(rtLeft); renderer.clear(); renderer.render(scene, camera);
+        camera.layers.set(2); renderer.setRenderTarget(rtRight); renderer.clear(); renderer.render(scene, camera);
+        camera.layers.set(0); renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
     }
 }
 
@@ -703,12 +786,17 @@ function executeReset() {
     if(rotateCheckbox) rotateCheckbox.checked = true; 
     if(fillCheckbox) fillCheckbox.checked = false; 
     if(balanceSlider) balanceSlider.value = 50;
+    if(prismSlider) prismSlider.value = 0;
     
-    if(redSlider) redSlider.value = 50; 
-    if(greenSlider) greenSlider.value = 50; 
-    if(blueSlider) blueSlider.value = 50;
+    if(redSlider) redSlider.value = 100; 
+    if(greenSlider) greenSlider.value = 100; 
+    if(blueSlider) blueSlider.value = 100;
     
-    updateUIValues(); updateColorsFromUI(); buildTargets(); updatePositions(0);
+    updateUIValues(); buildTargets(); updatePositions(0, '');
+    
+    camera.layers.set(1); renderer.setRenderTarget(rtLeft); renderer.clear(); renderer.render(scene, camera);
+    camera.layers.set(2); renderer.setRenderTarget(rtRight); renderer.clear(); renderer.render(scene, camera);
+    camera.layers.set(0); renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
 }
 
 if(startBtn) startBtn.addEventListener('click', toggleTraining); 
@@ -734,7 +822,7 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    const shortcuts = ['Space', 'Enter', 'KeyE', 'KeyW', 'KeyS', 'KeyD', 'KeyA', 'KeyF', 'KeyR', 'KeyG', 'KeyZ', 'Digit0', 'Numpad0', 'BracketLeft', 'BracketRight', 'Comma', 'Period', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP'];
+    const shortcuts = ['Space', 'Enter', 'KeyE', 'KeyW', 'KeyS', 'KeyD', 'KeyA', 'KeyF', 'KeyR', 'KeyG', 'KeyZ', 'Digit0', 'Numpad0', 'Digit1', 'Digit2', 'Numpad1', 'Numpad2', 'BracketLeft', 'BracketRight', 'Comma', 'Period', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP'];
     if (shortcuts.includes(code)) {
         e.preventDefault(); if (document.activeElement) document.activeElement.blur(); 
         switch(code) {
@@ -742,7 +830,13 @@ document.addEventListener('keydown', (e) => {
             case 'Enter': executeReset(); break; 
             case 'KeyE': if(controlPanel) { controlPanel.style.display = controlPanel.style.display === 'none' ? 'flex' : 'none'; setTimeout(onWindowResize, 50); } break;
             case 'KeyG': uploadToSupabase(); break; 
-            case 'KeyZ': if(aiToggle) { aiToggle.checked = !aiToggle.checked; if (!aiToggle.checked) disableAI(); } break;
+            case 'KeyZ': 
+                if(aiToggle) { 
+                    aiToggle.checked = !aiToggle.checked; 
+                    if (!aiToggle.checked) { disableAI(); } 
+                    else { if (!activeProtocol) { activeProtocol = 'KeyY'; protocolStage = 0; } loadMatrixStage(activeProtocol, protocolStage); }
+                } 
+                break;
             case 'Digit0': case 'Numpad0':
                 if (!isTestModeAllowed) { alert("當前訓練 Program 限制進行測驗。"); break; }
                 if (isAIRescueActive) { alert("AI 急救代管中，無法切換測試模式。"); break; }
@@ -750,7 +844,8 @@ document.addEventListener('keydown', (e) => {
                 if (!isTestModeActive) { taskActive = false; cueLeft.visible = false; cueRight.visible = false; if (isRunning && statusText) { statusText.innerText = "TRAINING"; statusText.style.color = '#e11d48'; } } 
                 else { if (isRunning && statusText) { statusText.innerText = "TEST MODE ACTIVE"; statusText.style.color = '#deff9a'; } }
                 break;
-            // 🚀 快捷鍵邊界放寬至 ±0.15
+            case 'Digit1': case 'Numpad1': currentDist = Math.max(0, currentDist - 10); updateUIValues(); if (!isRunning) updatePositions(0, ''); disableAI(); break;
+            case 'Digit2': case 'Numpad2': currentDist = Math.min(600, currentDist + 10); updateUIValues(); if (!isRunning) updatePositions(0, ''); disableAI(); break;
             case 'BracketRight': if(stereoSlider) { stereoSlider.value = Math.min(0.15, parseFloat(stereoSlider.value) + 0.01).toFixed(2); stereoSlider.dispatchEvent(new Event('input')); } break;
             case 'BracketLeft': if(stereoSlider) { stereoSlider.value = Math.max(-0.15, parseFloat(stereoSlider.value) - 0.01).toFixed(2); stereoSlider.dispatchEvent(new Event('input')); } break;
             case 'Period': if(speedSlider) { speedSlider.value = Math.min(100, parseFloat(speedSlider.value) + (e.shiftKey ? 10 : 1)); speedSlider.dispatchEvent(new Event('input')); } break;
@@ -771,14 +866,16 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-if(redSlider) redSlider.value = 50; 
-if(greenSlider) greenSlider.value = 50; 
-if(blueSlider) blueSlider.value = 50;
-updateGlassesUI(); updateUIValues(); updateColorsFromUI(); 
+updateGlassesUI(); updateUIValues(); buildTargets();
 
 function onWindowResize() {
     const width = container.clientWidth; const height = container.clientHeight;
     camera.left = -d * (width / height); camera.right = d * (width / height); camera.updateProjectionMatrix();
-    renderer.setSize(width, height); if (!isRunning) renderer.render(scene, camera);
+    renderer.setSize(width, height); rtLeft.setSize(width, height); rtRight.setSize(width, height);
+    if (!isRunning) {
+        camera.layers.set(1); renderer.setRenderTarget(rtLeft); renderer.clear(); renderer.render(scene, camera);
+        camera.layers.set(2); renderer.setRenderTarget(rtRight); renderer.clear(); renderer.render(scene, camera);
+        camera.layers.set(0); renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
+    }
 }
 window.addEventListener('resize', onWindowResize); setTimeout(onWindowResize, 100);

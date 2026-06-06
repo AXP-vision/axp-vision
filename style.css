@@ -1,3 +1,5 @@
+/* style.css - AXP Fusion Dynamics (醫療級全息儀表板 - 左藍右紅相容版) */
+
 :root {
     /* --- 訓練區核心 (必須保持極致黑以確保濾光物理作用) --- */
     --arena-bg: #000000;         
@@ -9,6 +11,11 @@
     --accent-red: #E11D48;       /* 警示與作動紅 */
     --border-silver: #CBD5E1;    /* 銀灰色線條 */
     --bg-light-gray: #F8FAFC;    /* 極淺灰 (用於細微層次區分) */
+    
+    /* --- 光學與融像專屬色彩 --- */
+    --optic-blue: #3b82f6;       /* 左眼藍通道 */
+    --optic-red: #ef4444;        /* 右眼紅通道 */
+    --fusion-indigo: #6366f1;    /* 稜鏡融像紫 */
     
     /* --- 文字色彩 --- */
     --text-main: #334155;        /* 深石板灰 (易讀且不刺眼) */
@@ -28,7 +35,7 @@ body {
 #fv-fusion-app {
     width: 100%; max-width: 1150px; height: 850px; max-height: 90vh; 
     border-radius: 12px; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15);
-    border: 2px solid var(--border-silver); /* 銀線框大框 */
+    border: 2px solid var(--border-silver); 
     display: flex; flex-direction: row-reverse; 
     background-color: var(--panel-bg); color: var(--text-main); 
     overflow: hidden; position: relative;
@@ -61,7 +68,7 @@ body {
 ========================================= */
 .panel-section {
     background: var(--panel-bg); 
-    border: 1px solid var(--accent-gold); /* 金線框小框 */
+    border: 1px solid var(--accent-gold); 
     border-radius: 8px; padding: 16px 14px; margin-bottom: 4px;
     display: flex; flex-direction: column; gap: 12px;
     box-shadow: 0 4px 10px rgba(212, 175, 55, 0.05); 
@@ -103,7 +110,7 @@ input[type="range"] {
     appearance: none;
     width: 100%; 
     height: 8px;
-    background: var(--border-silver); /* 圓點右側：淺灰色 */
+    background: var(--border-silver); 
     border-radius: 6px;
     outline: none;
     overflow: hidden; 
@@ -117,16 +124,18 @@ input[type="range"]::-webkit-slider-thumb {
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: var(--accent-gold); /* 圓點全面統一：凡特錫金 */
+    background: var(--accent-gold); 
     cursor: pointer;
-    box-shadow: -400px 0 0 400px var(--brand-blue); /* 預設圓點左側軌道：醫療藍色 */
-    border: 2px solid #ffffff; /* 白色描邊增加立體感 */
+    box-shadow: -400px 0 0 400px var(--brand-blue); 
+    border: 2px solid #ffffff; 
 }
 
-/* --- 光學色彩拉桿專屬覆寫 (該紅就紅、該綠就綠) --- */
-#red-slider::-webkit-slider-thumb { box-shadow: -400px 0 0 400px #ef4444; }
+/* --- 光學色彩拉桿專屬覆寫 --- */
+#blue-slider::-webkit-slider-thumb { box-shadow: -400px 0 0 400px var(--optic-blue); }
+#red-slider::-webkit-slider-thumb { box-shadow: -400px 0 0 400px var(--optic-red); }
 #green-slider::-webkit-slider-thumb { box-shadow: -400px 0 0 400px #10b981; }
-#blue-slider::-webkit-slider-thumb { box-shadow: -400px 0 0 400px #3b82f6; }
+/* 🚀 稜鏡滑桿專屬融像色 */
+#prism-slider::-webkit-slider-thumb { box-shadow: -400px 0 0 400px var(--fusion-indigo); }
 
 /* Firefox 支援 */
 input[type="range"]::-moz-range-track {
@@ -140,10 +149,11 @@ input[type="range"]::-moz-range-thumb {
     cursor: pointer; border: 2px solid #ffffff;
 }
 /* Firefox 光學色彩拉桿專屬覆寫 */
-#red-slider::-moz-range-progress { background: #ef4444; }
+#blue-slider::-moz-range-progress { background: var(--optic-blue); }
+#red-slider::-moz-range-progress { background: var(--optic-red); }
 #green-slider::-moz-range-progress { background: #10b981; }
-#blue-slider::-moz-range-progress { background: #3b82f6; }
-
+/* 🚀 Firefox 稜鏡滑桿專屬融像色 */
+#prism-slider::-moz-range-progress { background: var(--fusion-indigo); }
 
 .checkbox-wrapper {
     display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; color: var(--text-main); font-weight: bold;
@@ -196,7 +206,7 @@ input[type="range"]::-moz-range-thumb {
     font-family: 'Azeret Mono', monospace; color: #94a3b8; font-size: 13px; text-align: center;
     line-height: 1.6; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(10px);
     padding: 12px 24px; border-radius: 12px; 
-    border: 2px solid var(--brand-blue); /* 醫療藍外框 */
+    border: 2px solid var(--brand-blue); 
     z-index: 10; min-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 .hud strong { color: #ffffff; font-size: 16px; }

@@ -17,7 +17,7 @@
     <div class="training-arena" id="arena">
         <div class="hud" id="hud-display">
             STATUS: <strong id="status-text">IDLE</strong> | TIME: <strong id="timer-val" class="timer-display">00:00</strong><br>
-            SEP: <span id="sep-val">0.0px</span> | <strong id="prism-val">0.0 Δ</strong> | STEREO: <strong id="hud-stereo-val">0.00</strong>
+            PRISM: <strong id="prism-val-hud">0.0 Δ</strong> | STEREO: <strong id="hud-stereo-val">0.00</strong>
             <span class="lab-tag" id="dynamic-mode-tag">AXP FUSION DYNAMICS 視覺空間優化矩陣</span>
         </div>
         
@@ -26,7 +26,7 @@
     </div>
 
     <div class="control-panel" style="z-index: 20;">
-        <div class="app-title">AXP FUSION 9.5.52</div>
+        <div class="app-title">AXP FUSION</div>
 
         <div class="panel-section">
             <div class="section-title">🎨 視覺與形體</div>
@@ -40,8 +40,9 @@
                     </optgroup>
                     <optgroup label="高階 3D 幾何 (WebGL 3D)">
                         <option value="sphere5" selected>3D 網格地球儀 ( 5-Sphere )</option>
+                        <option value="glossysphere">高光實體晶球 ( Glossy Sphere )</option>
                         <option value="rock3">3D 多邊形隕石 ( 3-LowPoly Rock )</option>
-                        <option value="startunnel5">3D 扭曲星系隧道 ( 5-Star Tunnel )</option>
+                        <option value="torusknot">無限立體扭結 ( Torus Knot )</option>
                     </optgroup>
                     <optgroup label="客製化">
                         <option value="text">全息粒子文字 ( TEXT )</option>
@@ -74,10 +75,20 @@
                 <span>🚀 空間動態 ( Y U I O P )</span>
                 <label class="checkbox-wrapper" id="ai-toggle-wrapper" title="Z 鍵切換"><input type="checkbox" id="ai-toggle"> AI 託管 [ Z ]</label>
             </div>
-            <div class="control-group">
-                <label>最大分離距離 [ 2遠 / 1近 ] <span class="val-display" id="dist-label">120px</span></label>
-                <input type="range" id="dist-slider" min="0" max="600" step="0.1" value="120">
+            
+            <div class="control-group" style="background: rgba(59, 130, 246, 0.15); padding: 10px; border-radius: 6px; border-left: 3px solid #3b82f6; margin-bottom: 12px;">
+                <label style="color: #60a5fa; margin-bottom: 8px; display: flex; justify-content: space-between;">
+                    <span>稜鏡需求量 [ 2遠 / 1近 ]</span>
+                    <span class="val-display" id="prism-label" style="font-weight: bold; color: #fff;">0.0 Δ (平光)</span>
+                </label>
+                <div style="display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; margin-bottom: 4px;">
+                    <span>BI (-6)</span>
+                    <span>0</span>
+                    <span>BO (+40)</span>
+                </div>
+                <input type="range" id="prism-slider" min="-6" max="40" step="0.5" value="0">
             </div>
+
             <div class="control-group">
                 <label>運動速度 [ ← / → / Shift ] <span class="val-display" id="speed-label">20</span></label>
                 <input type="range" id="speed-slider" min="1" max="100" step="0.1" value="20">
@@ -108,21 +119,19 @@
             <div class="section-title">🔬 數位光學與視覺感知微調</div>
             <div class="control-group">
                 <select id="glasses-select">
-                    <option value="rc" selected>🔴🔵 紅 / 青 (藍) 旗艦推薦</option>
-                    <option value="rg">🔴🟢 紅 / 綠 眼鏡</option>
+                    <option value="rb" selected>紅藍眼鏡（Digital Anaglyph）</option>
+                    <option value="rg">紅綠眼鏡（Classic Tranaglyph）</option>
                 </select>
             </div>
             <div class="control-group">
                 <label>視覺感知平衡 <span class="val-display" id="balance-label">50/50</span></label>
-                <input type="range" id="balance-slider" min="0" max="100" value="50" style="background: linear-gradient(to right, red, green);">
+                <input type="range" id="balance-slider" min="0" max="100" value="50" style="background: linear-gradient(to right, #3b82f6, #ef4444);">
             </div>
             <div class="control-group">
-                <label>雙眼視覺疊影濾除校正 <span class="val-display">R: <span id="r-val">100%</span> | G: <span id="g-val">100%</span><span id="b-val-box"> | B: <span id="b-val">100%</span></span></span></label>
+                <label>疊影濾除校正 <span class="val-display"><span id="l-label-text">藍光</span>: <span id="l-val">100%</span> | 紅光: <span id="r-val">100%</span></span></label>
+                <input type="range" id="blue-slider" min="5" max="100" value="100" style="accent-color: #0080ff; margin-bottom: 4px;">
+                <input type="range" id="green-slider" min="5" max="100" value="100" style="accent-color: green; display: none; margin-bottom: 4px;">
                 <input type="range" id="red-slider" min="5" max="100" value="100" style="accent-color: red;">
-                <input type="range" id="green-slider" min="5" max="100" value="100" style="accent-color: green;">
-                <div id="blue-channel-box" style="display: block;">
-                    <input type="range" id="blue-slider" min="5" max="100" value="100" style="accent-color: #0080ff;">
-                </div>
             </div>
             <div class="control-group">
                 <div style="display: flex; gap: 8px;">
@@ -131,7 +140,7 @@
                         <option value="ipad13">iPad Pro (264 DPI)</option>
                         <option value="generic">一般螢幕 (96 DPI)</option>
                     </select>
-                    <input type="number" id="view-dist" value="40" min="20" style="flex: 1; text-align: center;" title="觀距(cm)">
+                    <input type="number" id="view-dist" value="50" min="20" style="flex: 1; text-align: center;" title="觀距(cm)">
                 </div>
             </div>
         </div>
