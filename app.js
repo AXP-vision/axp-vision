@@ -1,6 +1,6 @@
-// app.js - AXP Fusion Dynamics (v21.0 - SaaS Data Structure & Neuro-Crystal Optimized)
-// 優化：徹底抹除不對稱的 rock 幾何雜訊，確保 V1 視覺皮層的絕對物理對稱性
+// app.js - AXP Fusion Dynamics (v22.0 - SaaS Data Structure & Optotype Rotation Lock)
 // 重構：修復 Supabase 寫入的反模式，將 raw_data 升級為標準的關聯式 JSON Schema
+// 修正：徹底拔除可預測字庫，改為高頻醫療視標，並強制鎖死文字旋轉，確保睫狀肌調節極限
 
 import { AIM_MATRIX, PROTOCOL_NAMES } from './matrix.js';
 import { createTarget } from './shapes.js';
@@ -114,7 +114,8 @@ let protocolTimePausedVal = 0;
 let flipperTimer = 0;
 let flipperState = true; 
 
-const AXP_WORDS = ['GUCCI', 'PRADA', 'FERRARI', 'CHANEL', 'HERMES', 'ROLEX', 'CARTIER', 'DIOR'];
+// 🚀 CTO 修正：高頻醫療級無意義字串 (Optotypes)
+const AXP_WORDS = ['H O T V', 'Z R K D', 'E M C W', 'S N E L', 'O S V D', 'N H Z O', 'A X 7 P', '9 Q 2 M'];
 let currentWordIndex = 0;
 let lastWordChangeTime = 0;
 
@@ -293,7 +294,7 @@ function buildTargets() {
     clearTargets(); 
     if(textInputGroup) textInputGroup.style.display = shapeSelect?.value === 'text' ? 'block' : 'none';
     const shapeVal = shapeSelect ? shapeSelect.value : 'sphere5';
-    const txtVal = customTextInput ? customTextInput.value : 'AXP';
+    const txtVal = customTextInput ? customTextInput.value : 'A X P';
     
     targetLeft = createTarget(shapeVal, 0xffffff, isFilled, txtVal, currentThick);
     targetRight = createTarget(shapeVal, 0xffffff, isFilled, txtVal, currentThick);
@@ -551,14 +552,13 @@ function showClinicalReport(logs, totalTime, protocolName) {
     document.getElementById('close-report-btn').addEventListener('click', () => { document.body.removeChild(reportOverlay); executeReset(); });
 }
 
-// 💡 【CTO 核心升級區】：捨棄陣列外殼，建立符合 RESTful API 標準的 JSON Object Schema
+// 💡 寫入 JSON Object Schema
 async function uploadToSupabase() {
     if (sessionLogs.length === 0) return alert("尚無測驗數據！");
     
     const finalTime = totalTimerSec; 
     const finalProtocol = activeProtocol ? PROTOCOL_NAMES[activeProtocol] : 'MANUAL_MODE';
     
-    // 💡 關鍵魔術：採用標準 JSON Schema，讓機器學習引擎能順暢讀取
     const payloadData = {
         patient_id: currentPatientCode,
         environmental_setup: {
@@ -574,7 +574,6 @@ async function uploadToSupabase() {
     if(statusText) { statusText.innerText = "UPLOADING TO SUPABASE..."; statusText.style.color = "#38bdf8"; }
     
     try {
-        // 寫入 Supabase：完美對接你已建立的欄位結構
         const { data, error } = await supabase.from('training_sessions').insert([{ 
             duration_sec: finalTime, 
             protocol_name: finalProtocol, 
@@ -585,7 +584,6 @@ async function uploadToSupabase() {
         if (error) throw error;
         
         if(statusText) { statusText.innerText = "UPLOAD SUCCESSFUL"; statusText.style.color = "#4ade80"; }
-        // 注意：報告渲染已改為抓取 payloadData.clinical_logs
         showClinicalReport(payloadData.clinical_logs, finalTime, finalProtocol);
         sessionLogs = []; 
     } catch (err) {
@@ -684,7 +682,6 @@ function loadMatrixStage(protocol, stage) {
     protocolTime = 0; flipperTimer = 0; currentSaccadeX = 0; currentSaccadeY = 0; saccadeTimer = 0; currentRoamX = 0; currentRoamY = 0;
 }
 
-// 🚀 獨立的全螢幕切換函數
 function toggleFullScreen() {
     const elem = document.getElementById('fv-fusion-app');
     if (!document.fullscreenElement && !document.webkitFullscreenElement) {
@@ -694,7 +691,6 @@ function toggleFullScreen() {
     }
 }
 
-// 綁定全螢幕按鈕
 if(fullscreenBtn) fullscreenBtn.addEventListener('click', toggleFullScreen);
 
 // ==========================================
@@ -807,13 +803,31 @@ function animate(time) {
     }
 
     if(targetLeft && targetRight) {
-        targetLeft.children.forEach((layer, index) => { if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere')) && isRotating) { layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01); layer.rotation.y += 0.015; } });
-        targetRight.children.forEach((layer, index) => { if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere')) && isRotating) { layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01); layer.rotation.y += 0.015; } });
+        targetLeft.children.forEach((layer, index) => { 
+            // 🚀 新武器動態擾動與本體自轉判定
+            if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere') || shapeSelect.value === 'nested_dodeca' || shapeSelect.value === 'torusKnot') && isRotating) { 
+                layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01); 
+                layer.rotation.y += 0.015; 
+            } 
+        });
+        targetRight.children.forEach((layer, index) => { 
+            if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere') || shapeSelect.value === 'nested_dodeca' || shapeSelect.value === 'torusKnot') && isRotating) { 
+                layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01); 
+                layer.rotation.y += 0.015; 
+            } 
+        });
     }
     
     updatePositions(phase, currentAnim); 
     
-    if (isRotating) { targetLeft.rotation.z = phase * 0.5; targetRight.rotation.z = phase * 0.5; }
+    // 🚀 CTO 修正：強制鎖死 text 的旋轉，維持高頻空間視網膜成像的銳利度
+    if (isRotating && shapeSelect?.value !== 'text') { 
+        targetLeft.rotation.z = phase * 0.5; 
+        targetRight.rotation.z = phase * 0.5; 
+    } else if (shapeSelect?.value === 'text') {
+        targetLeft.rotation.z = 0;
+        targetRight.rotation.z = 0;
+    }
 
     camera.layers.set(1); renderer.setRenderTarget(rtLeft); renderer.clear(); renderer.render(scene, camera);
     camera.layers.set(2); renderer.setRenderTarget(rtRight); renderer.clear(); renderer.render(scene, camera);
@@ -885,7 +899,6 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    // 🚀 將 KeyQ 加入到快捷鍵陣列中
     const shortcuts = ['Space', 'Enter', 'KeyE', 'KeyW', 'KeyS', 'KeyD', 'KeyA', 'KeyF', 'KeyR', 'KeyG', 'KeyZ', 'Digit0', 'Numpad0', 'Digit1', 'Digit2', 'Numpad1', 'Numpad2', 'BracketLeft', 'BracketRight', 'Comma', 'Period', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP', 'KeyQ'];
     if (shortcuts.includes(code)) {
         e.preventDefault(); if (document.activeElement) document.activeElement.blur(); 
@@ -901,7 +914,7 @@ document.addEventListener('keydown', (e) => {
                     else { if (!activeProtocol) { activeProtocol = 'KeyY'; protocolStage = 0; } loadMatrixStage(activeProtocol, protocolStage); }
                 } 
                 break;
-            case 'KeyQ': toggleFullScreen(); break; // 🚀 一鍵切換全螢幕
+            case 'KeyQ': toggleFullScreen(); break; 
             case 'Digit0': case 'Numpad0':
                 if (isAIRescueActive) { 
                     if(statusText) {
