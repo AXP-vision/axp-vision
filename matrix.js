@@ -1,6 +1,6 @@
-// matrix.js - AXP Fusion Dynamics 臨床視覺訓練協議矩陣 (v22.0 - Neuro-Quantum Matrix)
+// matrix.js - AXP Fusion Dynamics 臨床視覺訓練協議矩陣 (v22.1 - Neuro-Quantum Matrix & Physics Fixed)
 // 結構規範：嚴格遵循 1-3初級(低劑量) / 4-7中級(擴張期) / 8-10高級(極限重塑) 臨床分級
-// 系統優化：導入 torusKnot (無盡紐結) 處理平滑追視；導入 nested_dodeca (嵌套量子核) 榨取極限融像儲備
+// 系統優化：修復 Saccade (跳視) 模組的 Sine Wave 死鎖問題，確保極端稜鏡張力精準輸出
 
 export const PROTOCOL_NAMES = {
     'KeyY': 'Y. 感覺整合與去抑制模組 (Sensory & Anti-Suppression)',
@@ -84,11 +84,11 @@ export const AIM_MATRIX = {
         { name: 'O-02 慢速階躍翻轉 II (2.5秒切換)', shape: 'sphere5', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.03, size: 160, dist: 6.0, speed: 0, thick: 5, anim: 'flipper_slow' },
         { name: 'O-03 中速階躍翻轉 I (2.0秒切換)', shape: 'sphere5', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.04, size: 140, dist: 8.0, speed: 0, thick: 5, anim: 'flipper_fast' },
         
-        // ⭐【中級】4-7 階：高速階躍翻轉、導入動態跳視融像 (挑戰動眼肌肉急跳融像反應)
+        // ⭐【中級】4-7 階：高速階躍翻轉、導入動態跳視融像 (修復 Sine Wave 死鎖，給予基礎速度驅動稜鏡)
         { name: 'O-04 中速階躍翻轉 II (1.5秒瞬間切換)', shape: 'nested_dodeca', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.05, size: 120, dist: 12.0, speed: 0, thick: 4, anim: 'flipper_fast' },
-        { name: 'O-05 動態跳視融像 I (窄域雙向急跳)', shape: 'sphere5', axis: 'saccade', mode: 'crossover', fill: false, stereo: 0.04, size: 150, dist: 16.0, speed: 0, thick: 5, anim: 'saccade_vergence' },
-        { name: 'O-06 動態跳視融像 II (廣域多向急跳)', shape: 'nested_dodeca', axis: 'saccade', mode: 'crossover', fill: true, stereo: 0.06, size: 130, dist: 20.0, speed: 0, thick: 4, anim: 'saccade_vergence' },
-        { name: 'O-07 動態跳視融像 III (高頻隨機急跳)', shape: 'nested_dodeca', axis: 'saccade', mode: 'crossover', fill: true, stereo: 0.08, size: 110, dist: 24.0, speed: 0, thick: 3, anim: 'saccade_vergence' },
+        { name: 'O-05 動態跳視融像 I (窄域雙向急跳)', shape: 'sphere5', axis: 'saccade', mode: 'crossover', fill: false, stereo: 0.04, size: 150, dist: 16.0, speed: 15, thick: 5, anim: 'saccade_vergence' },
+        { name: 'O-06 動態跳視融像 II (廣域多向急跳)', shape: 'nested_dodeca', axis: 'saccade', mode: 'crossover', fill: true, stereo: 0.06, size: 130, dist: 20.0, speed: 20, thick: 4, anim: 'saccade_vergence' },
+        { name: 'O-07 動態跳視融像 III (高頻隨機急跳)', shape: 'nested_dodeca', axis: 'saccade', mode: 'crossover', fill: true, stereo: 0.08, size: 110, dist: 24.0, speed: 25, thick: 3, anim: 'saccade_vergence' },
         
         // ⭐【高級】8-10 階：階躍增壓、強效引入 Y 軸垂直微量視差 (精準校正微量垂直空間代償)
         { name: 'O-08 垂直極限微調 I (輕度 0.3Δ 垂直微擾)', shape: 'nested_dodeca', axis: 'horizontal', mode: 'crossover', fill: false, stereo: 0.05, size: 140, dist: 28.0, speed: 20, thick: 5, anim: 'vertical_tune_light' },
@@ -102,7 +102,7 @@ export const AIM_MATRIX = {
     'KeyP': [
         // ⭐【初級】1-3 階：基礎 BOP 模擬、低量字庫調節、大尺寸高對比 (初步拉開調節阻力)
         { name: 'P-01 BOP 模擬 I (高頻視標動態錨點)', shape: 'text', axis: 'horizontal', mode: 'oneway_bo', fill: false, stereo: 0.02, size: 260, dist: 4.0, speed: 12, thick: 8, anim: 'text_bop' },
-        { name: 'P-02 感覺交替 I (高對比晶體跳視)', shape: 'nested_dodeca', axis: 'saccade', mode: 'oneway_bo', fill: true, stereo: 0.04, size: 220, dist: 6.0, speed: 0, thick: 5, anim: 'none' },
+        { name: 'P-02 感覺交替 I (高對比晶體跳視)', shape: 'nested_dodeca', axis: 'saccade', mode: 'oneway_bo', fill: true, stereo: 0.04, size: 220, dist: 6.0, speed: 15, thick: 5, anim: 'none' },
         { name: 'P-03 BOP 模擬 II (視標中等字級對焦)', shape: 'text', axis: 'horizontal', mode: 'oneway_bo', fill: false, stereo: 0.04, size: 200, dist: 8.0, speed: 15, thick: 7, anim: 'text_bop' },
         
         // ⭐【中級】4-7 階：BIM 散開加入、文字急跳對焦、幾何空間漫遊 (放鬆睫狀肌高張力、恢復動態對焦)
@@ -111,8 +111,9 @@ export const AIM_MATRIX = {
         { name: 'P-06 BIM 模擬 II (細微視標反向增壓)', shape: 'text', axis: 'horizontal', mode: 'oneway_bi', fill: false, stereo: -0.04, size: 140, dist: -4.0, speed: 16, thick: 6, anim: 'text_bim' },
         { name: 'P-07 綜合活化 (幾何反向呼吸與解綁)', shape: 'sphere5', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.06, size: 180, dist: 20.0, speed: 20, thick: 5, anim: 'breathing_fractal' },
         
-// ⭐【高級】8-10 階：跳視對焦、3D動態追視、虛擬翻轉鏡 (純粹睫狀肌榨取，徹底解構 AC/A 異常綁定反射)
-        { name: 'P-08 全境負荷 I (跳視定錨瞬間對焦)', shape: 'text', axis: 'saccade', mode: 'crossover', fill: false, stereo: 0.10, size: 130, dist: 28.0, speed: 0, thick: 5, anim: 'text_saccade' },
+        // ⭐【高級】8-10 階：跳視對焦、3D動態追視、虛擬翻轉鏡 (純粹睫狀肌榨取，徹底解構 AC/A 異常綁定反射)
+        { name: 'P-08 全境負荷 I (跳視定錨瞬間對焦)', shape: 'text', axis: 'saccade', mode: 'crossover', fill: false, stereo: 0.10, size: 130, dist: 28.0, speed: 15, thick: 5, anim: 'text_saccade' },
         { name: 'P-09 全境負荷 II (3D 緩速追視推拉)', shape: 'text', axis: 'circular', mode: 'crossover', fill: false, stereo: 0.12, size: 110, dist: 34.0, speed: 10, thick: 4, anim: 'text_trombone' },
         { name: 'P-10 全境負荷 III (虛擬翻轉鏡極限解綁)', shape: 'text', axis: 'horizontal', mode: 'crossover', fill: false, stereo: 0.15, size: 90, dist: 40.0, speed: 0, thick: 3, anim: 'text_flipper_fast' }
-        };
+    ]
+};
