@@ -116,4 +116,3 @@ export const AIM_MATRIX = {
         { name: 'P-09 全境負荷 II (3D 緩速追視推拉)', shape: 'text', axis: 'circular', mode: 'crossover', fill: false, stereo: 0.12, size: 110, dist: 34.0, speed: 10, thick: 4, anim: 'text_trombone' },
         { name: 'P-10 全境負荷 III (虛擬翻轉鏡極限解綁)', shape: 'text', axis: 'horizontal', mode: 'crossover', fill: false, stereo: 0.15, size: 90, dist: 40.0, speed: 0, thick: 3, anim: 'text_flipper_fast' }
         };
-}
