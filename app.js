@@ -1,7 +1,6 @@
-// app.js - AXP Fusion Dynamics (v20.6 - Fullscreen Q-Key Unlock)
-// 修正：新增 Q 鍵一鍵全螢幕/退出全螢幕快捷功能
-// 修正：Supabase 寫入修復，將姓名夾帶至 raw_data 中
-// 優化：採用【陣列改序法】，強迫姓名顯示在 Supabase 預覽的最前端！
+// app.js - AXP Fusion Dynamics (v21.0 - SaaS Data Structure & Neuro-Crystal Optimized)
+// 優化：徹底抹除不對稱的 rock 幾何雜訊，確保 V1 視覺皮層的絕對物理對稱性
+// 重構：修復 Supabase 寫入的反模式，將 raw_data 升級為標準的關聯式 JSON Schema
 
 import { AIM_MATRIX, PROTOCOL_NAMES } from './matrix.js';
 import { createTarget } from './shapes.js';
@@ -552,18 +551,22 @@ function showClinicalReport(logs, totalTime, protocolName) {
     document.getElementById('close-report-btn').addEventListener('click', () => { document.body.removeChild(reportOverlay); executeReset(); });
 }
 
-// 💡 【CTO 核心修復區】：採用「陣列[ ]」包裹，強迫姓名資料永遠置頂，在後台一秒目視！
+// 💡 【CTO 核心升級區】：捨棄陣列外殼，建立符合 RESTful API 標準的 JSON Object Schema
 async function uploadToSupabase() {
     if (sessionLogs.length === 0) return alert("尚無測驗數據！");
     
     const finalTime = totalTimerSec; 
     const finalProtocol = activeProtocol ? PROTOCOL_NAMES[activeProtocol] : 'MANUAL_MODE';
     
-    // 💡 關鍵魔術：用中括號 [ ] 取代大括號 { }，確保順序不被 PostgreSQL 重新打亂
-    const payloadData = [
-        { patient_name: currentPatientCode }, // 名字放第一個，在預覽行絕對直接秀出來！
-        { logs: [...sessionLogs] }            // 測驗明細跟在後面
-    ];
+    // 💡 關鍵魔術：採用標準 JSON Schema，讓機器學習引擎能順暢讀取
+    const payloadData = {
+        patient_id: currentPatientCode,
+        environmental_setup: {
+            prism_base: document.getElementById('prism-slider')?.value || 0,
+            anaglyph_balance: document.getElementById('balance-slider')?.value || 50
+        },
+        clinical_logs: [...sessionLogs]
+    };
 
     isRunning = false; 
     cancelAnimationFrame(animationId); 
@@ -571,19 +574,19 @@ async function uploadToSupabase() {
     if(statusText) { statusText.innerText = "UPLOADING TO SUPABASE..."; statusText.style.color = "#38bdf8"; }
     
     try {
-// 寫入 Supabase：這次我們除了 raw_data，還把名字直接寫進全新的 patient_code 欄位！
-const { data, error } = await supabase.from('training_sessions').insert([{ 
-    duration_sec: finalTime, 
-    protocol_name: finalProtocol, 
-    raw_data: payloadData,
-    patient_code: currentPatientCode  // 👈 新增這一行！直接對接你剛創的欄位
-}]);
+        // 寫入 Supabase：完美對接你已建立的欄位結構
+        const { data, error } = await supabase.from('training_sessions').insert([{ 
+            duration_sec: finalTime, 
+            protocol_name: finalProtocol, 
+            raw_data: payloadData,
+            patient_code: currentPatientCode  
+        }]);
         
         if (error) throw error;
         
         if(statusText) { statusText.innerText = "UPLOAD SUCCESSFUL"; statusText.style.color = "#4ade80"; }
-        // 注意：因為外殼改成陣列，彈出報告要抓 payloadData[1].logs 的明細
-        showClinicalReport(payloadData[1].logs, finalTime, finalProtocol);
+        // 注意：報告渲染已改為抓取 payloadData.clinical_logs
+        showClinicalReport(payloadData.clinical_logs, finalTime, finalProtocol);
         sessionLogs = []; 
     } catch (err) {
         console.error("Supabase Upload Error:", err);
@@ -804,8 +807,8 @@ function animate(time) {
     }
 
     if(targetLeft && targetRight) {
-        targetLeft.children.forEach((layer, index) => { if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere') || shapeSelect.value.includes('rock')) && isRotating) { layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01); layer.rotation.y += 0.015; } });
-        targetRight.children.forEach((layer, index) => { if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere') || shapeSelect.value.includes('rock')) && isRotating) { layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01); layer.rotation.y += 0.015; } });
+        targetLeft.children.forEach((layer, index) => { if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere')) && isRotating) { layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01); layer.rotation.y += 0.015; } });
+        targetRight.children.forEach((layer, index) => { if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere')) && isRotating) { layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01); layer.rotation.y += 0.015; } });
     }
     
     updatePositions(phase, currentAnim); 
