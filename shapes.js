@@ -1,6 +1,6 @@
-// shapes.js - AXP Fusion Dynamics: WebGL 3D 臨床高階醫療版 (v21.0 - Neuro-Crystal Optimized)
-// 徹底移除不規則隕石 (rock) 雜訊，極致優化 3D 幾何記憶體佔用與粒子文字共用材質
-// 導入 crystal8 (雙層八面神經晶體)，確保絕對對稱的視網膜滑動與 V1 皮層對角線高頻刺激
+// shapes.js - AXP Fusion Dynamics: WebGL 3D 臨床高階醫療版 (v22.0 - Neuro-Quantum Optimized)
+// 徹底移除不規則隕石雜訊，極致優化 3D 幾何記憶體佔用與粒子文字共用材質
+// 導入 crystal8 (雙層八面晶體), torusKnot (無盡紐結), nested_dodeca (嵌套量子核)，對接高階神經迴路
 
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
 
@@ -80,9 +80,8 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness) 
         }
     }
     else if (shapeType === 'glossysphere') {
-        // 🚀 執行長專屬：SILO 專用高光實體晶球 (單層、極高面數、完美光滑)
         const radius = 70;
-        const geo = new THREE.SphereGeometry(radius, 64, 64); // 超高網格面數
+        const geo = new THREE.SphereGeometry(radius, 64, 64);
         const mesh = new THREE.Mesh(geo, glossyMaterial);
         mesh.rotation.set(0.5, 0.5, 0);
         rootGroup.add(mesh);
@@ -134,7 +133,7 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness) 
         let layerOuter, layerInner;
         if (isFilled) {
             layerOuter = new THREE.Mesh(geoOuter, solidMaterial);
-            layerInner = new THREE.Mesh(geoInner, glossyMaterial); // 內核高光反射誘發立體深度
+            layerInner = new THREE.Mesh(geoInner, glossyMaterial); 
         } else {
             layerOuter = createWireframeTubes(geoOuter, thickness);
             layerInner = createWireframeTubes(geoInner, Math.max(1, thickness * 0.7));
@@ -146,8 +145,39 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness) 
         rootGroup.add(layerOuter);
         rootGroup.add(layerInner);
     }
+    else if (shapeType === 'torusKnot') {
+        // 🚀 無盡紐結 (Neuro-Knot)：無斷點連續空間幾何
+        const geoKnot = new THREE.TorusKnotGeometry(45, 12, 128, 16);
+        let meshKnot;
+        if (isFilled) {
+            meshKnot = new THREE.Mesh(geoKnot, solidMaterial);
+        } else {
+            meshKnot = createWireframeTubes(geoKnot, thickness);
+        }
+        rootGroup.add(meshKnot);
+    }
+    else if (shapeType === 'nested_dodeca') {
+        // 🚀 嵌套量子核 (Quantum Core)：正十二面體多邊深角鎖定
+        const geoOuter = new THREE.DodecahedronGeometry(80, 0);
+        const geoInner = new THREE.DodecahedronGeometry(40, 0);
+
+        let layerOuter, layerInner;
+        if (isFilled) {
+            layerOuter = new THREE.Mesh(geoOuter, solidMaterial);
+            layerInner = new THREE.Mesh(geoInner, glossyMaterial); 
+        } else {
+            layerOuter = createWireframeTubes(geoOuter, thickness);
+            layerInner = createWireframeTubes(geoInner, Math.max(1, thickness * 0.8));
+        }
+
+        layerOuter.rotation.set(0.2, 0.3, 0);
+        layerInner.rotation.set(-0.2, -0.3, 0);
+
+        rootGroup.add(layerOuter);
+        rootGroup.add(layerInner);
+    }
     else if (shapeType === 'text') {
-        // 🚀 高解析度立體文字 (256x64)：支援 12 字元長字串渲染與隨機動態字庫
+        // 🚀 高頻視標立體文字 (256x64)：支援隨機動態字庫，鎖定自轉
         const canvas = document.createElement('canvas');
         canvas.width = 256; 
         canvas.height = 64; 
@@ -158,12 +188,11 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness) 
         ctx.textBaseline = 'middle';
         ctx.textAlign = 'center';
         
-        ctx.fillText((textStr || 'AXP').substring(0, 12), 128, 32); 
+        ctx.fillText((textStr || 'A X P').substring(0, 12), 128, 32); 
         
         const imgData = ctx.getImageData(0, 0, 256, 64).data;
         const radius = Math.max(1.0, thickness * 0.25);
         
-        // 粒子共用幾何與材質，避免 Memory Leak
         const boxGeo = new THREE.BoxGeometry(radius*2, radius*2, radius*5); 
 
         const textGroup = new THREE.Group(); 
@@ -173,7 +202,6 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness) 
                 if (imgData[i] > 128) {
                     const mesh = new THREE.Mesh(boxGeo, lineMaterial);
                     const depth = (Math.random() - 0.5) * 15; 
-                    // 粒子原點置中對齊
                     mesh.position.set((x - 128) * 1.2, (32 - y) * 1.2, depth);
                     textGroup.add(mesh);
                 }
