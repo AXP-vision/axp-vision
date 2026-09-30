@@ -111,8 +111,9 @@ export const AIM_MATRIX = {
         { name: 'P-06 BIM 模擬 II (細微視標反向增壓)', shape: 'text', axis: 'horizontal', mode: 'oneway_bi', fill: false, stereo: -0.04, size: 140, dist: -4.0, speed: 16, thick: 6, anim: 'text_bim' },
         { name: 'P-07 綜合活化 (幾何反向呼吸與解綁)', shape: 'sphere5', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.06, size: 180, dist: 20.0, speed: 20, thick: 5, anim: 'breathing_fractal' },
         
-// ⭐【高級】8-10 階：鎖死視標、極端物理張力、純粹睫狀肌榨取 (徹底解構 AC/A 異常綁定反射)
-        { name: 'P-08 全境負荷 I (高頻視標動態推拉)', shape: 'text', axis: 'horizontal', mode: 'crossover', fill: false, stereo: 0.08, size: 130, dist: 28.0, speed: 20, thick: 5, anim: 'trombone' },
-        { name: 'P-09 全境負荷 II (極微視標瞬間急跳)', shape: 'text', axis: 'saccade', mode: 'crossover', fill: false, stereo: 0.12, size: 110, dist: 34.0, speed: 0, thick: 4, anim: 'text_bop' },
-        { name: 'P-10 全境負荷 III (極限視標深空定錨)', shape: 'text', axis: 'horizontal', mode: 'crossover', fill: false, stereo: 0.15, size: 90, dist: 40.0, speed: 10, thick: 3, anim: 'breathing_fractal' }    ]
-};
+// ⭐【高級】8-10 階：跳視對焦、3D動態追視、虛擬翻轉鏡 (純粹睫狀肌榨取，徹底解構 AC/A 異常綁定反射)
+        { name: 'P-08 全境負荷 I (跳視定錨瞬間對焦)', shape: 'text', axis: 'saccade', mode: 'crossover', fill: false, stereo: 0.10, size: 130, dist: 28.0, speed: 0, thick: 5, anim: 'text_saccade' },
+        { name: 'P-09 全境負荷 II (3D 緩速追視推拉)', shape: 'text', axis: 'circular', mode: 'crossover', fill: false, stereo: 0.12, size: 110, dist: 34.0, speed: 10, thick: 4, anim: 'text_trombone' },
+        { name: 'P-10 全境負荷 III (虛擬翻轉鏡極限解綁)', shape: 'text', axis: 'horizontal', mode: 'crossover', fill: false, stereo: 0.15, size: 90, dist: 40.0, speed: 0, thick: 3, anim: 'text_flipper_fast' }
+        };
+}
