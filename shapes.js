@@ -1,9 +1,8 @@
-// shapes.js - AXP Fusion Dynamics: WebGL 3D 臨床高階醫療版 (v20.0 - Performance Optimized)
-// 徹底移除不必要的複雜干擾圖形，極致優化 3D 幾何記憶體佔用與粒子文字共用材質
+// shapes.js - AXP Fusion Dynamics: WebGL 3D 臨床高階醫療版 (v21.0 - Neuro-Crystal Optimized)
+// 徹底移除不規則隕石 (rock) 雜訊，極致優化 3D 幾何記憶體佔用與粒子文字共用材質
+// 導入 crystal8 (雙層八面神經晶體)，確保絕對對稱的視網膜滑動與 V1 皮層對角線高頻刺激
 
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
-// 備註：若使用 CDN r128，全域已有 THREE，此處的 import 在模組化環境中可確保相容性
-// 在你的 index.html 中已經透過 <script> 引入了 THREE，因此也可以直接使用全域的 THREE。
 
 // 🚀 建立具有物理粗細的實體線框管 (突破 WebGL 1px 限制，確保濾光鏡下的最高對比度)
 function createWireframeTubes(geometry, thickness) {
@@ -127,29 +126,25 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness) 
             rootGroup.add(layerMesh);
         }
     }
-    else if (shapeType.startsWith('rock')) {
-        const rockLayers = Math.min(layers, 3); 
-        for (let i = 0; i < rockLayers; i++) {
-            const radius = 50 + i * 45;
-            const geo = new THREE.IcosahedronGeometry(radius, 1);
-            
-            const pos = geo.attributes.position;
-            const vec = new THREE.Vector3();
-            for (let v = 0; v < pos.count; v++) {
-                vec.fromBufferAttribute(pos, v);
-                const noise = 1 + (Math.random() - 0.5) * 0.35; 
-                vec.normalize().multiplyScalar(radius * noise);
-                pos.setXYZ(v, vec.x, vec.y, vec.z);
-            }
-            geo.computeVertexNormals();
+    else if (shapeType === 'crystal8') {
+        // 🚀 雙層八面神經晶體 (Neuro-Crystal) - 絕對對稱與 V1 對角線刺激
+        const geoOuter = new THREE.OctahedronGeometry(90, 0);
+        const geoInner = new THREE.OctahedronGeometry(45, 0);
 
-            let layerMesh;
-            if (isFilled) layerMesh = new THREE.Mesh(geo, solidMaterial);
-            else layerMesh = createWireframeTubes(geo, thickness);
-            
-            layerMesh.rotation.set(Math.random() * 2, Math.random() * 2, 0);
-            rootGroup.add(layerMesh);
+        let layerOuter, layerInner;
+        if (isFilled) {
+            layerOuter = new THREE.Mesh(geoOuter, solidMaterial);
+            layerInner = new THREE.Mesh(geoInner, glossyMaterial); // 內核高光反射誘發立體深度
+        } else {
+            layerOuter = createWireframeTubes(geoOuter, thickness);
+            layerInner = createWireframeTubes(geoInner, Math.max(1, thickness * 0.7));
         }
+
+        layerOuter.rotation.set(Math.PI / 4, 0, Math.PI / 4);
+        layerInner.rotation.set(Math.PI / 4, 0, Math.PI / 4);
+
+        rootGroup.add(layerOuter);
+        rootGroup.add(layerInner);
     }
     else if (shapeType === 'text') {
         // 🚀 高解析度立體文字 (256x64)：支援 12 字元長字串渲染與隨機動態字庫
