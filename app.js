@@ -1,6 +1,6 @@
-// app.js - AXP Fusion Dynamics (v22.0 - SaaS Data Structure & Optotype Rotation Lock)
-// 重構：修復 Supabase 寫入的反模式，將 raw_data 升級為標準的關聯式 JSON Schema
-// 修正：徹底拔除可預測字庫，改為高頻醫療視標，並強制鎖死文字旋轉，確保睫狀肌調節極限
+// app.js - AXP Fusion Dynamics (v23.0 - SaaS MOT Engine & Physics Fixed)
+// 重構：導入 distractors (干擾物) 解析與獨立軌跡運算，對接 KeyU 宏觀多目標感知模組
+// 修正：鎖死高頻視標自轉、修復 Saccade 稜鏡死鎖，確保極限解綁張力精準輸出
 
 import { AIM_MATRIX, PROTOCOL_NAMES } from './matrix.js';
 import { createTarget } from './shapes.js';
@@ -89,11 +89,11 @@ document.getElementById('arena').appendChild(siloPrompt);
 // 引擎與臨床全域狀態變數
 let isRunning = false, animationId;
 let currentSize = 200, currentSpeed = 20, currentStereo = 0, currentThick = 9.0;
+let currentDistractors = 0; // 🚀 MOT 干擾物數量
 let isRotating = true, isFilled = false;
 let activeProtocol = null, protocolStage = 0, protocolTime = 0, totalTimerSec = 0, lastTime = 0, phase = 0;
 let currentSaccadeX = 0, currentSaccadeY = 0, saccadeTimer = 0, currentRoamX = 0, currentRoamY = 0;
 
-// 內部隱藏的軌跡與模式變數
 let currentAxis = 'horizontal';
 let currentMode = 'crossover';
 
@@ -104,7 +104,6 @@ let taskInitialPrism = "";
 
 let consecutiveHits = 0;
 let consecutiveMisses = 0;
-
 let isAIRescueActive = false;
 let aiRescueStartTime = 0;
 let originalSizeBeforeRescue = 200;
@@ -114,7 +113,7 @@ let protocolTimePausedVal = 0;
 let flipperTimer = 0;
 let flipperState = true; 
 
-// 🚀 CTO 修正：高頻醫療級無意義字串 (Optotypes)
+// 高頻醫療級無意義字串 (Optotypes)
 const AXP_WORDS = ['H O T V', 'Z R K D', 'E M C W', 'S N E L', 'O S V D', 'N H Z O', 'A X 7 P', '9 Q 2 M'];
 let currentWordIndex = 0;
 let lastWordChangeTime = 0;
@@ -213,17 +212,18 @@ starsLeft.layers.set(1); starsRight.layers.set(2);
 scene.add(starsLeft); scene.add(starsRight);
 
 let targetLeft, targetRight;
+let distractorGroupLeft = new THREE.Group();
+let distractorGroupRight = new THREE.Group();
+let distractorData = []; // 儲存干擾物的獨立軌跡相量
 
-// 測驗原點修正 (高對比黑圈底 + 無視深度)
+// 測驗原點修正
 const cueGroupLeft = new THREE.Group();
 const cueGroupRight = new THREE.Group();
-
 const cueOutlineGeo = new THREE.CircleGeometry(1.4, 32);
 const cueOutlineMatLeft = new THREE.MeshBasicMaterial({ color: 0x000000, depthTest: false, depthWrite: false });
 const cueOutlineMatRight = new THREE.MeshBasicMaterial({ color: 0x000000, depthTest: false, depthWrite: false });
 const outlineLeft = new THREE.Mesh(cueOutlineGeo, cueOutlineMatLeft);
 const outlineRight = new THREE.Mesh(cueOutlineGeo, cueOutlineMatRight);
-
 const cueDotGeo = new THREE.CircleGeometry(1, 32); 
 const cueDotMatLeft = new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, depthWrite: false }); 
 const cueDotMatRight = new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, depthWrite: false });
@@ -232,15 +232,14 @@ const dotRight = new THREE.Mesh(cueDotGeo, cueDotMatRight);
 
 outlineLeft.renderOrder = 998; outlineRight.renderOrder = 998;
 dotLeft.renderOrder = 999; dotRight.renderOrder = 999;
-
 outlineLeft.layers.set(1); dotLeft.layers.set(1);
 outlineRight.layers.set(2); dotRight.layers.set(2);
 
 cueGroupLeft.add(outlineLeft); cueGroupLeft.add(dotLeft);
 cueGroupRight.add(outlineRight); cueGroupRight.add(dotRight);
-
 cueGroupLeft.visible = false; cueGroupRight.visible = false; 
 scene.add(cueGroupLeft); scene.add(cueGroupRight);
+scene.add(distractorGroupLeft); scene.add(distractorGroupRight);
 
 function forceRenderFrame() {
     if (isRunning) return; 
@@ -288,6 +287,15 @@ function updateOpticsFromUI() {
 function clearTargets() {
     if (targetLeft) { targetLeft.traverse(child => { if(child.isMesh) { child.geometry?.dispose(); child.material?.dispose(); }}); scene.remove(targetLeft); }
     if (targetRight) { targetRight.traverse(child => { if(child.isMesh) { child.geometry?.dispose(); child.material?.dispose(); }}); scene.remove(targetRight); }
+    
+    // 清除干擾物
+    while(distractorGroupLeft.children.length > 0){ 
+        const c = distractorGroupLeft.children[0]; c.geometry?.dispose(); c.material?.dispose(); distractorGroupLeft.remove(c); 
+    }
+    while(distractorGroupRight.children.length > 0){ 
+        const c = distractorGroupRight.children[0]; c.geometry?.dispose(); c.material?.dispose(); distractorGroupRight.remove(c); 
+    }
+    distractorData = [];
 }
 
 function buildTargets() {
@@ -296,13 +304,40 @@ function buildTargets() {
     const shapeVal = shapeSelect ? shapeSelect.value : 'sphere5';
     const txtVal = customTextInput ? customTextInput.value : 'A X P';
     
+    // 主視標生成
     targetLeft = createTarget(shapeVal, 0xffffff, isFilled, txtVal, currentThick);
     targetRight = createTarget(shapeVal, 0xffffff, isFilled, txtVal, currentThick);
     
     targetLeft.traverse(c => { c.layers.set(1); if(c.isMesh) { c.material.blending = THREE.NormalBlending; c.material.color.setHex(0xffffff); } });
     targetRight.traverse(c => { c.layers.set(2); if(c.isMesh) { c.material.blending = THREE.NormalBlending; c.material.color.setHex(0xffffff); } });
 
-    updateScaleAndThickness(); scene.add(targetLeft); scene.add(targetRight); updateOpticsFromUI(); 
+    // 🚀 MOT 干擾物生成 (動態雜訊建置)
+    if (currentDistractors > 0) {
+        const distMatLeft = new THREE.MeshBasicMaterial({ color: 0x888888, wireframe: !isFilled, transparent: true, opacity: 0.5 });
+        const distMatRight = new THREE.MeshBasicMaterial({ color: 0x888888, wireframe: !isFilled, transparent: true, opacity: 0.5 });
+        const distGeo = new THREE.IcosahedronGeometry(1, 0); // 基準大小
+
+        for (let i = 0; i < currentDistractors; i++) {
+            const meshL = new THREE.Mesh(distGeo, distMatLeft);
+            const meshR = new THREE.Mesh(distGeo, distMatRight);
+            meshL.layers.set(1); meshR.layers.set(2);
+            distractorGroupLeft.add(meshL); distractorGroupRight.add(meshR);
+            
+            // 賦予獨立物理相量
+            distractorData.push({
+                phaseOffset: Math.random() * Math.PI * 2,
+                speedMultiplier: 0.5 + Math.random() * 1.5,
+                orbitRadiusX: 100 + Math.random() * 250,
+                orbitRadiusY: 80 + Math.random() * 200,
+                zOffset: (Math.random() - 0.5) * 100,
+                baseSize: 40 + Math.random() * 60
+            });
+        }
+    }
+
+    updateScaleAndThickness(); 
+    scene.add(targetLeft); scene.add(targetRight); 
+    updateOpticsFromUI(); 
 }
 
 function updateScaleAndThickness(dynamicSize = currentSize) {
@@ -322,6 +357,16 @@ function updateScaleAndThickness(dynamicSize = currentSize) {
             });
         });
     }
+
+    // 更新干擾物基礎尺寸
+    for (let i = 0; i < currentDistractors; i++) {
+        if(distractorGroupLeft.children[i]) {
+            const dSize = distractorData[i].baseSize * scaleFactor * 0.7; // 干擾物略小於主體
+            distractorGroupLeft.children[i].scale.set(dSize, dSize, dSize);
+            distractorGroupRight.children[i].scale.set(dSize, dSize, dSize);
+        }
+    }
+
     const cueScale = Math.max(12, dynamicSize * 0.04); 
     cueGroupLeft.scale.set(cueScale, cueScale, 1); 
     cueGroupRight.scale.set(cueScale, cueScale, 1);
@@ -332,7 +377,6 @@ function updatePositions(phaseVal, currentAnim = '') {
     const maxPrismLoad = parseFloat(prismSlider ? prismSlider.value : 0);
     let targetPrismDemand = maxPrismLoad;
 
-    // 支援波形運算
     if (isRunning) {
         if (aiToggle && aiToggle.checked && currentAnim.includes('flipper')) {
             targetPrismDemand = flipperState ? maxPrismLoad : -maxPrismLoad * 0.2;
@@ -368,7 +412,7 @@ function updatePositions(phaseVal, currentAnim = '') {
         const orbitY = Math.sin(phaseVal) * Math.abs(totalSeparationPx * 0.25);
         pxLeftX = disp + orbitX; pxRightX = -disp + orbitX; pxLeftY = orbitY; pxRightY = orbitY;
     } 
-    else { pxLeftX = disp; pxRightX = -disp; } // horizontal
+    else { pxLeftX = disp; pxRightX = -disp; }
 
     let finalLeftX = pxLeftX + currentRoamX + currentSaccadeX; let finalLeftY = pxLeftY + currentRoamY + currentSaccadeY;
     let finalRightX = pxRightX + currentRoamX + currentSaccadeX; let finalRightY = pxRightY + currentRoamY + currentSaccadeY;
@@ -406,6 +450,31 @@ function updatePositions(phaseVal, currentAnim = '') {
             let hudText = `${horizontalPrism.toFixed(1)} Δ (${hPrismDir})`;
             if (Math.abs(currentSepY) > 0.5) { hudText += ` | ↕ ${verticalPrism.toFixed(1)} Δ`; }
             prismValHud.innerText = hudText;
+        }
+    }
+
+    // 🚀 更新干擾物獨立漫遊軌跡
+    for (let i = 0; i < currentDistractors; i++) {
+        const dData = distractorData[i];
+        const dPhase = (protocolTime / 1000) * dData.speedMultiplier + dData.phaseOffset;
+        
+        // 干擾物在全螢幕空間進行獨立的李薩如漫遊，並帶有深度變化
+        const dX = Math.sin(dPhase) * dData.orbitRadiusX;
+        const dY = Math.cos(dPhase * 1.3) * dData.orbitRadiusY;
+        const dZ = Math.sin(dPhase * 0.7) * dData.zOffset;
+
+        // 立體視偏移
+        const dStereoDisp = (currentStereo * 10) * (dZ > 0 ? 1 : -1); 
+
+        if (distractorGroupLeft.children[i]) {
+            distractorGroupLeft.children[i].position.set(dX + dStereoDisp, dY, dZ);
+            distractorGroupLeft.children[i].rotation.x += 0.02;
+            distractorGroupLeft.children[i].rotation.y += 0.01;
+        }
+        if (distractorGroupRight.children[i]) {
+            distractorGroupRight.children[i].position.set(dX - dStereoDisp, dY, dZ);
+            distractorGroupRight.children[i].rotation.x += 0.02;
+            distractorGroupRight.children[i].rotation.y += 0.01;
         }
     }
 
@@ -480,7 +549,9 @@ function handleTaskResult(result, rt = 0) {
     }
     
     if(!isAIRescueActive && statusText) statusText.innerText = logMsg;
-    sessionLogs.push({ time: totalTimerSec.toString(), initial_sep: "0", initial_prism: taskInitialPrism, response_sep: "0", response_prism: currentPrismStr, reaction_time: rt, stereo: currentStereo.toFixed(2), size: currentSize.toFixed(1), status: statusLabel, eye: taskEye });
+    
+    // 寫入日誌時，包含 distractors 狀態
+    sessionLogs.push({ time: totalTimerSec.toString(), initial_sep: "0", initial_prism: taskInitialPrism, response_sep: "0", response_prism: currentPrismStr, reaction_time: rt, stereo: currentStereo.toFixed(2), size: currentSize.toFixed(1), status: statusLabel, eye: taskEye, distractors: currentDistractors });
 
     if (!isAIRescueActive) {
         if(statusTimeout) clearTimeout(statusTimeout);
@@ -552,18 +623,20 @@ function showClinicalReport(logs, totalTime, protocolName) {
     document.getElementById('close-report-btn').addEventListener('click', () => { document.body.removeChild(reportOverlay); executeReset(); });
 }
 
-// 💡 寫入 JSON Object Schema
 async function uploadToSupabase() {
     if (sessionLogs.length === 0) return alert("尚無測驗數據！");
     
     const finalTime = totalTimerSec; 
     const finalProtocol = activeProtocol ? PROTOCOL_NAMES[activeProtocol] : 'MANUAL_MODE';
     
+    // 💡 預埋 distractors (干擾物數量) 於 payload
     const payloadData = {
         patient_id: currentPatientCode,
         environmental_setup: {
             prism_base: document.getElementById('prism-slider')?.value || 0,
-            anaglyph_balance: document.getElementById('balance-slider')?.value || 50
+            anaglyph_balance: document.getElementById('balance-slider')?.value || 50,
+            target_count: 1,
+            distractor_count: currentDistractors
         },
         clinical_logs: [...sessionLogs]
     };
@@ -645,6 +718,8 @@ function disableAI() {
     
     currentAxis = 'horizontal';
     currentMode = 'crossover';
+    currentDistractors = 0; // 手動模式預設關閉干擾物
+    buildTargets();
     
     siloPrompt.style.display = 'none'; 
     if(isAIRescueActive) endAIRescue();
@@ -661,6 +736,9 @@ function loadMatrixStage(protocol, stage) {
     
     currentAxis = config.axis || 'horizontal';
     currentMode = config.mode || 'crossover';
+    
+    // 讀取 MOT 干擾物設定 (預設 0)
+    currentDistractors = config.distractors || 0;
 
     if(fillCheckbox) fillCheckbox.checked = config.fill; isFilled = config.fill;
     
@@ -804,7 +882,6 @@ function animate(time) {
 
     if(targetLeft && targetRight) {
         targetLeft.children.forEach((layer, index) => { 
-            // 🚀 新武器動態擾動與本體自轉判定
             if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere') || shapeSelect.value === 'nested_dodeca' || shapeSelect.value === 'torusKnot') && isRotating) { 
                 layer.rotation.x += (index % 2 === 0 ? 0.01 : -0.01); 
                 layer.rotation.y += 0.015; 
@@ -820,7 +897,7 @@ function animate(time) {
     
     updatePositions(phase, currentAnim); 
     
-    // 🚀 CTO 修正：強制鎖死 text 的旋轉，維持高頻空間視網膜成像的銳利度
+    // 鎖死 text 的旋轉
     if (isRotating && shapeSelect?.value !== 'text') { 
         targetLeft.rotation.z = phase * 0.5; 
         targetRight.rotation.z = phase * 0.5; 
@@ -862,6 +939,7 @@ function executeReset() {
     consecutiveHits = 0; consecutiveMisses = 0;
     
     currentSize = 200; currentSpeed = 20; currentStereo = 0; currentThick = 9.0;
+    currentDistractors = 0; 
     currentSaccadeX = 0; currentSaccadeY = 0; currentRoamX = 0; currentRoamY = 0; phase = 0;
     isRotating = true; isFilled = false; sessionLogs = []; isAIRescueActive = false;
     
