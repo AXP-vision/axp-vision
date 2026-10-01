@@ -1,11 +1,12 @@
-// app.js - AXP Fusion Dynamics (v23.0 - SaaS MOT Engine & Physics Fixed)
-// 重構：導入 distractors (干擾物) 解析與獨立軌跡運算，對接 KeyU 宏觀多目標感知模組
-// 修正：鎖死高頻視標自轉、修復 Saccade 稜鏡死鎖，確保極限解綁張力精準輸出
+// app.js - AXP Fusion Dynamics (v23.1 - 終極 MOT 多目標立體對應引擎)
+// 核心升級：徹底解決紫影 (Purple Artifact) 與物理死角，將干擾物升級為獨立的紅藍 3D 實體視標群
+// 數據基建：Supabase 負載端已預埋 distractors，完美對接 KeyU 1-9 階宏觀感知矩陣
 
 import { AIM_MATRIX, PROTOCOL_NAMES } from './matrix.js';
 import { createTarget } from './shapes.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
+// === SaaS 後端資料庫配置 ===
 const supabaseUrl = 'https://wvholwcyrldixlsgoege.supabase.co';
 const supabaseKey = 'sb_publishable_BozJ84tPQF-jBHGKtXKqgw_ELodM54e';
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -18,17 +19,17 @@ loginOverlay.innerHTML = `
     <h1 style="color:#0f172a; letter-spacing:2px; margin-bottom:10px;">AXP FUSION DYNAMICS</h1>
     <p style="color:#475569; margin-bottom:30px; font-weight:bold;">企業級雙眼視覺雲端診療系統</p>
     <div style="background:#ffffff; padding:40px; border-radius:12px; text-align:center; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
-        <p style="margin-bottom:15px; font-size:14px; font-weight:bold; color:#64748b;">請輸入姓名加生日</p>
+        <p style="margin-bottom:15px; font-size:14px; font-weight:bold; color:#64748b;">請輸入病患/專家代碼</p>
         <input type="text" id="patient-code-input" placeholder="例如: 凡特錫0123" style="background-color:#f1f5f9; padding:12px; width:220px; text-align:center; border-radius:6px; border:1px solid #cbd5e1; margin-bottom:25px; font-size:16px; font-weight:bold; color:#475569; outline:none; transition:0.2s;">
         <br>
-        <button id="login-btn" style="background:#2563eb; color:white; border:none; padding:12px 30px; border-radius:6px; font-size:16px; cursor:pointer; font-weight:bold; transition:0.3s; box-shadow: 0 4px 6px rgba(37,99,235,0.2);">登入並開始訓練</button>
+        <button id="login-btn" style="background:#2563eb; color:white; border:none; padding:12px 30px; border-radius:6px; font-size:16px; cursor:pointer; font-weight:bold; transition:0.3s; box-shadow: 0 4px 6px rgba(37,99,235,0.2);">登入並啟動引擎</button>
     </div>
 `;
 document.body.appendChild(loginOverlay);
 
 function performLogin() {
     const code = document.getElementById('patient-code-input')?.value.trim();
-    if(!code) return alert("請輸入姓名與生日！");
+    if(!code) return alert("請輸入有效的認證代碼！");
     currentPatientCode = code; 
     loginOverlay.style.display = 'none'; 
 }
@@ -86,10 +87,10 @@ siloPrompt.id = 'silo-prompt';
 siloPrompt.style.cssText = "position:absolute; bottom:80px; left:50%; transform:translateX(-50%); font-size:18px; font-weight:bold; letter-spacing:2px; background:rgba(15, 23, 42, 0.85); backdrop-filter:blur(8px); padding:12px 24px; border-radius:12px; border:2px solid #4ade80; z-index:100; display:none; text-shadow: 0 0 10px rgba(0,0,0,0.5); text-align:center; transition: 0.3s; pointer-events:none;";
 document.getElementById('arena').appendChild(siloPrompt);
 
-// 引擎與臨床全域狀態變數
+// === 核心狀態變數 ===
 let isRunning = false, animationId;
 let currentSize = 200, currentSpeed = 20, currentStereo = 0, currentThick = 9.0;
-let currentDistractors = 0; // 🚀 MOT 干擾物數量
+let currentDistractors = 0; // MOT 模組變數
 let isRotating = true, isFilled = false;
 let activeProtocol = null, protocolStage = 0, protocolTime = 0, totalTimerSec = 0, lastTime = 0, phase = 0;
 let currentSaccadeX = 0, currentSaccadeY = 0, saccadeTimer = 0, currentRoamX = 0, currentRoamY = 0;
@@ -113,7 +114,7 @@ let protocolTimePausedVal = 0;
 let flipperTimer = 0;
 let flipperState = true; 
 
-// 高頻醫療級無意義字串 (Optotypes)
+// 高頻醫療級視標
 const AXP_WORDS = ['H O T V', 'Z R K D', 'E M C W', 'S N E L', 'O S V D', 'N H Z O', 'A X 7 P', '9 Q 2 M'];
 let currentWordIndex = 0;
 let lastWordChangeTime = 0;
@@ -214,7 +215,7 @@ scene.add(starsLeft); scene.add(starsRight);
 let targetLeft, targetRight;
 let distractorGroupLeft = new THREE.Group();
 let distractorGroupRight = new THREE.Group();
-let distractorData = []; // 儲存干擾物的獨立軌跡相量
+let distractorData = []; 
 
 // 測驗原點修正
 const cueGroupLeft = new THREE.Group();
@@ -288,7 +289,6 @@ function clearTargets() {
     if (targetLeft) { targetLeft.traverse(child => { if(child.isMesh) { child.geometry?.dispose(); child.material?.dispose(); }}); scene.remove(targetLeft); }
     if (targetRight) { targetRight.traverse(child => { if(child.isMesh) { child.geometry?.dispose(); child.material?.dispose(); }}); scene.remove(targetRight); }
     
-    // 清除干擾物
     while(distractorGroupLeft.children.length > 0){ 
         const c = distractorGroupLeft.children[0]; c.geometry?.dispose(); c.material?.dispose(); distractorGroupLeft.remove(c); 
     }
@@ -307,30 +307,37 @@ function buildTargets() {
     // 主視標生成
     targetLeft = createTarget(shapeVal, 0xffffff, isFilled, txtVal, currentThick);
     targetRight = createTarget(shapeVal, 0xffffff, isFilled, txtVal, currentThick);
-    
     targetLeft.traverse(c => { c.layers.set(1); if(c.isMesh) { c.material.blending = THREE.NormalBlending; c.material.color.setHex(0xffffff); } });
     targetRight.traverse(c => { c.layers.set(2); if(c.isMesh) { c.material.blending = THREE.NormalBlending; c.material.color.setHex(0xffffff); } });
 
-    // 🚀 MOT 干擾物生成 (動態雜訊建置)
+    // 🚀 MOT 干擾物生成 (多目標實體 PBR 渲染)
     if (currentDistractors > 0) {
-        const distMatLeft = new THREE.MeshBasicMaterial({ color: 0x888888, wireframe: !isFilled, transparent: true, opacity: 0.5 });
-        const distMatRight = new THREE.MeshBasicMaterial({ color: 0x888888, wireframe: !isFilled, transparent: true, opacity: 0.5 });
-        const distGeo = new THREE.IcosahedronGeometry(1, 0); // 基準大小
+        const distMatLeft = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.3 });
+        const distMatRight = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.3 });
+        
+        // 幾何體多樣化，打破視覺適應性
+        const geoPool = [
+            new THREE.BoxGeometry(1.2, 1.2, 1.2),
+            new THREE.OctahedronGeometry(1.2, 0),
+            new THREE.TetrahedronGeometry(1.2, 0),
+            new THREE.TorusGeometry(0.8, 0.4, 16, 32),
+            new THREE.IcosahedronGeometry(1.2, 0)
+        ];
 
         for (let i = 0; i < currentDistractors; i++) {
-            const meshL = new THREE.Mesh(distGeo, distMatLeft);
-            const meshR = new THREE.Mesh(distGeo, distMatRight);
+            const geo = geoPool[i % geoPool.length];
+            const meshL = new THREE.Mesh(geo, distMatLeft);
+            const meshR = new THREE.Mesh(geo, distMatRight);
             meshL.layers.set(1); meshR.layers.set(2);
             distractorGroupLeft.add(meshL); distractorGroupRight.add(meshR);
             
-            // 賦予獨立物理相量
             distractorData.push({
                 phaseOffset: Math.random() * Math.PI * 2,
-                speedMultiplier: 0.5 + Math.random() * 1.5,
-                orbitRadiusX: 100 + Math.random() * 250,
-                orbitRadiusY: 80 + Math.random() * 200,
-                zOffset: (Math.random() - 0.5) * 100,
-                baseSize: 40 + Math.random() * 60
+                speedMultiplier: 0.3 + Math.random() * 1.2,
+                orbitRadiusX: 150 + Math.random() * 350,
+                orbitRadiusY: 100 + Math.random() * 250,
+                zOffset: (Math.random() - 0.5) * 150,
+                baseSize: 30 + (Math.random() * 40)
             });
         }
     }
@@ -358,10 +365,9 @@ function updateScaleAndThickness(dynamicSize = currentSize) {
         });
     }
 
-    // 更新干擾物基礎尺寸
     for (let i = 0; i < currentDistractors; i++) {
         if(distractorGroupLeft.children[i]) {
-            const dSize = distractorData[i].baseSize * scaleFactor * 0.7; // 干擾物略小於主體
+            const dSize = distractorData[i].baseSize * scaleFactor * 0.7;
             distractorGroupLeft.children[i].scale.set(dSize, dSize, dSize);
             distractorGroupRight.children[i].scale.set(dSize, dSize, dSize);
         }
@@ -396,23 +402,23 @@ function updatePositions(phaseVal, currentAnim = '') {
 
     const requiredSeparationCm = targetPrismDemand * viewDistM;
     const totalSeparationPx = requiredSeparationCm / pixelToCm;
-    let disp = totalSeparationPx / 2;
+    let baseDispX = totalSeparationPx / 2;
 
     let pxLeftX = 0, pxRightX = 0, pxLeftY = 0, pxRightY = 0;
     let vertDisp = 0;
 
     if (currentAxis === 'lissajous') {
-        pxLeftX = disp; pxRightX = -disp;
+        pxLeftX = baseDispX; pxRightX = -baseDispX;
         pxLeftY = Math.sin(phaseVal * 2) * (totalSeparationPx * 0.3);
         pxRightY = pxLeftY;
     }
-    else if (currentAxis === 'vertical') { pxLeftY = disp; pxRightY = -disp; } 
+    else if (currentAxis === 'vertical') { pxLeftY = baseDispX; pxRightY = -baseDispX; } 
     else if (currentAxis === 'circular') {
         const orbitX = Math.cos(phaseVal) * Math.abs(totalSeparationPx * 0.25); 
         const orbitY = Math.sin(phaseVal) * Math.abs(totalSeparationPx * 0.25);
-        pxLeftX = disp + orbitX; pxRightX = -disp + orbitX; pxLeftY = orbitY; pxRightY = orbitY;
+        pxLeftX = baseDispX + orbitX; pxRightX = -baseDispX + orbitX; pxLeftY = orbitY; pxRightY = orbitY;
     } 
-    else { pxLeftX = disp; pxRightX = -disp; }
+    else { pxLeftX = baseDispX; pxRightX = -baseDispX; }
 
     let finalLeftX = pxLeftX + currentRoamX + currentSaccadeX; let finalLeftY = pxLeftY + currentRoamY + currentSaccadeY;
     let finalRightX = pxRightX + currentRoamX + currentSaccadeX; let finalRightY = pxRightY + currentRoamY + currentSaccadeY;
@@ -430,7 +436,6 @@ function updatePositions(phaseVal, currentAnim = '') {
     let dx = finalLeftX - finalRightX; 
     if (dx > maxBOPx) { let scale = maxBOPx / dx; finalLeftX *= scale; finalRightX *= scale; } 
     else if (dx < -maxBIPx) { let scale = -maxBIPx / dx; finalLeftX *= scale; finalRightX *= scale; }
-
     let dy = finalLeftY - finalRightY;
     if (Math.abs(dy) > maxVertPx) { let scale = maxVertPx / Math.abs(dy); finalLeftY *= scale; finalRightY *= scale; }
 
@@ -453,26 +458,25 @@ function updatePositions(phaseVal, currentAnim = '') {
         }
     }
 
-    // 🚀 更新干擾物獨立漫遊軌跡
+    // 🚀 更新干擾物軌跡：強制綁定基底稜鏡分離，修復融像崩塌死角
     for (let i = 0; i < currentDistractors; i++) {
         const dData = distractorData[i];
         const dPhase = (protocolTime / 1000) * dData.speedMultiplier + dData.phaseOffset;
         
-        // 干擾物在全螢幕空間進行獨立的李薩如漫遊，並帶有深度變化
-        const dX = Math.sin(dPhase) * dData.orbitRadiusX;
-        const dY = Math.cos(dPhase * 1.3) * dData.orbitRadiusY;
-        const dZ = Math.sin(dPhase * 0.7) * dData.zOffset;
-
-        // 立體視偏移
-        const dStereoDisp = (currentStereo * 10) * (dZ > 0 ? 1 : -1); 
+        const roamingX = Math.sin(dPhase) * dData.orbitRadiusX;
+        const roamingY = Math.cos(dPhase * 1.3) * dData.orbitRadiusY;
+        const roamingZ = Math.sin(dPhase * 0.7) * dData.zOffset;
+        
+        // 深度立體視差
+        const depthDisp = (currentStereo * dData.zOffset * 0.1); 
 
         if (distractorGroupLeft.children[i]) {
-            distractorGroupLeft.children[i].position.set(dX + dStereoDisp, dY, dZ);
+            distractorGroupLeft.children[i].position.set(baseDispX + roamingX + depthDisp, roamingY, roamingZ);
             distractorGroupLeft.children[i].rotation.x += 0.02;
             distractorGroupLeft.children[i].rotation.y += 0.01;
         }
         if (distractorGroupRight.children[i]) {
-            distractorGroupRight.children[i].position.set(dX - dStereoDisp, dY, dZ);
+            distractorGroupRight.children[i].position.set(-baseDispX + roamingX - depthDisp, roamingY, roamingZ);
             distractorGroupRight.children[i].rotation.x += 0.02;
             distractorGroupRight.children[i].rotation.y += 0.01;
         }
@@ -550,7 +554,7 @@ function handleTaskResult(result, rt = 0) {
     
     if(!isAIRescueActive && statusText) statusText.innerText = logMsg;
     
-    // 寫入日誌時，包含 distractors 狀態
+    // 寫入日誌：加入 distractors 數據
     sessionLogs.push({ time: totalTimerSec.toString(), initial_sep: "0", initial_prism: taskInitialPrism, response_sep: "0", response_prism: currentPrismStr, reaction_time: rt, stereo: currentStereo.toFixed(2), size: currentSize.toFixed(1), status: statusLabel, eye: taskEye, distractors: currentDistractors });
 
     if (!isAIRescueActive) {
@@ -629,14 +633,13 @@ async function uploadToSupabase() {
     const finalTime = totalTimerSec; 
     const finalProtocol = activeProtocol ? PROTOCOL_NAMES[activeProtocol] : 'MANUAL_MODE';
     
-    // 💡 預埋 distractors (干擾物數量) 於 payload
     const payloadData = {
         patient_id: currentPatientCode,
         environmental_setup: {
             prism_base: document.getElementById('prism-slider')?.value || 0,
             anaglyph_balance: document.getElementById('balance-slider')?.value || 50,
             target_count: 1,
-            distractor_count: currentDistractors
+            distractor_count: currentDistractors // 🚀 預埋干擾物數量
         },
         clinical_logs: [...sessionLogs]
     };
@@ -718,7 +721,7 @@ function disableAI() {
     
     currentAxis = 'horizontal';
     currentMode = 'crossover';
-    currentDistractors = 0; // 手動模式預設關閉干擾物
+    currentDistractors = 0; 
     buildTargets();
     
     siloPrompt.style.display = 'none'; 
@@ -736,8 +739,6 @@ function loadMatrixStage(protocol, stage) {
     
     currentAxis = config.axis || 'horizontal';
     currentMode = config.mode || 'crossover';
-    
-    // 讀取 MOT 干擾物設定 (預設 0)
     currentDistractors = config.distractors || 0;
 
     if(fillCheckbox) fillCheckbox.checked = config.fill; isFilled = config.fill;
@@ -746,9 +747,7 @@ function loadMatrixStage(protocol, stage) {
     currentSize = config.size; currentSpeed = config.speed; currentThick = config.thick;
     isRotating = !config.anim.includes('none'); if(rotateCheckbox) rotateCheckbox.checked = isRotating; 
     
-    if(prismSlider) {
-        prismSlider.value = config.dist; 
-    }
+    if(prismSlider) { prismSlider.value = config.dist; }
 
     updateUIValues(); buildTargets();
     
@@ -897,7 +896,7 @@ function animate(time) {
     
     updatePositions(phase, currentAnim); 
     
-    // 鎖死 text 的旋轉
+    // 鎖死 text 旋轉，確保邊緣高頻解析度
     if (isRotating && shapeSelect?.value !== 'text') { 
         targetLeft.rotation.z = phase * 0.5; 
         targetRight.rotation.z = phase * 0.5; 
