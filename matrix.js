@@ -1,6 +1,6 @@
-// matrix.js - AXP Fusion Dynamics 臨床視覺訓練協議矩陣 (v23.0 - MOT Integration & Physics Fixed)
+// matrix.js - AXP Fusion Dynamics 臨床視覺訓練協議矩陣 (v23.1 - 終極 MOT 升級版)
 // 結構規範：嚴格遵循 1-3初級(低劑量) / 4-7中級(擴張期) / 8-10高級(極限重塑) 臨床分級
-// 架構升級：U鍵全面重構為「宏觀空間與多目標感知 (MOT)」，預埋 distractors 欄位供 SaaS 數據擷取與 WebGL 算繪
+// 架構升級：U鍵全面重構為「宏觀空間與多目標感知 (MOT)」，精準控制 0 到 9 個干擾物，打破視覺皮層適應性
 
 export const PROTOCOL_NAMES = {
     'KeyY': 'Y. 感覺整合與去抑制模組 (Sensory & Anti-Suppression)',
@@ -36,21 +36,21 @@ export const AIM_MATRIX = {
     // 🟦 [ U 鍵 ] 宏觀空間與多目標感知模組 (主要對接：多目標抗干擾、周邊視野優化、空間迷向解除)
     // ========================================================================
     'KeyU': [
-        // ⭐【初級】1-3 階：0 干擾物、低振幅、慢速節律 (建立基礎動眼平滑定錨)
-        { name: 'U-01 基礎定錨 I (單目標水平)', shape: 'circle3', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.01, size: 260, dist: 2.0, speed: 10, thick: 7, anim: 'smooth_pursuit', distractors: 0 },
-        { name: 'U-02 基礎定錨 II (單目標垂直)', shape: 'circle3', axis: 'vertical', mode: 'crossover', fill: true, stereo: 0.01, size: 260, dist: 2.0, speed: 10, thick: 7, anim: 'smooth_pursuit', distractors: 0 },
-        { name: 'U-03 基礎定錨 III (單目標環形)', shape: 'sphere5', axis: 'circular', mode: 'crossover', fill: false, stereo: 0.02, size: 220, dist: 4.0, speed: 14, thick: 6, anim: 'smooth_pursuit', distractors: 0 },
+        // ⭐【初級】1-3 階：低負荷、建立基礎動眼平滑定錨與周邊感知
+        { name: 'U-01 基礎定錨 I (單目標/無干擾)', shape: 'circle3', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.01, size: 260, dist: 2.0, speed: 10, thick: 7, anim: 'smooth_pursuit', distractors: 0 },
+        { name: 'U-02 空間感知 I (2對視標/平滑追視)', shape: 'sphere5', axis: 'vertical', mode: 'crossover', fill: true, stereo: 0.01, size: 220, dist: 4.0, speed: 12, thick: 6, anim: 'smooth_pursuit', distractors: 1 },
+        { name: 'U-03 空間感知 II (3對視標/環形軌跡)', shape: 'torusKnot', axis: 'circular', mode: 'crossover', fill: false, stereo: 0.02, size: 180, dist: 6.0, speed: 15, thick: 6, anim: 'smooth_pursuit', distractors: 2 },
         
-        // ⭐【中級】4-7 階：導入 2-3 個干擾物 (Distractors)、無限大 Lissajous 軌跡 (周邊視野抗干擾啟動)
-        { name: 'U-04 雜訊抗擾 I (2干擾物/紐結追視)', shape: 'torusKnot', axis: 'lissajous', mode: 'crossover', fill: false, stereo: 0.03, size: 180, dist: 6.0, speed: 20, thick: 6, anim: 'smooth_pursuit', distractors: 2 },
-        { name: 'U-05 雜訊抗擾 II (3干擾物/廣域擴張)', shape: 'torusKnot', axis: 'lissajous', mode: 'crossover', fill: false, stereo: 0.04, size: 150, dist: 8.0, speed: 25, thick: 5, anim: 'smooth_pursuit', distractors: 3 },
-        { name: 'U-06 空間解壓縮 I (3干擾物/隨機漫遊)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: true, stereo: 0.05, size: 130, dist: 10.0, speed: 30, thick: 5, anim: 'roam_smooth', distractors: 3 },
-        { name: 'U-07 空間解壓縮 II (4干擾物/極致牽引)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: true, stereo: 0.06, size: 110, dist: 12.0, speed: 35, thick: 4, anim: 'roam_smooth', distractors: 4 },
+        // ⭐【中級】4-7 階：干擾物多樣化、無限大 Lissajous 軌跡、周邊視野抗干擾啟動
+        { name: 'U-04 雜訊抗擾 I (4對視標/紐結拉伸)', shape: 'torusKnot', axis: 'lissajous', mode: 'crossover', fill: false, stereo: 0.03, size: 160, dist: 8.0, speed: 20, thick: 6, anim: 'smooth_pursuit', distractors: 3 },
+        { name: 'U-05 雜訊抗擾 II (5對視標/廣域擴張)', shape: 'crystal8', axis: 'lissajous', mode: 'crossover', fill: true, stereo: 0.04, size: 140, dist: 10.0, speed: 25, thick: 5, anim: 'smooth_pursuit', distractors: 4 },
+        { name: 'U-06 空間解壓縮 I (6對視標/隨機漫遊)', shape: 'nested_dodeca', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.05, size: 130, dist: 12.0, speed: 30, thick: 5, anim: 'roam_smooth', distractors: 5 },
+        { name: 'U-07 空間解壓縮 II (7對視標/極致牽引)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: true, stereo: 0.06, size: 120, dist: 14.0, speed: 35, thick: 4, anim: 'roam_smooth', distractors: 6 },
         
-        // ⭐【高級】8-10 階：極限認知超載、4-5 個干擾物、雙向背景星空旋轉 (頂尖運動視覺與極端代償解除)
-        { name: 'U-08 認知超載 I (4干擾物/高頻漫遊)', shape: 'sphere5', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.06, size: 220, dist: 14.0, speed: 40, thick: 5, anim: 'roam_smooth', distractors: 4 },
-        { name: 'U-09 認知超載 II (5干擾物/逆旋星空)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.08, size: 180, dist: 15.0, speed: 45, thick: 4, anim: 'roam_starfield_ccw', distractors: 5 },
-        { name: 'U-10 認知超載 III (5干擾物/順旋星空)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.10, size: 140, dist: 16.0, speed: 50, thick: 4, anim: 'roam_starfield_cw', distractors: 5 }
+        // ⭐【高級】8-10 階：極限認知超載 (8-10對視標滿載)、雙向背景星空旋轉 (極端代償解除)
+        { name: 'U-08 認知超載 I (8對視標/高頻漫遊)', shape: 'crystal8', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.06, size: 130, dist: 16.0, speed: 40, thick: 5, anim: 'roam_smooth', distractors: 7 },
+        { name: 'U-09 認知超載 II (9對視標/逆旋星空)', shape: 'nested_dodeca', axis: 'roam', mode: 'crossover', fill: true, stereo: 0.08, size: 110, dist: 18.0, speed: 45, thick: 4, anim: 'roam_starfield_ccw', distractors: 8 },
+        { name: 'U-10 認知超載 III (10對滿載/順旋星空)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.10, size: 100, dist: 20.0, speed: 50, thick: 4, anim: 'roam_starfield_cw', distractors: 9 }
     ],
 
     // ========================================================================
@@ -83,7 +83,7 @@ export const AIM_MATRIX = {
         { name: 'O-02 慢速階躍翻轉 II (2.5秒切換)', shape: 'sphere5', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.03, size: 160, dist: 6.0, speed: 0, thick: 5, anim: 'flipper_slow' },
         { name: 'O-03 中速階躍翻轉 I (2.0秒切換)', shape: 'sphere5', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.04, size: 140, dist: 8.0, speed: 0, thick: 5, anim: 'flipper_fast' },
         
-        // ⭐【中級】4-7 階：高速階躍翻轉、導入動態跳視融像 (修復 Sine Wave 死鎖，給予基礎速度驅動稜鏡)
+        // ⭐【中級】4-7 階：高速階躍翻轉、導入動態跳視融像 (挑戰動眼肌肉急跳融像反應)
         { name: 'O-04 中速階躍翻轉 II (1.5秒瞬間切換)', shape: 'nested_dodeca', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.05, size: 120, dist: 12.0, speed: 0, thick: 4, anim: 'flipper_fast' },
         { name: 'O-05 動態跳視融像 I (窄域雙向急跳)', shape: 'sphere5', axis: 'saccade', mode: 'crossover', fill: false, stereo: 0.04, size: 150, dist: 16.0, speed: 15, thick: 5, anim: 'saccade_vergence' },
         { name: 'O-06 動態跳視融像 II (廣域多向急跳)', shape: 'nested_dodeca', axis: 'saccade', mode: 'crossover', fill: true, stereo: 0.06, size: 130, dist: 20.0, speed: 20, thick: 4, anim: 'saccade_vergence' },
