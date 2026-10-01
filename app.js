@@ -1,6 +1,5 @@
-// app.js - AXP Fusion Dynamics (v23.1 - 終極 MOT 多目標立體對應引擎)
-// 核心升級：徹底解決紫影 (Purple Artifact) 與物理死角，將干擾物升級為獨立的紅藍 3D 實體視標群
-// 數據基建：Supabase 負載端已預埋 distractors，完美對接 KeyU 1-9 階宏觀感知矩陣
+// app.js - AXP Fusion Dynamics (v23.2 - MOT 引擎與臨床熱鍵升級)
+// 核心升級：新增 PageUp (降階) 與 PageDown (升階) 臨床絕對控制權
 
 import { AIM_MATRIX, PROTOCOL_NAMES } from './matrix.js';
 import { createTarget } from './shapes.js';
@@ -90,7 +89,7 @@ document.getElementById('arena').appendChild(siloPrompt);
 // === 核心狀態變數 ===
 let isRunning = false, animationId;
 let currentSize = 200, currentSpeed = 20, currentStereo = 0, currentThick = 9.0;
-let currentDistractors = 0; // MOT 模組變數
+let currentDistractors = 0; 
 let isRotating = true, isFilled = false;
 let activeProtocol = null, protocolStage = 0, protocolTime = 0, totalTimerSec = 0, lastTime = 0, phase = 0;
 let currentSaccadeX = 0, currentSaccadeY = 0, saccadeTimer = 0, currentRoamX = 0, currentRoamY = 0;
@@ -304,18 +303,15 @@ function buildTargets() {
     const shapeVal = shapeSelect ? shapeSelect.value : 'sphere5';
     const txtVal = customTextInput ? customTextInput.value : 'A X P';
     
-    // 主視標生成
     targetLeft = createTarget(shapeVal, 0xffffff, isFilled, txtVal, currentThick);
     targetRight = createTarget(shapeVal, 0xffffff, isFilled, txtVal, currentThick);
     targetLeft.traverse(c => { c.layers.set(1); if(c.isMesh) { c.material.blending = THREE.NormalBlending; c.material.color.setHex(0xffffff); } });
     targetRight.traverse(c => { c.layers.set(2); if(c.isMesh) { c.material.blending = THREE.NormalBlending; c.material.color.setHex(0xffffff); } });
 
-    // 🚀 MOT 干擾物生成 (多目標實體 PBR 渲染)
     if (currentDistractors > 0) {
         const distMatLeft = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.3 });
         const distMatRight = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.3 });
         
-        // 幾何體多樣化，打破視覺適應性
         const geoPool = [
             new THREE.BoxGeometry(1.2, 1.2, 1.2),
             new THREE.OctahedronGeometry(1.2, 0),
@@ -458,27 +454,26 @@ function updatePositions(phaseVal, currentAnim = '') {
         }
     }
 
-    // 🚀 更新干擾物軌跡：強制綁定基底稜鏡分離，修復融像崩塌死角
     for (let i = 0; i < currentDistractors; i++) {
         const dData = distractorData[i];
-        const dPhase = (protocolTime / 1000) * dData.speedMultiplier + dData.phaseOffset;
+        const dynamicSpeedRatio = currentSpeed / 20.0; 
+        const dPhase = (phase * dData.speedMultiplier * 2.0) + dData.phaseOffset;
         
         const roamingX = Math.sin(dPhase) * dData.orbitRadiusX;
         const roamingY = Math.cos(dPhase * 1.3) * dData.orbitRadiusY;
         const roamingZ = Math.sin(dPhase * 0.7) * dData.zOffset;
         
-        // 深度立體視差
         const depthDisp = (currentStereo * dData.zOffset * 0.1); 
 
         if (distractorGroupLeft.children[i]) {
             distractorGroupLeft.children[i].position.set(baseDispX + roamingX + depthDisp, roamingY, roamingZ);
-            distractorGroupLeft.children[i].rotation.x += 0.02;
-            distractorGroupLeft.children[i].rotation.y += 0.01;
+            distractorGroupLeft.children[i].rotation.x += 0.02 * dynamicSpeedRatio;
+            distractorGroupLeft.children[i].rotation.y += 0.01 * dynamicSpeedRatio;
         }
         if (distractorGroupRight.children[i]) {
             distractorGroupRight.children[i].position.set(-baseDispX + roamingX - depthDisp, roamingY, roamingZ);
-            distractorGroupRight.children[i].rotation.x += 0.02;
-            distractorGroupRight.children[i].rotation.y += 0.01;
+            distractorGroupRight.children[i].rotation.x += 0.02 * dynamicSpeedRatio;
+            distractorGroupRight.children[i].rotation.y += 0.01 * dynamicSpeedRatio;
         }
     }
 
@@ -554,7 +549,6 @@ function handleTaskResult(result, rt = 0) {
     
     if(!isAIRescueActive && statusText) statusText.innerText = logMsg;
     
-    // 寫入日誌：加入 distractors 數據
     sessionLogs.push({ time: totalTimerSec.toString(), initial_sep: "0", initial_prism: taskInitialPrism, response_sep: "0", response_prism: currentPrismStr, reaction_time: rt, stereo: currentStereo.toFixed(2), size: currentSize.toFixed(1), status: statusLabel, eye: taskEye, distractors: currentDistractors });
 
     if (!isAIRescueActive) {
@@ -639,7 +633,7 @@ async function uploadToSupabase() {
             prism_base: document.getElementById('prism-slider')?.value || 0,
             anaglyph_balance: document.getElementById('balance-slider')?.value || 50,
             target_count: 1,
-            distractor_count: currentDistractors // 🚀 預埋干擾物數量
+            distractor_count: currentDistractors
         },
         clinical_logs: [...sessionLogs]
     };
@@ -854,8 +848,8 @@ function animate(time) {
     const isSaccadeActive = currentAnim.includes('saccade') || (!aiToggle.checked && currentAxis === 'saccade');
 
     if (isRoamActive) {
-        currentRoamX = Math.sin(time / 3000) * 350;
-        currentRoamY = Math.cos(time / 2100) * 250;
+        currentRoamX = Math.sin(phase * 0.8) * 350;
+        currentRoamY = Math.cos(phase * 0.56) * 250;
     } else {
         currentRoamX = 0; currentRoamY = 0;
     }
@@ -896,7 +890,6 @@ function animate(time) {
     
     updatePositions(phase, currentAnim); 
     
-    // 鎖死 text 旋轉，確保邊緣高頻解析度
     if (isRotating && shapeSelect?.value !== 'text') { 
         targetLeft.rotation.z = phase * 0.5; 
         targetRight.rotation.z = phase * 0.5; 
@@ -976,10 +969,29 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    const shortcuts = ['Space', 'Enter', 'KeyE', 'KeyW', 'KeyS', 'KeyD', 'KeyA', 'KeyF', 'KeyR', 'KeyG', 'KeyZ', 'Digit0', 'Numpad0', 'Digit1', 'Digit2', 'Numpad1', 'Numpad2', 'BracketLeft', 'BracketRight', 'Comma', 'Period', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP', 'KeyQ'];
+    // 🚀 新增 PageUp 與 PageDown 至熱鍵陣列
+    const shortcuts = ['Space', 'Enter', 'KeyE', 'KeyW', 'KeyS', 'KeyD', 'KeyA', 'KeyF', 'KeyR', 'KeyG', 'KeyZ', 'Digit0', 'Numpad0', 'Digit1', 'Digit2', 'Numpad1', 'Numpad2', 'BracketLeft', 'BracketRight', 'Comma', 'Period', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP', 'KeyQ', 'PageUp', 'PageDown'];
+    
     if (shortcuts.includes(code)) {
         e.preventDefault(); if (document.activeElement) document.activeElement.blur(); 
+        
         switch(code) {
+            case 'PageUp':
+                if (isAIRescueActive || !activeProtocol) break;
+                if (protocolStage > 0) {
+                    protocolStage--;
+                    loadMatrixStage(activeProtocol, protocolStage);
+                }
+                break;
+            case 'PageDown':
+                if (isAIRescueActive || !activeProtocol) break;
+                const maxStagesDown = AIM_MATRIX[activeProtocol] ? AIM_MATRIX[activeProtocol].length : 10;
+                if (protocolStage < maxStagesDown - 1) {
+                    protocolStage++;
+                    loadMatrixStage(activeProtocol, protocolStage);
+                }
+                break;
+
             case 'Space': toggleTraining(); break; 
             case 'Enter': executeReset(); break; 
             case 'KeyE': if(controlPanel) { controlPanel.style.display = controlPanel.style.display === 'none' ? 'flex' : 'none'; setTimeout(onWindowResize, 50); } break;
