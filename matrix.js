@@ -1,10 +1,10 @@
-// matrix.js - AXP Fusion Dynamics 臨床視覺訓練協議矩陣 (v22.1 - Neuro-Quantum Matrix & Physics Fixed)
+// matrix.js - AXP Fusion Dynamics 臨床視覺訓練協議矩陣 (v23.0 - MOT Integration & Physics Fixed)
 // 結構規範：嚴格遵循 1-3初級(低劑量) / 4-7中級(擴張期) / 8-10高級(極限重塑) 臨床分級
-// 系統優化：修復 Saccade (跳視) 模組的 Sine Wave 死鎖問題，確保極端稜鏡張力精準輸出
+// 架構升級：U鍵全面重構為「宏觀空間與多目標感知 (MOT)」，預埋 distractors 欄位供 SaaS 數據擷取與 WebGL 算繪
 
 export const PROTOCOL_NAMES = {
     'KeyY': 'Y. 感覺整合與去抑制模組 (Sensory & Anti-Suppression)',
-    'KeyU': 'U. 動眼神經與空間迷向模組 (Oculomotor & Spatial Awareness)',
+    'KeyU': 'U. 宏觀空間與多目標感知模組 (Macro-Spatial & Multiple Object Tracking)',
     'KeyI': 'I. 平滑融像與 SILO 空間感知 (Smooth Vergence & SILO)',
     'KeyO': 'O. 階躍融像與垂直微調 (Step Vergence & Vertical Tuning)',
     'KeyP': 'P. 調節與聚合極限解綁 (Accommodative-Vergence Uncoupling)'
@@ -33,28 +33,28 @@ export const AIM_MATRIX = {
     ],
 
     // ========================================================================
-    // 🟦 [ U 鍵 ] 動眼神經與空間迷向模組 (主要對接：眼球震顫光學安撫、周邊視野優化、肩頸姿態代償解除)
+    // 🟦 [ U 鍵 ] 宏觀空間與多目標感知模組 (主要對接：多目標抗干擾、周邊視野優化、空間迷向解除)
     // ========================================================================
     'KeyU': [
-        // ⭐【初級】1-3 階：低振幅、慢速節律、窄域追視 (穩定中央注視)
-        { name: 'U-01 中樞穩定 I (水平低頻追視)', shape: 'circle3', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.01, size: 260, dist: 2.0, speed: 10, thick: 7, anim: 'smooth_pursuit' },
-        { name: 'U-02 中樞穩定 II (垂直低頻追視)', shape: 'circle3', axis: 'vertical', mode: 'crossover', fill: true, stereo: 0.01, size: 260, dist: 2.0, speed: 10, thick: 7, anim: 'smooth_pursuit' },
-        { name: 'U-03 中樞穩定 III (溫和環形軌跡)', shape: 'sphere5', axis: 'circular', mode: 'crossover', fill: false, stereo: 0.02, size: 220, dist: 4.0, speed: 14, thick: 6, anim: 'smooth_pursuit' },
+        // ⭐【初級】1-3 階：0 干擾物、低振幅、慢速節律 (建立基礎動眼平滑定錨)
+        { name: 'U-01 基礎定錨 I (單目標水平)', shape: 'circle3', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.01, size: 260, dist: 2.0, speed: 10, thick: 7, anim: 'smooth_pursuit', distractors: 0 },
+        { name: 'U-02 基礎定錨 II (單目標垂直)', shape: 'circle3', axis: 'vertical', mode: 'crossover', fill: true, stereo: 0.01, size: 260, dist: 2.0, speed: 10, thick: 7, anim: 'smooth_pursuit', distractors: 0 },
+        { name: 'U-03 基礎定錨 III (單目標環形)', shape: 'sphere5', axis: 'circular', mode: 'crossover', fill: false, stereo: 0.02, size: 220, dist: 4.0, speed: 14, thick: 6, anim: 'smooth_pursuit', distractors: 0 },
         
-        // ⭐【中級】4-7 階：無限大 Lissajous 軌跡、拉開運動振幅 (導入 torusKnot，確保無死角連續平滑追視)
-        { name: 'U-04 無盡追視 I (窄域四角活化)', shape: 'torusKnot', axis: 'lissajous', mode: 'crossover', fill: false, stereo: 0.03, size: 180, dist: 6.0, speed: 20, thick: 6, anim: 'smooth_pursuit' },
-        { name: 'U-05 無盡追視 II (中域動眼擴張)', shape: 'torusKnot', axis: 'lissajous', mode: 'crossover', fill: false, stereo: 0.04, size: 150, dist: 8.0, speed: 25, thick: 5, anim: 'smooth_pursuit' },
-        { name: 'U-06 無盡追視 III (廣域肌群拉伸)', shape: 'torusKnot', axis: 'lissajous', mode: 'crossover', fill: true, stereo: 0.05, size: 130, dist: 10.0, speed: 30, thick: 5, anim: 'smooth_pursuit' },
-        { name: 'U-07 無盡追視 IV (極致邊緣牽引)', shape: 'torusKnot', axis: 'lissajous', mode: 'crossover', fill: true, stereo: 0.06, size: 110, dist: 12.0, speed: 35, thick: 4, anim: 'smooth_pursuit' },
+        // ⭐【中級】4-7 階：導入 2-3 個干擾物 (Distractors)、無限大 Lissajous 軌跡 (周邊視野抗干擾啟動)
+        { name: 'U-04 雜訊抗擾 I (2干擾物/紐結追視)', shape: 'torusKnot', axis: 'lissajous', mode: 'crossover', fill: false, stereo: 0.03, size: 180, dist: 6.0, speed: 20, thick: 6, anim: 'smooth_pursuit', distractors: 2 },
+        { name: 'U-05 雜訊抗擾 II (3干擾物/廣域擴張)', shape: 'torusKnot', axis: 'lissajous', mode: 'crossover', fill: false, stereo: 0.04, size: 150, dist: 8.0, speed: 25, thick: 5, anim: 'smooth_pursuit', distractors: 3 },
+        { name: 'U-06 空間解壓縮 I (3干擾物/隨機漫遊)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: true, stereo: 0.05, size: 130, dist: 10.0, speed: 30, thick: 5, anim: 'roam_smooth', distractors: 3 },
+        { name: 'U-07 空間解壓縮 II (4干擾物/極致牽引)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: true, stereo: 0.06, size: 110, dist: 12.0, speed: 35, thick: 4, anim: 'roam_smooth', distractors: 4 },
         
-        // ⭐【高級】8-10 階：全螢幕隨機漫遊、雙向背景星空旋轉 (激活周邊視野、解除肩頸枕下肌代償)
-        { name: 'U-08 全境鎖定 I (高頻隨機漫遊)', shape: 'sphere5', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.06, size: 220, dist: 14.0, speed: 40, thick: 5, anim: 'roam_smooth' },
-        { name: 'U-09 全境鎖定 II (紐結星空逆旋轉)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.08, size: 180, dist: 15.0, speed: 45, thick: 4, anim: 'roam_starfield_ccw' },
-        { name: 'U-10 全境鎖定 III (紐結星空順旋轉)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.10, size: 140, dist: 16.0, speed: 50, thick: 4, anim: 'roam_starfield_cw' }
+        // ⭐【高級】8-10 階：極限認知超載、4-5 個干擾物、雙向背景星空旋轉 (頂尖運動視覺與極端代償解除)
+        { name: 'U-08 認知超載 I (4干擾物/高頻漫遊)', shape: 'sphere5', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.06, size: 220, dist: 14.0, speed: 40, thick: 5, anim: 'roam_smooth', distractors: 4 },
+        { name: 'U-09 認知超載 II (5干擾物/逆旋星空)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.08, size: 180, dist: 15.0, speed: 45, thick: 4, anim: 'roam_starfield_ccw', distractors: 5 },
+        { name: 'U-10 認知超載 III (5干擾物/順旋星空)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.10, size: 140, dist: 16.0, speed: 50, thick: 4, anim: 'roam_starfield_cw', distractors: 5 }
     ],
 
     // ========================================================================
-    // 🟪 [ I 鍵 ] 平滑融像與 SILO 空間感知模組 (主要對接：內/外隱斜張力量化、融像極限擴展、SOLI空間認知重建)
+    // 🟪 [ I 鍵 ] 平滑融像與 SILO 空間感知模組 (主要對接：內/外隱斜張力量化、融像極限擴展、SILO空間認知重建)
     // ========================================================================
     'KeyI': [
         // ⭐【初級】1-3 階：基礎平滑推拉、極低振幅劑量 (輕度 Eso/Exo 適應)
@@ -65,7 +65,6 @@ export const AIM_MATRIX = {
         // ⭐【中級】4-7 階：SILO 字幕啟動、幾何反向呼吸、強制重建大遠小近認知
         { name: 'I-04 SILO 認知重建 I (輕度呼吸連動)', shape: 'sphere5', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.04, size: 200, dist: 12.0, speed: 20, thick: 6, anim: 'silo_text' },
         { name: 'I-05 SILO 認知重建 II (中度空間適應)', shape: 'sphere5', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.06, size: 180, dist: 16.0, speed: 22, thick: 5, anim: 'silo_text' },
-        // 導入 nested_dodeca，迫使大腦抓取複雜切面進行融像
         { name: 'I-06 SILO 認知重建 III (量子核重度修正)', shape: 'nested_dodeca', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.08, size: 160, dist: 20.0, speed: 25, thick: 4, anim: 'silo_text' },
         { name: 'I-07 SILO 認知重建 IV (量子核幾何擴張)', shape: 'nested_dodeca', axis: 'horizontal', mode: 'crossover', fill: true, stereo: 0.10, size: 140, dist: 24.0, speed: 28, thick: 4, anim: 'silo_text' },
         
