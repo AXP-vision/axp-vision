@@ -47,10 +47,11 @@ export const AIM_MATRIX = {
         { name: 'U-06 空間解壓縮 I (6對視標/隨機漫遊)', shape: 'nested_dodeca', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.05, size: 130, dist: 12.0, speed: 30, thick: 5, anim: 'roam_smooth', distractors: 5 },
         { name: 'U-07 空間解壓縮 II (7對視標/極致牽引)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: true, stereo: 0.06, size: 120, dist: 14.0, speed: 35, thick: 4, anim: 'roam_smooth', distractors: 6 },
         
-        // ⭐【高級】8-10 階：極限認知超載 (8-10對視標滿載)、雙向背景星空旋轉 (極端代償解除)
-        { name: 'U-08 認知超載 I (8對視標/高頻漫遊)', shape: 'crystal8', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.06, size: 130, dist: 16.0, speed: 40, thick: 5, anim: 'roam_smooth', distractors: 7 },
-        { name: 'U-09 認知超載 II (9對視標/逆旋星空)', shape: 'nested_dodeca', axis: 'roam', mode: 'crossover', fill: true, stereo: 0.08, size: 110, dist: 18.0, speed: 45, thick: 4, anim: 'roam_starfield_ccw', distractors: 8 },
-        { name: 'U-10 認知超載 III (10對滿載/順旋星空)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.10, size: 100, dist: 20.0, speed: 50, thick: 4, anim: 'roam_starfield_cw', distractors: 9 }
+// ⭐【高級】8-10 階：極限認知超載 (8-10對視標滿載)、雙向背景星空旋轉 (極端代償解除)
+        // 修正：將速度壓制在人類平滑追視極限 (30-35) 內，將壓力源轉移至感官衝突與雜訊總量
+        { name: 'U-08 認知超載 I (8對視標/全境漫遊)', shape: 'crystal8', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.06, size: 130, dist: 16.0, speed: 30, thick: 5, anim: 'roam_smooth', distractors: 7 },
+        { name: 'U-09 認知超載 II (9對視標/逆旋星空)', shape: 'nested_dodeca', axis: 'roam', mode: 'crossover', fill: true, stereo: 0.08, size: 110, dist: 18.0, speed: 32, thick: 4, anim: 'roam_starfield_ccw', distractors: 8 },
+        { name: 'U-10 認知超載 III (10對滿載/順旋星空)', shape: 'torusKnot', axis: 'roam', mode: 'crossover', fill: false, stereo: 0.10, size: 100, dist: 20.0, speed: 35, thick: 4, anim: 'roam_starfield_cw', distractors: 9 }   
     ],
 
     // ========================================================================
