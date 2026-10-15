@@ -1,5 +1,7 @@
-// shapes.js - AXP Fusion Dynamics: WebGL 3D 臨床視覺幾何工廠 (v24.0)
-// 核心升級：1. 新增雙眼互補破抑制視標 (dichoptic_lock / dichoptic_cross) ｜ 2. 清晰大尺寸立體文字 (512x160 無深度雜訊)
+// shapes.js - AXP Fusion Dynamics: WebGL 3D 臨床視覺幾何工廠 (v27.0 - 十字靶加粗 300% 強效融像鎖 × 零鬼影純色版)
+// 核心升級：
+// 1. 徹底解決十字靶 (dichoptic_cross) 與對位鎖 (dichoptic_lock) 線條過細無法在高稜鏡下融像之問題：線條加粗 300% 並採用雙層厚環周邊鎖
+// 2. 雙眼互補視標全面改用無漸層漫反射之純淨材質 (MeshBasicMaterial)，消除邊緣半透明高光引發的濾鏡鬼影
 
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
 
@@ -8,7 +10,8 @@ function createWireframeTubes(geometry, thickness) {
     const pos = edges.attributes.position;
     const group = new THREE.Group();
     
-    const size = Math.max(0.6, thickness * 0.16); 
+    // 提升線框管基礎物理粗細，確保高稜鏡度下依然具備足夠的視網膜捕捉面積
+    const size = Math.max(1.2, thickness * 0.24); 
     const boxGeo = new THREE.BoxGeometry(size, 1, size); 
     const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
@@ -36,7 +39,6 @@ function createWireframeTubes(geometry, thickness) {
     return group;
 }
 
-// eyeSide: 'left' | 'right' | 'both'，用於生成左右眼互補之破抑制視標
 export function createTarget(shapeType, colorHex, isFilled, textStr, thickness, eyeSide = 'both') {
     const rootGroup = new THREE.Group();
     
@@ -47,62 +49,76 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness, 
     const solidMaterial = new THREE.MeshStandardMaterial({ 
         color: 0xffffff, 
         roughness: 0.45, 
-        metalness: 0.25,
+        metalness: 0.2,
         side: THREE.DoubleSide
     });
-    
-    const glossyMaterial = new THREE.MeshStandardMaterial({
+
+    // 零鬼影高對比純白材質 (專供十字靶與線條使用，避免半透明陰影造成紅藍疊影)
+    const pureFlatMaterial = new THREE.MeshBasicMaterial({ 
         color: 0xffffff,
-        roughness: 0.08,
-        metalness: 0.85,
         side: THREE.DoubleSide
     });
 
-    const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    // =========================================================================
+    // 🔬 升級一：加粗 300% 雙眼互補十字靶 (Dichoptic Crosshair - 高稜鏡強效融像版)
+    // 採用「雙層厚實同心圓環 (雙眼共視周邊鎖) + 超粗水平與垂直十字靶 + 加大中心鎖定圓盤」
+    // =========================================================================
+    if (shapeType === 'dichoptic_cross') {
+        const barW = Math.max(12, thickness * 2.2); // 線條直接加粗 3 倍以上
+        const ringTube = Math.max(9, thickness * 1.5);
 
-    // =========================================================================
-    // 🔬 黑科技一：雙眼互補對位鎖 (Dichoptic Anti-Suppression Lock)
-    // 左眼僅見「外圍八角準星環＋上下垂直定位線」；右眼僅見「中央立體晶核＋左右水平定位線」
-    // 唯有雙眼同時不抑制且融像對位，才能拼出完整準星鎖定畫面！
-    // =========================================================================
-    if (shapeType === 'dichoptic_lock') {
-        const barThick = Math.max(3, thickness * 0.7);
+        // 1. 雙眼共視之雙層厚實外環 (提供強大的低空間頻率周邊融像拉力，高稜鏡下也能輕鬆吸住合像)
+        const outerLockRing = new THREE.Mesh(new THREE.RingGeometry(130 - ringTube, 130 + ringTube, 64), pureFlatMaterial);
+        const innerLockRing = new THREE.Mesh(new THREE.RingGeometry(72 - ringTube * 0.6, 72 + ringTube * 0.6, 64), pureFlatMaterial);
+        rootGroup.add(outerLockRing, innerLockRing);
+
         if (eyeSide === 'left') {
-            // 左眼：外圍雙層準星環 + 上下垂直對位錨點
-            const outerRing = new THREE.Mesh(new THREE.TorusGeometry(115, barThick * 0.7, 16, 8), solidMaterial);
-            const midRing = new THREE.Mesh(new THREE.TorusGeometry(85, barThick * 0.45, 16, 64), solidMaterial);
-            const topTick = new THREE.Mesh(new THREE.BoxGeometry(barThick, 38, barThick), lineMaterial);
-            const botTick = new THREE.Mesh(new THREE.BoxGeometry(barThick, 38, barThick), lineMaterial);
-            topTick.position.set(0, 115, 0);
-            botTick.position.set(0, -115, 0);
-            rootGroup.add(outerRing, midRing, topTick, botTick);
+            // 左眼通道：超粗垂直中軸柱 + 上下定位端點塊
+            const vLine = new THREE.Mesh(new THREE.BoxGeometry(barW, 210, 4), pureFlatMaterial);
+            const topCap = new THREE.Mesh(new THREE.BoxGeometry(barW * 2.2, barW * 0.8, 4), pureFlatMaterial);
+            const botCap = new THREE.Mesh(new THREE.BoxGeometry(barW * 2.2, barW * 0.8, 4), pureFlatMaterial);
+            topCap.position.set(0, 105, 0);
+            botCap.position.set(0, -105, 0);
+            rootGroup.add(vLine, topCap, botCap);
         } else if (eyeSide === 'right') {
-            // 右眼：中央立體八面晶核 + 左右水平對位錨點
-            const coreGeo = new THREE.OctahedronGeometry(52, 0);
-            const coreMesh = isFilled ? new THREE.Mesh(coreGeo, glossyMaterial) : createWireframeTubes(coreGeo, thickness);
-            const leftTick = new THREE.Mesh(new THREE.BoxGeometry(38, barThick, barThick), lineMaterial);
-            const rightTick = new THREE.Mesh(new THREE.BoxGeometry(38, barThick, barThick), lineMaterial);
-            leftTick.position.set(-115, 0, 0);
-            rightTick.position.set(115, 0, 0);
-            rootGroup.add(coreMesh, leftTick, rightTick);
+            // 右眼通道：超粗水平橫軸柱 + 左右定位端點塊 + 加大實心中央圓盤
+            const hLine = new THREE.Mesh(new THREE.BoxGeometry(210, barW, 4), pureFlatMaterial);
+            const leftCap = new THREE.Mesh(new THREE.BoxGeometry(barW * 0.8, barW * 2.2, 4), pureFlatMaterial);
+            const rightCap = new THREE.Mesh(new THREE.BoxGeometry(barW * 0.8, barW * 2.2, 4), pureFlatMaterial);
+            leftCap.position.set(-105, 0, 0);
+            rightCap.position.set(105, 0, 0);
+            const centerDisc = new THREE.Mesh(new THREE.CircleGeometry(Math.max(22, barW * 1.6), 48), pureFlatMaterial);
+            centerDisc.position.set(0, 0, 2);
+            rootGroup.add(hLine, leftCap, rightCap, centerDisc);
         }
     }
-    // 🔬 黑科技二：雙眼互補十字準星 (Dichoptic Crosshair)
-    else if (shapeType === 'dichoptic_cross') {
-        const barW = Math.max(4, thickness * 0.8);
-        // 雙眼共視之最外圍穩定圓環 (Peripheral Lock)
-        const commonRing = new THREE.Mesh(new THREE.TorusGeometry(125, barW * 0.5, 16, 64), solidMaterial);
-        rootGroup.add(commonRing);
+    // =========================================================================
+    // 🔬 升級二：加粗 300% 雙眼互補對位鎖 (Dichoptic Ring & Core Lock)
+    // =========================================================================
+    else if (shapeType === 'dichoptic_lock') {
+        const barThick = Math.max(11, thickness * 2.0);
+        // 雙眼共視之最外層穩定八角厚環 (協助高稜鏡度下快速抓回中心對位)
+        const commonBaseRing = new THREE.Mesh(new THREE.RingGeometry(135 - barThick * 0.6, 135 + barThick * 0.6, 8), pureFlatMaterial);
+        commonBaseRing.rotation.z = Math.PI / 8;
+        rootGroup.add(commonBaseRing);
 
         if (eyeSide === 'left') {
-            // 左眼負責垂直軸線與內圈方框
-            const vLine = new THREE.Mesh(new THREE.BoxGeometry(barW, 180, barW), lineMaterial);
-            rootGroup.add(vLine);
+            // 左眼：厚實內圓框 + 上下粗定位柱
+            const midRing = new THREE.Mesh(new THREE.RingGeometry(88 - barThick * 0.7, 88 + barThick * 0.7, 64), pureFlatMaterial);
+            const topTick = new THREE.Mesh(new THREE.BoxGeometry(barThick * 1.2, 52, 4), pureFlatMaterial);
+            const botTick = new THREE.Mesh(new THREE.BoxGeometry(barThick * 1.2, 52, 4), pureFlatMaterial);
+            topTick.position.set(0, 112, 0);
+            botTick.position.set(0, -112, 0);
+            rootGroup.add(midRing, topTick, botTick);
         } else if (eyeSide === 'right') {
-            // 右眼負責水平軸線與中心圓點
-            const hLine = new THREE.Mesh(new THREE.BoxGeometry(180, barW, barW), lineMaterial);
-            const centerDot = new THREE.Mesh(new THREE.SphereGeometry(16, 24, 24), glossyMaterial);
-            rootGroup.add(hLine, centerDot);
+            // 右眼：中央厚實八面晶核 + 左右粗定位柱
+            const coreGeo = new THREE.OctahedronGeometry(58, 0);
+            const coreMesh = isFilled ? new THREE.Mesh(coreGeo, pureFlatMaterial) : createWireframeTubes(coreGeo, thickness * 1.5);
+            const leftTick = new THREE.Mesh(new THREE.BoxGeometry(52, barThick * 1.2, 4), pureFlatMaterial);
+            const rightTick = new THREE.Mesh(new THREE.BoxGeometry(52, barThick * 1.2, 4), pureFlatMaterial);
+            leftTick.position.set(-112, 0, 0);
+            rightTick.position.set(112, 0, 0);
+            rootGroup.add(coreMesh, leftTick, rightTick);
         }
     }
     else if (shapeType.startsWith('circle')) {
@@ -113,24 +129,18 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness, 
                 const geo = new THREE.CircleGeometry(radius, 64);
                 mesh = new THREE.Mesh(geo, solidMaterial);
             } else {
-                const geo = new THREE.TorusGeometry(radius, Math.max(1.5, thickness * 0.55), 16, 64);
-                mesh = new THREE.Mesh(geo, solidMaterial);
+                const tubeW = Math.max(3.5, thickness * 0.85);
+                const geo = new THREE.RingGeometry(radius - tubeW, radius + tubeW, 64);
+                mesh = new THREE.Mesh(geo, pureFlatMaterial);
             }
             mesh.position.z = i * 0.1;
             rootGroup.add(mesh);
         }
     }
-    else if (shapeType === 'glossysphere') {
-        const radius = 85;
-        const geo = new THREE.SphereGeometry(radius, 64, 64);
-        const mesh = new THREE.Mesh(geo, glossyMaterial);
-        mesh.rotation.set(0.5, 0.5, 0);
-        rootGroup.add(mesh);
-    }
     else if (shapeType.startsWith('star')) {
         for (let i = 0; i < layers; i++) {
             const outer = 42 + i * 28;
-            const inner = outer * 0.45;
+            const inner = outer * 0.48;
             const starShape = new THREE.Shape();
             for (let j = 0; j < 10; j++) {
                 const r = (j % 2 === 0) ? outer : inner;
@@ -147,7 +157,7 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness, 
                 rootGroup.add(mesh);
             } else {
                 const geo = new THREE.ExtrudeGeometry(starShape, { depth: 0.1, bevelEnabled: false });
-                const wireframe = createWireframeTubes(geo, thickness);
+                const wireframe = createWireframeTubes(geo, thickness * 1.3);
                 wireframe.position.z = i * 0.1;
                 rootGroup.add(wireframe);
             }
@@ -155,19 +165,19 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness, 
     }
     else if (shapeType.startsWith('sphere')) {
         for (let i = 0; i < layers; i++) {
-            const radius = 38 + i * 28;
+            const radius = 40 + i * 28;
             const geo = new THREE.SphereGeometry(radius, 24, 18);
-            let layerMesh = isFilled ? new THREE.Mesh(geo, solidMaterial) : createWireframeTubes(geo, thickness);
+            let layerMesh = isFilled ? new THREE.Mesh(geo, solidMaterial) : createWireframeTubes(geo, thickness * 1.2);
             layerMesh.rotation.set(0.6, 0.4, 0); 
             rootGroup.add(layerMesh);
         }
     }
     else if (shapeType === 'crystal8') {
         const geoOuter = new THREE.OctahedronGeometry(95, 0);
-        const geoInner = new THREE.OctahedronGeometry(48, 0);
+        const geoInner = new THREE.OctahedronGeometry(50, 0);
 
-        let layerOuter = isFilled ? new THREE.Mesh(geoOuter, solidMaterial) : createWireframeTubes(geoOuter, thickness);
-        let layerInner = isFilled ? new THREE.Mesh(geoInner, glossyMaterial) : createWireframeTubes(geoInner, Math.max(1.5, thickness * 0.75));
+        let layerOuter = isFilled ? new THREE.Mesh(geoOuter, solidMaterial) : createWireframeTubes(geoOuter, thickness * 1.3);
+        let layerInner = isFilled ? new THREE.Mesh(geoInner, pureFlatMaterial) : createWireframeTubes(geoInner, Math.max(2.5, thickness * 1.0));
 
         layerOuter.rotation.set(Math.PI / 4, 0, Math.PI / 4);
         layerInner.rotation.set(Math.PI / 4, 0, Math.PI / 4);
@@ -175,16 +185,16 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness, 
         rootGroup.add(layerOuter, layerInner);
     }
     else if (shapeType === 'torusKnot') {
-        const geoKnot = new THREE.TorusKnotGeometry(55, 14, 128, 16);
-        let meshKnot = isFilled ? new THREE.Mesh(geoKnot, solidMaterial) : createWireframeTubes(geoKnot, thickness);
+        const geoKnot = new THREE.TorusKnotGeometry(55, 15, 128, 16);
+        let meshKnot = isFilled ? new THREE.Mesh(geoKnot, solidMaterial) : createWireframeTubes(geoKnot, thickness * 1.2);
         rootGroup.add(meshKnot);
     }
     else if (shapeType === 'nested_dodeca') {
         const geoOuter = new THREE.DodecahedronGeometry(88, 0);
-        const geoInner = new THREE.DodecahedronGeometry(44, 0);
+        const geoInner = new THREE.DodecahedronGeometry(46, 0);
 
-        let layerOuter = isFilled ? new THREE.Mesh(geoOuter, solidMaterial) : createWireframeTubes(geoOuter, thickness);
-        let layerInner = isFilled ? new THREE.Mesh(geoInner, glossyMaterial) : createWireframeTubes(geoInner, Math.max(1.5, thickness * 0.8));
+        let layerOuter = isFilled ? new THREE.Mesh(geoOuter, solidMaterial) : createWireframeTubes(geoOuter, thickness * 1.3);
+        let layerInner = isFilled ? new THREE.Mesh(geoInner, pureFlatMaterial) : createWireframeTubes(geoInner, Math.max(2.5, thickness * 1.0));
 
         layerOuter.rotation.set(0.2, 0.3, 0);
         layerInner.rotation.set(-0.2, -0.3, 0);
@@ -192,7 +202,6 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness, 
         rootGroup.add(layerOuter, layerInner);
     }
     else if (shapeType === 'text') {
-        // 🚀 全面升級：清晰大尺寸立體視標文字 (512x160 畫布，消除隨機深度毛刺，字體放大 3.5 倍)
         const canvas = document.createElement('canvas');
         canvas.width = 512; 
         canvas.height = 160; 
@@ -200,23 +209,22 @@ export function createTarget(shapeType, colorHex, isFilled, textStr, thickness, 
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, 512, 160);
         ctx.fillStyle = 'white'; 
-        ctx.font = '900 84px "Montserrat", monospace';
+        ctx.font = '900 88px "Montserrat", monospace';
         ctx.textBaseline = 'middle';
         ctx.textAlign = 'center';
         
         ctx.fillText((textStr || 'H O T V').substring(0, 9), 256, 80); 
         
         const imgData = ctx.getImageData(0, 0, 512, 160).data;
-        const voxelSize = Math.max(1.8, thickness * 0.32);
-        const boxGeo = new THREE.BoxGeometry(voxelSize * 1.4, voxelSize * 1.4, voxelSize * 3.0); 
+        const voxelSize = Math.max(2.2, thickness * 0.38);
+        const boxGeo = new THREE.BoxGeometry(voxelSize * 1.5, voxelSize * 1.5, voxelSize * 3.0); 
 
         const textGroup = new THREE.Group(); 
         for (let y = 0; y < 160; y += 3) {
             for (let x = 0; x < 512; x += 3) {
                 const i = (y * 512 + x) * 4;
                 if (imgData[i] > 140) {
-                    const mesh = new THREE.Mesh(boxGeo, lineMaterial);
-                    // 移除舊版會弄糊字體的隨機 Z 軸雜訊，改為平整銳利的立體字塊
+                    const mesh = new THREE.Mesh(boxGeo, pureFlatMaterial);
                     mesh.position.set((x - 256) * 0.72, (80 - y) * 0.72, 0);
                     textGroup.add(mesh);
                 }
