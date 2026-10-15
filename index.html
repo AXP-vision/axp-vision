@@ -3,141 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AXP Fusion Dynamics | Visual Performance Engine</title>
-    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;700&family=Noto+Sans+TC:wght@400;700&family=Azeret+Mono:wght@400&display=swap" rel="stylesheet">
+    <title>AXP Fusion Dynamics | 凡特錫雙眼融像與視覺空間動態系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FontLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/TextGeometry.js"></script>
 </head>
 <body>
 
 <div id="fv-fusion-app">
+    <!-- 左側 WebGL 3D 視覺訓練主舞台 -->
     <div class="training-arena" id="arena">
         <div class="hud" id="hud-display">
-            STATUS: <strong id="status-text">IDLE</strong> | TIME: <strong id="timer-val" class="timer-display">00:00</strong><br>
-            PRISM: <strong id="prism-val-hud">0.0 Δ</strong> | STEREO: <strong id="hud-stereo-val">0.00</strong>
-            <span class="lab-tag" id="dynamic-mode-tag">AXP FUSION DYNAMICS 視覺空間優化矩陣</span>
+            <div class="hud-top-row">
+                <span>STATUS: <strong id="status-text">IDLE</strong></span>
+                <span>TIME: <strong id="timer-val" class="timer-display">00:00</strong></span>
+            </div>
+            <div class="hud-mid-row">
+                <span>PRISM: <strong id="prism-val-hud">0.0 Δ</strong></span>
+                <span>STEREO: <strong id="hud-stereo-val">0.00</strong></span>
+                <span>SCORE: <strong id="hud-score-val" style="color:#D4AF37;">0</strong></span>
+            </div>
+            <span class="lab-tag" id="dynamic-mode-tag">AXP FUSION DYNAMICS｜雙眼空間協同矩陣</span>
         </div>
         
         <div id="webgl-container" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;"></div>
-        <div class="breathe-reminder">💡 訓練中請保持平穩呼吸，勿憋氣</div>
+        
+        <!-- 迷走神經呼吸節律同步導引列 -->
+        <div class="breathe-reminder" id="breathe-guide-bar">
+            <span class="breath-dot" id="breath-indicator"></span>
+            <span id="breath-text">💡 練習中請跟隨中央微光環保持平穩呼吸，切勿憋氣</span>
+        </div>
     </div>
 
+    <!-- 右側臨床級毛玻璃控制面板 -->
     <div class="control-panel" style="z-index: 20;">
-        <div class="app-title">AXP FUSION</div>
+        <div class="app-header">
+            <div class="app-title">AXP FUSION <span>PRO</span></div>
+            <div class="app-sub">FANTASTIC VISION LAB</div>
+        </div>
 
+        <!-- 區塊 1：五大臨床模組與互動測驗快捷面板 (滑鼠與鍵盤雙棲) -->
         <div class="panel-section">
-            <div class="section-title">🎨 視覺與形體</div>
+            <div class="section-title">
+                <span>🎯 臨床訓練模組 [ Y U I O P ]</span>
+                <label class="checkbox-wrapper gold-chk" id="ai-toggle-wrapper" title="按 Z 鍵開啟 AI 動態階梯闖關">
+                    <input type="checkbox" id="ai-toggle"> AI 闖關 [Z]
+                </label>
+            </div>
+            
+            <div class="protocol-btn-grid">
+                <button type="button" class="proto-btn" data-proto="KeyY" title="破除單眼抑制與雙眼互補鎖定"><strong>Y</strong> 去抑制平衡</button>
+                <button type="button" class="proto-btn" data-proto="KeyU" title="平滑追視與多目標空間穩定"><strong>U</strong> 追視與周邊</button>
+                <button type="button" class="proto-btn" data-proto="KeyI" title="平滑聚散推拉與 SILO 景深"><strong>I</strong> 立體融像</button>
+                <button type="button" class="proto-btn" data-proto="KeyO" title="階躍融像翻轉與垂直微調"><strong>O</strong> 跳視與垂直</button>
+                <button type="button" class="proto-btn" data-proto="KeyP" title="大字體對焦收放與聚散解綁"><strong>P</strong> 調節解綁</button>
+                <button type="button" class="proto-btn test-mode-btn" id="btn-test-mode" title="按 0 鍵開啟四向方向鍵破抑制測驗"><strong>0</strong> 互動測驗: 關</button>
+            </div>
+
+            <div class="stage-nav-row">
+                <button type="button" class="stage-btn" id="btn-stage-prev">◀ 降階 [PgUp]</button>
+                <span id="stage-indicator-label" class="stage-badge">手動自由模式</span>
+                <button type="button" class="stage-btn" id="btn-stage-next">升階 [PgDn] ▶</button>
+            </div>
+        </div>
+
+        <!-- 區塊 2：視標幾何與尺寸控制 -->
+        <div class="panel-section">
+            <div class="section-title">🎨 視標幾何與雙眼互補結構</div>
             <div class="control-group">
                 <select id="shape-select">
-                    <optgroup label="經典平面對焦 (Classic)">
-                        <option value="circle3">三層同心圓 ( 3-Rings )</option>
-                        <option value="circle5">五層同心圓 ( 5-Rings )</option>
-                        <option value="star3">三層扁平星芒 ( 3-Stars )</option>
-                        <option value="star5">五層扁平星芒 ( 5-Stars )</option>
+                    <optgroup label="雙眼去抑制互補視標 (Dichoptic Anti-Suppression)">
+                        <option value="dichoptic_lock" selected>雙眼互補對位鎖 (左框右核・破抑制專用)</option>
+                        <option value="dichoptic_cross">雙眼互補十字準星 (水平垂直分視校準)</option>
                     </optgroup>
-                    <optgroup label="高階 3D 幾何 (WebGL 3D)">
-                        <option value="sphere5" selected>3D 網格地球儀 ( 5-Sphere )</option>
-                        <option value="glossysphere">高光實體晶球 ( Glossy Sphere )</option>
-                        <option value="crystal8">3D 雙層八面晶體 ( 8-Crystal )</option>
-                        <option value="torusKnot">3D 無盡紐結 ( Neuro-Knot )</option>
-                        <option value="nested_dodeca">3D 嵌套量子核 ( Quantum Core )</option>
+                    <optgroup label="高階 3D 空間幾何 (WebGL 3D)">
+                        <option value="sphere5">3D 經緯網格球體 (5-Sphere)</option>
+                        <option value="glossysphere">高光澤立體晶球 (SILO 專用)</option>
+                        <option value="crystal8">3D 雙層八面晶體 (Octa-Crystal)</option>
+                        <option value="torusKnot">3D 莫比烏斯連續軌跡 (Torus Knot)</option>
+                        <option value="nested_dodeca">3D 雙層十二面體 (Dodecahedron)</option>
                     </optgroup>
-                    <optgroup label="客製化">
-                        <option value="text">高頻視標文字 ( TEXT )</option>
+                    <optgroup label="經典平面融像與清晰大視標">
+                        <option value="circle5">五層同心圓環 (5-Rings)</option>
+                        <option value="star5">五層立體星芒 (5-Stars)</option>
+                        <option value="text">高對比清晰大視標 (Large Optotype)</option>
                     </optgroup>
                 </select>
             </div>
             
-            <div class="control-group" id="text-input-group" style="display: none; margin-top: 4px;">
-                <input type="text" id="custom-text" value="AXP" placeholder="輸入文字..." style="text-align: center; font-weight: bold; font-size: 16px; letter-spacing: 2px;">
+            <div class="control-group" id="text-input-group" style="display: none; margin-top: 6px;">
+                <input type="text" id="custom-text" value="H O T V" placeholder="輸入大寫字母..." style="text-align: center; font-weight: 800; font-size: 15px; letter-spacing: 3px;">
             </div>
 
-            <div class="control-group" style="margin-top: 8px;">
-                <label>視覺感知尺寸 [ W / S ] <span class="val-display" id="size-label">200px</span></label>
-                <input type="range" id="size-slider" min="100" max="600" step="0.1" value="200">
+            <div class="control-group" style="margin-top: 10px;">
+                <label>視標物理尺寸 [ W 放大 / S 縮小 ] <span class="val-display" id="size-label">280px</span></label>
+                <input type="range" id="size-slider" min="150" max="600" step="5" value="280">
             </div>
             <div class="control-group">
                 <label style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>線條粗細 [ A / D ] <span class="val-display" id="thick-label">9.0</span></span>
-                    <div style="display:flex; gap:8px;">
-                        <label class="checkbox-wrapper"><input type="checkbox" id="rotate-checkbox" checked> 轉 [R]</label>
-                        <label class="checkbox-wrapper"><input type="checkbox" id="fill-checkbox"> 滿 [F]</label>
+                    <span>線條粗細 [ A / D ] <span class="val-display" id="thick-label">8.0</span></span>
+                    <div style="display:flex; gap:6px;">
+                        <label class="checkbox-wrapper"><input type="checkbox" id="rotate-checkbox" checked> 旋轉[R]</label>
+                        <label class="checkbox-wrapper"><input type="checkbox" id="fill-checkbox"> 實體[F]</label>
                     </div>
                 </label>
-                <input type="range" id="thick-slider" min="1" max="10" step="0.1" value="9">
+                <input type="range" id="thick-slider" min="2" max="10" step="0.5" value="8">
             </div>
         </div>
 
+        <!-- 區塊 3：稜鏡度與空間運動參數 -->
         <div class="panel-section">
-            <div class="section-title">
-                <span>🚀 空間動態 ( Y U I O P )</span>
-                <label class="checkbox-wrapper" id="ai-toggle-wrapper" title="Z 鍵切換"><input type="checkbox" id="ai-toggle"> AI 託管 [ Z ]</label>
-            </div>
+            <div class="section-title">🚀 稜鏡負載與空間深度</div>
             
-            <div class="control-group" style="background: rgba(59, 130, 246, 0.15); padding: 10px; border-radius: 6px; border-left: 3px solid #3b82f6; margin-bottom: 8px;">
-                <label style="color: #60a5fa; margin-bottom: 8px; display: flex; justify-content: space-between;">
-                    <span>稜鏡需求量 [ 1 BI / 2 BO ]</span>
+            <div class="control-group prism-highlight-box">
+                <label style="color: #93c5fd; margin-bottom: 6px; display: flex; justify-content: space-between;">
+                    <span>稜鏡訓練需求 [ 1 開散 / 2 聚合 ]</span>
                     <span class="val-display" id="prism-label">0.0 Δ (平光)</span>
                 </label>
-                <div style="display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; margin-bottom: 4px;">
-                    <span>BI (-6)</span>
-                    <span>0</span>
-                    <span>BO (+40)</span>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-bottom: 4px; font-family: 'Montserrat', monospace;">
+                    <span>BI 開散 (-12Δ)</span>
+                    <span>0Δ</span>
+                    <span>BO 聚合 (+35Δ)</span>
                 </div>
-                <input type="range" id="prism-slider" min="-6" max="40" step="0.5" value="0">
+                <input type="range" id="prism-slider" min="-12" max="35" step="0.5" value="0">
             </div>
 
             <div class="control-group">
-                <label>運動速度 [ , 慢 / . 快 ] <span class="val-display" id="speed-label">20</span></label>
-                <input type="range" id="speed-slider" min="1" max="100" step="0.1" value="20">
+                <label>運動律動速度 [ , 慢 / . 快 ] <span class="val-display" id="speed-label">18.0</span></label>
+                <input type="range" id="speed-slider" min="1" max="60" step="1" value="18">
             </div>
             
             <div class="control-group" style="margin-top: 4px;">
-                <label>立體視深度 [ [ 凹陷 / ] 凸出 ] <span class="val-display" id="stereo-label">0.00</span></label>
-                <input type="range" id="stereo-slider" min="-0.15" max="0.15" step="0.01" value="0">
+                <label>立體視差深度 [ [ 遠離 / ] 浮出 ] <span class="val-display" id="stereo-label">+0.02</span></label>
+                <input type="range" id="stereo-slider" min="-0.15" max="0.15" step="0.01" value="0.02">
             </div>
         </div>
 
+        <!-- 區塊 4：螢幕尺寸物理校準與紅藍/紅綠濾光平衡 -->
         <div class="panel-section">
-            <div class="section-title">🔬 數位光學與視覺感知微調</div>
+            <div class="section-title">🔬 螢幕尺寸校準與雙眼亮度平衡</div>
+            <div class="control-group">
+                <label>您的螢幕尺寸與觀看距離 (cm)</label>
+                <div style="display: flex; gap: 8px;">
+                    <select id="screen-spec" style="flex: 2.2;">
+                        <option value="laptop14">13" ~ 14" 筆電或平板 (30.5cm)</option>
+                        <option value="mbp16" selected>15" ~ 16" 筆電 MacBook Pro (34.5cm)</option>
+                        <option value="desktop24">24" 桌上型螢幕 (53.1cm)</option>
+                        <option value="desktop27">27" 桌上型螢幕 (59.8cm)</option>
+                        <option value="desktop32">32" 大型螢幕 (70.8cm)</option>
+                    </select>
+                    <input type="number" id="view-dist" value="50" min="30" max="100" style="flex: 0.8; text-align: center;" title="眼睛與螢幕距離(cm)">
+                </div>
+            </div>
+
             <div class="control-group">
                 <select id="glasses-select">
-                    <option value="rb" selected>紅藍眼鏡（Digital Anaglyph）</option>
-                    <option value="rg">紅綠眼鏡（Classic Tranaglyph）</option>
+                    <option value="rb" selected>紅藍分視濾鏡 (左藍 / 右紅)</option>
+                    <option value="rg">紅綠分視濾鏡 (左綠 / 右紅)</option>
                 </select>
             </div>
             <div class="control-group">
-                <label>視覺感知平衡 <span class="val-display" id="balance-label">50/50</span></label>
-                <input type="range" id="balance-slider" min="0" max="100" value="50" style="background: linear-gradient(to right, #3b82f6, #ef4444);">
+                <label>強弱眼對比平衡 (破抑制微調) <span class="val-display" id="balance-label">均衡 50/50</span></label>
+                <input type="range" id="balance-slider" min="10" max="90" value="50" style="background: linear-gradient(to right, #2980b9, #ef4444); border-radius: 4px;">
             </div>
             <div class="control-group">
-                <label>疊影濾除校正 <span class="val-display"><span id="l-label-text">藍光</span>: <span id="l-val">100%</span> | 紅光: <span id="r-val">100%</span></span></label>
-                <input type="range" id="blue-slider" min="5" max="100" value="100" style="accent-color: #0080ff; margin-bottom: 4px;">
-                <input type="range" id="green-slider" min="5" max="100" value="100" style="accent-color: green; display: none; margin-bottom: 4px;">
-                <input type="range" id="red-slider" min="5" max="100" value="100" style="accent-color: red;">
-            </div>
-            <div class="control-group">
-                <div style="display: flex; gap: 8px;">
-                    <select id="screen-spec" style="flex: 2;">
-                        <option value="retina16">MacBook Pro (226 DPI)</option>
-                        <option value="ipad13">iPad Pro (264 DPI)</option>
-                        <option value="generic">一般螢幕 (96 DPI)</option>
-                    </select>
-                    <input type="number" id="view-dist" value="50" min="20" style="flex: 1; text-align: center;" title="觀距(cm)">
-                </div>
+                <label>底色疊影消除校正 <span class="val-display"><span id="l-label-text">藍通道</span>:<span id="l-val">100%</span> | 紅通道:<span id="r-val">100%</span></span></label>
+                <input type="range" id="blue-slider" min="10" max="100" value="100" style="accent-color: #38bdf8; margin-bottom: 5px;">
+                <input type="range" id="green-slider" min="10" max="100" value="100" style="accent-color: #4ade80; display: none; margin-bottom: 5px;">
+                <input type="range" id="red-slider" min="10" max="100" value="100" style="accent-color: #f87171;">
             </div>
         </div>
 
+        <!-- 底部主控制按鈕群 -->
         <div class="btn-row">
-            <button class="btn-toggle" id="start-btn">開始 [ Space ]</button>
-            <button class="btn-reset" id="reset-btn" title="歸零 [ Enter ]">
-                <svg viewBox="0 0 512 512" style="width:18px; fill:currentColor;"><path d="M463.5 224H472c13.3 0 24-10.7 24-24V72c0-9.7-5.8-18.5-14.8-22.2s-19.3-1.7-26.2 5.2L413.4 96.6c-87.6-86.5-228.7-86.2-315.8 1c-87.5 87.5-87.5 229.3 0 316.8s229.3 87.5 316.8 0c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0c-62.5 62.5-163.8 62.5-226.3 0s-62.5-163.8 0-226.3c62.2-62.2 162.7-62.5 225.3-1L327 183c-6.9 6.9-8.9 17.2-5.2 26.2s12.5 14.8 22.2 14.8H463.5z"/></svg>
-            </button>
+            <button type="button" class="btn-toggle" id="start-btn">▶ 啟動訓練 [ Space ]</button>
+            <button type="button" class="btn-reset" id="reset-btn" title="歸零重置 [ Enter ]">↺</button>
         </div>
-        <button class="btn-fullscreen" id="fullscreen-btn">進入全螢幕沉浸模式</button>
+        <div class="btn-sub-row">
+            <button type="button" class="btn-report" id="report-btn" title="按 G 鍵結算並上傳練習報告">📊 結算練習報告 [ G ]</button>
+            <button type="button" class="btn-fullscreen" id="fullscreen-btn" title="按 Q 鍵切換全螢幕">⛶ 全螢幕 [ Q ]</button>
+        </div>
     </div>
 </div>
 
