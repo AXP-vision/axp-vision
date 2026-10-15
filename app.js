@@ -1,10 +1,9 @@
-// app.js - AXP Fusion Dynamics (v26.0 - 垂直雙向互調 A+B × 周邊廣角定錨 × 第7階90秒全向拮抗肌放鬆旗艦版)
-// 核心臨床機制：
-// 1. 登入介面：晨曦冰川霧藍輕鬆配色，提示為「請輸入您的專屬訓練代號，或者姓名 (例：FV-8888 / 凡特錫)」
-// 2. 垂直稜鏡雙向互調：實作 vert_smooth_alt (14秒超慢速正負交替平滑牽引) 與 vert_step_alt (左高停4s -> 平光3s -> 右高停4s -> 平光3s)
-// 3. 第 7 階 90 秒全向拮抗肌同步放鬆 (antagonist_relax)：自動讀取 duration:90，啟動 360 度同心圓水波離心擴張，抵銷單向向量，同步放鬆六條眼外肌
-// 4. 去抑制瞬態交換 (swap_flash)：每隔 7 秒自動將左右眼紅藍圖形與十字組件瞬間對調 1.4 秒再彈回，強效震碎單眼抑制
-// 5. 周邊視野中心定錨 (center_lock_peripheral)：中央十字靶鎖定不動，將測驗閃爍點推向廣角外圍區，訓練軟視線餘光感知
+// app.js - AXP Fusion Dynamics (v27.0 - 零鬼影純光譜 × 嚴格 60s/90s 計時 × 換關前 5 秒倒數旗艦版)
+// 核心臨床修復與升級：
+// 1. 徹底消除鬼影色偏：移除會發紫光的背景八角框，Shader 改為純通道無壓縮提取，鎖定舊版精準純紅與純藍波段
+// 2. 修復偷秒數跳關 Bug：移除「連對 3 題就強制跳下一關」之邏輯，嚴格保證每階段完整執行 60 秒 (第 7 階 90 秒)
+// 3. 新增換關前 5 秒倒數提示：於每階段最後 5 秒顯示溫和倒數膠囊，引導受測者眨眼吐氣準備銜接下一動
+// 4. 完整支援垂直雙向互調 (A 超慢速 14s 平滑牽引 + B 階梯停留 4s 鎖定) 與第 7 階 360 度同心水波拮抗肌放鬆
 
 import { AIM_MATRIX, PROTOCOL_NAMES } from './matrix.js';
 import { createTarget } from './shapes.js';
@@ -93,23 +92,30 @@ const btnTestMode = document.getElementById('btn-test-mode');
 const breathIndicator = document.getElementById('breath-indicator');
 const breathText = document.getElementById('breath-text');
 
+// 臨床狀態導引膠囊
 const siloPrompt = document.createElement('div');
 siloPrompt.id = 'silo-prompt';
-siloPrompt.style.cssText = "position:absolute; bottom:68px; left:50%; transform:translateX(-50%); font-size:15.5px; font-weight:800; letter-spacing:1.2px; background:rgba(15, 23, 42, 0.90); backdrop-filter:blur(8px); padding:10px 24px; border-radius:10px; border:1.5px solid #D4AF37; color:#f8fafc; z-index:100; display:none; text-align:center; pointer-events:none; box-shadow:0 8px 25px rgba(0,0,0,0.45);";
+siloPrompt.style.cssText = "position:absolute; bottom:66px; left:50%; transform:translateX(-50%); font-size:15px; font-weight:800; letter-spacing:1.2px; background:rgba(15, 23, 42, 0.90); backdrop-filter:blur(8px); padding:10px 24px; border-radius:10px; border:1.5px solid #D4AF37; color:#f8fafc; z-index:100; display:none; text-align:center; pointer-events:none; box-shadow:0 8px 25px rgba(0,0,0,0.45);";
 document.getElementById('arena').appendChild(siloPrompt);
+
+// ⏳ 新增：切換下一動作前「最後 5 秒倒數計時膠囊」
+const stageCountdownBadge = document.createElement('div');
+stageCountdownBadge.id = 'stage-countdown-badge';
+stageCountdownBadge.style.cssText = "position:absolute; top:24px; right:28px; font-size:15.5px; font-weight:900; letter-spacing:1px; background:rgba(26, 54, 93, 0.92); backdrop-filter:blur(10px); padding:12px 22px; border-radius:12px; border:2px solid #D4AF37; color:#D4AF37; z-index:110; display:none; text-align:center; pointer-events:none; box-shadow:0 10px 30px rgba(0,0,0,0.5); font-family:'Noto Sans TC', monospace;";
+document.getElementById('arena').appendChild(stageCountdownBadge);
 
 // === 核心狀態變數 ===
 let isRunning = false, animationId;
-let currentSize = 320, currentSpeed = 14, currentStereo = 0.02, currentThick = 8.0;
-let currentVertPrism = 0; // 獨立垂直稜鏡目標量 (v_prism)
-let currentStageDurationMs = 60000; // 預設每階 60 秒，第 7 階放鬆站自動切換為 90 秒 (90000ms)
+let currentSize = 340, currentSpeed = 14, currentStereo = 0.02, currentThick = 9.0;
+let currentVertPrism = 0; 
+let currentStageDurationMs = 60000; // 嚴格預設 60 秒 (60000ms)，第 7 階自動設為 90 秒 (90000ms)
 let currentDistractors = 0; 
 let isRotating = true, isFilled = true;
 let activeProtocol = null, protocolStage = 0, protocolTime = 0, totalTimerSec = 0, lastTime = 0, phase = 0;
 let currentSaccadeX = 0, currentSaccadeY = 0, saccadeTimer = 0, currentRoamX = 0, currentRoamY = 0;
 
-let dichopticSwapState = false; // 雙眼互補組件交換狀態
-let colorPolaritySwapState = false; // 左右眼紅藍顏色瞬間閃換狀態
+let dichopticSwapState = false; 
+let colorPolaritySwapState = false; 
 
 let currentAxis = 'horizontal';
 let currentMode = 'crossover';
@@ -125,7 +131,7 @@ let consecutiveHits = 0;
 let consecutiveMisses = 0;
 let isAIRescueActive = false;
 let aiRescueStartTime = 0;
-let originalSizeBeforeRescue = 320;
+let originalSizeBeforeRescue = 340;
 let originalPrismBeforeRescue = 0; 
 
 let flipperTimer = 0;
@@ -140,8 +146,13 @@ if (btnTestMode) {
     btnTestMode.classList.add('test-on');
 }
 
+// 預設將紅藍輸出滑桿微調至 88%，消除廣色域螢幕滿載 100% 造成的邊緣刺穿鬼影
+if (redSlider) redSlider.value = 88;
+if (blueSlider) blueSlider.value = 88;
+if (greenSlider) greenSlider.value = 85;
+
 // ==========================================
-// 核心圖學：Layer Masking 雙通道渲染引擎 (純紅純藍零鬼影校準)
+// 核心圖學：Layer Masking 雙通道渲染引擎 (還原舊版純淨無鬼影 Shader)
 // ==========================================
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#000000');
@@ -155,11 +166,11 @@ renderer.setSize(container.clientWidth, container.clientHeight);
 renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
 container.appendChild(renderer.domElement);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.45); 
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.55); 
 ambientLight.layers.enable(1); ambientLight.layers.enable(2);
 scene.add(ambientLight);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9); 
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.85); 
 directionalLight.position.set(0, 0, 200); 
 directionalLight.layers.enable(1); directionalLight.layers.enable(2);
 scene.add(directionalLight);
@@ -167,14 +178,15 @@ scene.add(directionalLight);
 const rtLeft = new THREE.WebGLRenderTarget(container.clientWidth, container.clientHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat });
 const rtRight = new THREE.WebGLRenderTarget(container.clientWidth, container.clientHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat });
 
+// 還原舊版最準確之直接通道合成 Shader (不經灰階壓縮，徹底消除半透明鬼影)
 const anaglyphShader = {
     uniforms: {
         "mapLeft": { value: rtLeft.texture },
         "mapRight": { value: rtRight.texture },
         "colorLeft": { value: new THREE.Color(0.0, 0.0, 1.0) }, 
         "colorRight": { value: new THREE.Color(1.0, 0.0, 0.0) }, 
-        "intensityLeft": { value: 1.0 },
-        "intensityRight": { value: 1.0 }
+        "intensityLeft": { value: 0.88 },
+        "intensityRight": { value: 0.88 }
     },
     vertexShader: ` varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); } `,
     fragmentShader: `
@@ -188,11 +200,9 @@ const anaglyphShader = {
         void main() {
             vec4 texelLeft = texture2D(mapLeft, vUv);
             vec4 texelRight = texture2D(mapRight, vUv);
-            float lumLeft = dot(texelLeft.rgb, vec3(0.299, 0.587, 0.114));
-            float lumRight = dot(texelRight.rgb, vec3(0.299, 0.587, 0.114));
-            vec3 finalColor = (vec3(lumLeft) * colorLeft * intensityLeft) + 
-                              (vec3(lumRight) * colorRight * intensityRight);
-            gl_FragColor = vec4(finalColor, max(texelLeft.a, texelRight.a));
+            vec3 finalColor = (texelLeft.rgb * colorLeft * intensityLeft) + 
+                              (texelRight.rgb * colorRight * intensityRight);
+            gl_FragColor = vec4(finalColor, 1.0);
         }
     `
 };
@@ -203,58 +213,53 @@ const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 const postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMaterial);
 postScene.add(postQuad);
 
-// 周邊定錨框與呼吸光環
-const peripheralLockGroup = new THREE.Group();
-const frameMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.10 });
-const octFrame = new THREE.Mesh(new THREE.RingGeometry(430, 433, 8), frameMat);
-octFrame.rotation.z = Math.PI / 8;
-octFrame.layers.enable(1); octFrame.layers.enable(2);
-peripheralLockGroup.add(octFrame);
-
-const breathHaloMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.05 });
-const breathHaloMesh = new THREE.Mesh(new THREE.RingGeometry(190, 196, 64), breathHaloMat);
-breathHaloMesh.position.z = -80;
-breathHaloMesh.layers.enable(1); breathHaloMesh.layers.enable(2);
-peripheralLockGroup.add(breathHaloMesh);
-scene.add(peripheralLockGroup);
-
 // =========================================================================
-// 🌿 第 7 階專屬：360 度全向同心水波漣漪群組 (Antagonist Muscle Release Waves)
-// 透過上下左右完全對稱向外擴散的離心光流，抵銷單向運動向量，讓六條眼外拮抗肌同時放鬆
+// 🌿 第 7 階專屬：360 度全向同心水波漣漪群組 (僅於第 7 階放鬆站顯示，平時完全隱藏不產生紫光鬼影)
 // =========================================================================
 const antagonistRippleGroup = new THREE.Group();
 const rippleRings = [];
 for (let r = 0; r < 4; r++) {
     const rMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.0, depthWrite: false });
-    const rMesh = new THREE.Mesh(new THREE.RingGeometry(95, 99, 64), rMat);
+    const rMesh = new THREE.Mesh(new THREE.RingGeometry(95, 101, 64), rMat);
     rMesh.position.z = -40;
-    rMesh.layers.enable(1); rMesh.layers.enable(2);
+    // 偶數圈放左眼，奇數圈放右眼，避免紅藍重疊發紫，同時達成雙眼 360 度全向離心放鬆
+    rMesh.layers.set(r % 2 === 0 ? 1 : 2);
     antagonistRippleGroup.add(rMesh);
     rippleRings.push({ mesh: rMesh, mat: rMat, offset: r * 0.25 });
 }
 antagonistRippleGroup.visible = false;
 scene.add(antagonistRippleGroup);
 
-// 微光深空星點
+// 還原舊版紅藍分層深空星點 (Layer 1 與 Layer 2 分離，徹底避免紅藍重疊變成紫色星點鬼影)
 const starCanvas = document.createElement('canvas');
 starCanvas.width = 32; starCanvas.height = 32;
 const starCtx = starCanvas.getContext('2d');
 starCtx.beginPath(); starCtx.arc(16, 16, 12, 0, Math.PI * 2); starCtx.fillStyle = 'white'; starCtx.fill();
 const starTexture = new THREE.CanvasTexture(starCanvas);
 
-const starsCount = 60; 
-const posArrayCommon = new Float32Array(starsCount * 3);
+const starsCount = 45; 
+const posArrayL = new Float32Array(starsCount * 3);
+const posArrayR = new Float32Array(starsCount * 3);
 for(let i = 0; i < starsCount; i++) {
-    posArrayCommon[i*3] = (Math.random() - 0.5) * 1500;
-    posArrayCommon[i*3+1] = (Math.random() - 0.5) * 1200;
-    posArrayCommon[i*3+2] = -300 - Math.random() * 500;
+    posArrayL[i*3] = (Math.random() - 0.5) * 1500;
+    posArrayL[i*3+1] = (Math.random() - 0.5) * 1200;
+    posArrayL[i*3+2] = -300 - Math.random() * 500;
+
+    posArrayR[i*3] = (Math.random() - 0.5) * 1500;
+    posArrayR[i*3+1] = (Math.random() - 0.5) * 1200;
+    posArrayR[i*3+2] = -300 - Math.random() * 500;
 }
-const starsGeo = new THREE.BufferGeometry();
-starsGeo.setAttribute('position', new THREE.BufferAttribute(posArrayCommon, 3));
-const starMat = new THREE.PointsMaterial({ size: 3.8, map: starTexture, transparent: true, opacity: 0.24, color: 0xffffff, depthWrite: false });
-const starsCommon = new THREE.Points(starsGeo, starMat);
-starsCommon.layers.enable(1); starsCommon.layers.enable(2);
-scene.add(starsCommon);
+const starsGeoL = new THREE.BufferGeometry();
+starsGeoL.setAttribute('position', new THREE.BufferAttribute(posArrayL, 3));
+const starsGeoR = new THREE.BufferGeometry();
+starsGeoR.setAttribute('position', new THREE.BufferAttribute(posArrayR, 3));
+
+const starMat = new THREE.PointsMaterial({ size: 4.5, map: starTexture, transparent: true, opacity: 0.35, color: 0xffffff, depthWrite: false });
+const starsLeft = new THREE.Points(starsGeoL, starMat);
+const starsRight = new THREE.Points(starsGeoR, starMat);
+starsLeft.layers.set(1);
+starsRight.layers.set(2);
+scene.add(starsLeft, starsRight);
 
 let targetLeft, targetRight;
 let distractorGroupLeft = new THREE.Group();
@@ -316,11 +321,11 @@ function getScreenSizeCompensationFactor() {
     return baseMbp16Cm / physicalWidthCm;
 }
 
-// 支援「左右紅藍顏色瞬間交換 (colorPolaritySwapState)」與純紅純藍零鬼影輸出
+// 還原舊版精準純紅 (1.0, 0.0, 0.0) 與純藍 (0.0, 0.0, 1.0) 編號，支援左右紅藍瞬間交換
 function updateOpticsFromUI() {
-    const rVal = redSlider ? parseInt(redSlider.value) : 100;
-    const gVal = greenSlider ? parseInt(greenSlider.value) : 100;
-    const bVal = blueSlider ? parseInt(blueSlider.value) : 100;
+    const rVal = redSlider ? parseInt(redSlider.value) : 88;
+    const gVal = greenSlider ? parseInt(greenSlider.value) : 85;
+    const bVal = blueSlider ? parseInt(blueSlider.value) : 88;
     
     let balance = balanceSlider ? parseInt(balanceSlider.value) : 50;
     let opacityLeft = balance < 50 ? (balance / 50) : 1; 
@@ -330,19 +335,18 @@ function updateOpticsFromUI() {
     if(document.getElementById('r-val')) document.getElementById('r-val').innerText = rVal + '%';
     
     let primaryLeftColor = new THREE.Color();
-    let primaryRightColor = new THREE.Color(1.0, 0.0, 0.0); // 純紅
+    let primaryRightColor = new THREE.Color(1.0, 0.0, 0.0); // 舊版標準純紅 #FF0000
 
     if (glassesSelect && glassesSelect.value === 'rg') {
         if(document.getElementById('l-val')) document.getElementById('l-val').innerText = gVal + '%';
-        primaryLeftColor.setRGB(0.0, 1.0, 0.0); // 純綠
+        primaryLeftColor.setRGB(0.0, 1.0, 0.0); // 舊版標準純綠 #00FF00
         postMaterial.uniforms.intensityLeft.value = (gVal / 100.0) * opacityLeft;
     } else {
         if(document.getElementById('l-val')) document.getElementById('l-val').innerText = bVal + '%';
-        primaryLeftColor.setRGB(0.0, 0.0, 1.0); // 純藍
+        primaryLeftColor.setRGB(0.0, 0.0, 1.0); // 舊版標準純藍 #0000FF
         postMaterial.uniforms.intensityLeft.value = (bVal / 100.0) * opacityLeft;
     }
 
-    // 當觸發 swap_flash 紅藍瞬間交換時，將左右通道的渲染顏色與組件瞬間互換再彈回
     if (colorPolaritySwapState) {
         postMaterial.uniforms.colorLeft.value.copy(primaryRightColor);
         postMaterial.uniforms.colorRight.value.copy(primaryLeftColor);
@@ -391,12 +395,12 @@ function buildTargets() {
     targetRight.traverse(c => { c.layers.set(2); if(c.isMesh) { c.material.blending = THREE.NormalBlending; c.material.color.setHex(0xffffff); } });
 
     if (currentDistractors > 0) {
-        const distMatLeft = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.3 });
-        const distMatRight = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.3 });
+        const distMatLeft = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const distMatRight = new THREE.MeshBasicMaterial({ color: 0xffffff });
         
         const geoPool = [
             new THREE.OctahedronGeometry(1.2, 0),
-            new THREE.TorusGeometry(0.9, 0.35, 16, 32),
+            new THREE.TorusGeometry(0.9, 0.38, 16, 32),
             new THREE.DodecahedronGeometry(1.1, 0)
         ];
 
@@ -407,14 +411,13 @@ function buildTargets() {
             meshL.layers.set(1); meshR.layers.set(2);
             distractorGroupLeft.add(meshL); distractorGroupRight.add(meshR);
             
-            // 將外圍干擾星體推向 240px ~ 390px 的廣角周邊軌道，強迫打開周邊視野
             distractorData.push({
                 phaseOffset: (i * Math.PI * 2) / currentDistractors,
                 speedMultiplier: 0.45 + (i % 3) * 0.22,
                 orbitRadiusX: 250 + (i * 32),
                 orbitRadiusY: 185 + (i * 26),
                 zOffset: (i % 2 === 0 ? 1 : -1) * 60,
-                baseSize: 40
+                baseSize: 42
             });
         }
     }
@@ -431,17 +434,6 @@ function updateScaleAndThickness(dynamicSize = currentSize) {
     if(targetLeft && targetRight) { 
         targetLeft.scale.set(scaleFactor, scaleFactor, scaleFactor); 
         targetRight.scale.set(scaleFactor, scaleFactor, scaleFactor); 
-        const thicknessScale = 1 + (scaleFactor - 1) * 0.35; 
-        const correctionScale = thicknessScale / scaleFactor;
-        
-        [targetLeft, targetRight].forEach(target => {
-            target.traverse(child => { 
-                if(child.isMesh && child.geometry) {
-                    if (child.geometry.type === 'BoxGeometry') { child.scale.x = correctionScale; child.scale.z = correctionScale; } 
-                    else if (child.geometry.type === 'TorusGeometry') { child.scale.set(correctionScale, correctionScale, correctionScale); }
-                } 
-            });
-        });
     }
 
     for (let i = 0; i < currentDistractors; i++) {
@@ -452,7 +444,7 @@ function updateScaleAndThickness(dynamicSize = currentSize) {
         }
     }
 
-    const cueScale = Math.max(13, dynamicSize * 0.048 * screenComp); 
+    const cueScale = Math.max(14, dynamicSize * 0.05 * screenComp); 
     cueGroupLeft.scale.set(cueScale, cueScale, 1); 
     cueGroupRight.scale.set(cueScale, cueScale, 1);
     forceRenderFrame();
@@ -464,7 +456,6 @@ function updatePositions(phaseVal, currentAnim = '') {
 
     if (isRunning) {
         if (currentAnim.includes('antagonist_relax') || currentAnim.includes('center_lock_peripheral') || currentAnim.includes('vert_')) {
-            // 在第7階拮抗肌放鬆、周邊中心定錨、以及垂直稜鏡訓練時，水平稜鏡保持穩定或僅做微米級呼吸，不大幅晃動
             targetPrismDemand = maxPrismLoad * (0.85 + 0.15 * Math.sin(phaseVal));
         } else if (currentAnim.includes('flipper')) {
             targetPrismDemand = flipperState ? maxPrismLoad : -maxPrismLoad * 0.35;
@@ -485,7 +476,6 @@ function updatePositions(phaseVal, currentAnim = '') {
 
     let pxLeftX = 0, pxRightX = 0, pxLeftY = 0, pxRightY = 0;
 
-    // 若為周邊中心定錨 (center_lock_peripheral) 或拮抗肌放鬆 (antagonist_relax)，主目標固定在畫面正中央
     if (currentAnim.includes('center_lock_peripheral') || currentAnim.includes('antagonist_relax')) {
         pxLeftX = baseDispX;
         pxRightX = -baseDispX;
@@ -514,11 +504,7 @@ function updatePositions(phaseVal, currentAnim = '') {
     let finalLeftX = pxLeftX + currentRoamX + currentSaccadeX; let finalLeftY = pxLeftY + currentRoamY + currentSaccadeY;
     let finalRightX = pxRightX + currentRoamX + currentSaccadeX; let finalRightY = pxRightY + currentRoamY + currentSaccadeY;
 
-    // =========================================================================
-    // ↕️ 垂直稜鏡雙向互調引擎 (左右眼上下交替，絕不單邊出力)
-    // 1. vert_smooth_alt (細節一 A)：14秒超慢速正弦波，左高右低 <-> 右高左低平滑交替
-    // 2. vert_step_alt (細節一 B)：14秒階梯停留，左高停4秒 -> 平光3秒 -> 右高停4秒 -> 平光3秒
-    // =========================================================================
+    // 垂直稜鏡雙向互調引擎 (左右眼上下交替)
     const targetVertPrism = currentVertPrism > 0 ? currentVertPrism : (currentAnim.includes('vert_') ? 0.8 : 0);
     if (targetVertPrism > 0 && isRunning) {
         const totalVertPx = (targetVertPrism * viewDistM) / pixelToCm;
@@ -526,19 +512,12 @@ function updatePositions(phaseVal, currentAnim = '') {
         let vertFactor = 0;
 
         if (currentAnim.includes('vert_step_alt')) {
-            // 細節一 B：階梯停留鎖定 (14秒循環)
             const cycleSec = (protocolTime / 1000) % 14.0;
-            if (cycleSec < 4.0) {
-                vertFactor = 1.0; // 0~4秒：左眼往上、右眼往下定點鎖定
-            } else if (cycleSec < 7.0) {
-                vertFactor = 0.0; // 4~7秒：回歸 0Δ 平光休息
-            } else if (cycleSec < 11.0) {
-                vertFactor = -1.0; // 7~11秒：交換！右眼往上、左眼往下定點鎖定
-            } else {
-                vertFactor = 0.0; // 11~14秒：回歸 0Δ 平光休息
-            }
+            if (cycleSec < 4.0) { vertFactor = 1.0; }
+            else if (cycleSec < 7.0) { vertFactor = 0.0; }
+            else if (cycleSec < 11.0) { vertFactor = -1.0; }
+            else { vertFactor = 0.0; }
         } else {
-            // 細節一 A：超慢速正弦波雙向平滑牽引 (14秒完整正負週期)
             vertFactor = Math.sin((protocolTime / 14000) * Math.PI * 2);
         }
 
@@ -594,7 +573,6 @@ function updatePositions(phaseVal, currentAnim = '') {
         }
     }
 
-    // 測驗閃爍點位置：若為周邊視野中心定錨模式 (center_lock_peripheral)，將閃爍點推到 275px 廣角外圍區，訓練餘光捕捉！
     if (taskActive && isTestModeActive) {
         const screenComp = getScreenSizeCompensationFactor();
         const isPeripheralLock = currentAnim.includes('center_lock_peripheral');
@@ -622,8 +600,9 @@ function spawnTask() {
     taskEye = eyes[Math.floor(Math.random() * eyes.length)];
 }
 
+// 修復偷秒數跳關 Bug：方向鍵答對僅增加積分與 COMBO 獎勵，絕不提前切斷 60 秒 / 90 秒階段計時！
 function handleTaskResult(result, rt = 0) {
-    taskActive = false; cueGroupLeft.visible = false; cueGroupRight.visible = false; timeSinceLastTask = 0; nextTaskInterval = 2200 + Math.random() * 2200; 
+    taskActive = false; cueGroupLeft.visible = false; cueGroupRight.visible = false; timeSinceLastTask = 0; nextTaskInterval = 2400 + Math.random() * 2200; 
     let logMsg = "", statusLabel = ""; 
     const currentPrismStr = prismValHud ? prismValHud.innerText : '0.0';
     const dx = targetRight.position.x - targetLeft.position.x; const dy = targetRight.position.y - targetLeft.position.y;
@@ -637,17 +616,7 @@ function handleTaskResult(result, rt = 0) {
         if (result === 'hit') { 
             consecutiveHits++; consecutiveMisses = 0;
             logMsg = `🟢 雙眼精準合像 (${rt}s) | COMBO x${consecutiveHits}`; statusLabel = "完美融像(FUSION)"; 
-            
-            if (aiToggle && aiToggle.checked && consecutiveHits >= 3) {
-                consecutiveHits = 0;
-                const stageMax = AIM_MATRIX[activeProtocol] ? AIM_MATRIX[activeProtocol].length - 1 : 9;
-                if (protocolStage < stageMax) {
-                    protocolStage++; loadMatrixStage(activeProtocol, protocolStage);
-                    logMsg = `✨ AI 動態晉級 Stage ${protocolStage + 1} | 反應 ${rt}s`;
-                    if(statusText) statusText.style.color = '#D4AF37';
-                }
-            } else { if(!isAIRescueActive && statusText) statusText.style.color = '#34d399'; }
-            
+            if(!isAIRescueActive && statusText) statusText.style.color = consecutiveHits >= 3 ? '#D4AF37' : '#34d399';
         } else {
             let failType = ""; let reason = result === 'wrong' ? "方向誤差" : "反應逾時";
             let triggerRescue = false;
@@ -659,15 +628,12 @@ function handleTaskResult(result, rt = 0) {
             logMsg = `🔴 ${failType} (${reason})`; 
             consecutiveMisses++; consecutiveHits = 0;
             
-            if (aiToggle && aiToggle.checked && consecutiveMisses >= 2) {
+            if (aiToggle && aiToggle.checked && consecutiveMisses >= 2 && !isAIRescueActive) {
                 consecutiveMisses = 0;
-                if (protocolStage > 0) {
-                    protocolStage--; loadMatrixStage(activeProtocol, protocolStage);
-                    logMsg = `📉 AI 自動減壓退階 | ${logMsg}`; if(statusText) statusText.style.color = '#facc15';
-                }
-            } else { if(!isAIRescueActive && statusText) statusText.style.color = '#fb7185'; }
-            
-            if (aiToggle && aiToggle.checked && triggerRescue && !isAIRescueActive) { activateAIRescue(logMsg); }
+                activateAIRescue(logMsg);
+            } else {
+                if(!isAIRescueActive && statusText) statusText.style.color = '#fb7185';
+            }
         }
     } else {
         const eyeName = taskEye === 'left' ? '左眼通道' : '右眼通道';
@@ -692,26 +658,30 @@ function handleTaskResult(result, rt = 0) {
     }
 }
 
+let protocolTimeBeforeRescue = 0;
+
 function activateAIRescue(reasonMsg) {
     if (loginOverlay.style.display !== 'none' || !isRunning || isAIRescueActive) return;
     isAIRescueActive = true; aiRescueStartTime = performance.now();
     originalSizeBeforeRescue = currentSize; originalPrismBeforeRescue = parseFloat(prismSlider ? prismSlider.value : 0);
-    if(prismSlider) { prismSlider.value = (originalPrismBeforeRescue * 0.4).toFixed(1); prismSlider.dispatchEvent(new Event('input')); }
-    updateScaleAndThickness(Math.min(550, currentSize * 1.35)); updateUIValues(); protocolTime = -999999; 
+    protocolTimeBeforeRescue = protocolTime; // 記住原本跑到的秒數，緩衝結束後接續計時
+    if(prismSlider) { prismSlider.value = (originalPrismBeforeRescue * 0.45).toFixed(1); updateOpticsFromUI(); }
+    updateScaleAndThickness(Math.min(550, currentSize * 1.3)); updateUIValues();
     if(statusText) { statusText.innerText = `🌿 視覺減壓緩衝中 | ${reasonMsg}`; statusText.style.color = '#facc15'; }
-    if(dynamicModeTag) { dynamicModeTag.innerText = `[ 視覺減壓緩衝 12s ] 正在溫和釋放雙眼融像張力...`; dynamicModeTag.style.color = '#facc15'; }
+    if(dynamicModeTag) { dynamicModeTag.innerText = `[ 視覺減壓緩衝 10s ] 正在溫和釋放雙眼融像張力...`; dynamicModeTag.style.color = '#facc15'; }
 }
 
 function endAIRescue() {
     if (!isAIRescueActive) return;
-    isAIRescueActive = false; protocolTime = 0; currentSize = originalSizeBeforeRescue; 
-    if(prismSlider) { prismSlider.value = originalPrismBeforeRescue.toFixed(1); prismSlider.dispatchEvent(new Event('input')); }
+    isAIRescueActive = false; protocolTime = protocolTimeBeforeRescue; currentSize = originalSizeBeforeRescue; 
+    if(prismSlider) { prismSlider.value = originalPrismBeforeRescue.toFixed(1); updateOpticsFromUI(); }
     updateScaleAndThickness(); updateUIValues(); 
     if(statusText) { statusText.innerText = isTestModeActive ? "INTERACTIVE TEST ON" : "TRAINING ACTIVE"; statusText.style.color = isTestModeActive ? "#D4AF37" : '#38bdf8'; }
     if(activeProtocol && dynamicModeTag) {
         const config = AIM_MATRIX[activeProtocol][protocolStage]; 
         const stageMaxStr = AIM_MATRIX[activeProtocol] ? AIM_MATRIX[activeProtocol].length : 10;
-        dynamicModeTag.innerText = `[ ${PROTOCOL_NAMES[activeProtocol].split(' ')[0]} ] Stage ${protocolStage + 1}/${stageMaxStr} : ${config.name}`;
+        const durSec = config.duration || 60;
+        dynamicModeTag.innerText = `[ ${PROTOCOL_NAMES[activeProtocol].split(' ')[0]} ] Stage ${protocolStage + 1}/${stageMaxStr} (${durSec}s) : ${config.name}`;
         dynamicModeTag.style.color = '#D4AF37';
     }
 }
@@ -872,13 +842,13 @@ function disableAI() {
     protocolTime = 0;
     colorPolaritySwapState = false;
     antagonistRippleGroup.visible = false;
+    stageCountdownBadge.style.display = 'none';
     buildTargets();
     
     siloPrompt.style.display = 'none'; 
     if(isAIRescueActive) endAIRescue();
 }
 
-// 讀取 matrix.js 之 duration (60秒或第7階90秒) 與 v_prism (垂直稜鏡量)
 function loadMatrixStage(protocol, stage) {
     const config = AIM_MATRIX[protocol][stage]; if (!config) return;
     
@@ -891,6 +861,7 @@ function loadMatrixStage(protocol, stage) {
     dichopticSwapState = false;
     cueGroupLeft.visible = false;
     cueGroupRight.visible = false;
+    stageCountdownBadge.style.display = 'none';
     lastTime = performance.now();
 
     document.querySelectorAll('.proto-btn[data-proto]').forEach(b => {
@@ -982,7 +953,7 @@ function toggleFullScreen() {
 if(fullscreenBtn) fullscreenBtn.addEventListener('click', toggleFullScreen);
 
 // ==========================================
-// 🚀 動態動畫與四大臨床黑科技迴圈
+// 🚀 動態動畫與嚴格 60s/90s 階段計時迴圈 (含換關前 5 秒倒數提示)
 // ==========================================
 function animate(time) {
     if (!isRunning) return;
@@ -996,23 +967,20 @@ function animate(time) {
     }
     const speedFactor = 40000 / Math.max(1, currentSpeed); phase += dt / speedFactor; 
 
-    // 10 秒迷走神經呼吸光環律動
+    // 10 秒迷走神經呼吸指示燈律動
     const breathCycle = (time % 10000) / 1000;
     const isInhale = breathCycle < 4.0;
     const breathWave = isInhale ? (breathCycle / 4.0) : (1.0 - (breathCycle - 4.0) / 6.0);
-    const haloScale = 0.85 + breathWave * 0.35;
-    breathHaloMesh.scale.set(haloScale, haloScale, 1);
-    breathHaloMat.opacity = 0.03 + breathWave * 0.06;
     if (breathIndicator && breathText) {
         breathIndicator.style.transform = `scale(${0.8 + breathWave * 0.6})`;
         breathIndicator.style.backgroundColor = isInhale ? '#38bdf8' : '#D4AF37';
-        breathText.innerText = isInhale ? '🌬️ 請跟隨微光環緩慢吸氣 (4秒)...' : '😮‍💨 請放鬆雙肩並深長吐氣 (6秒)...';
+        breathText.innerText = isInhale ? '🌬️ 請保持平穩吸氣 (4秒)...' : '😮‍💨 請放鬆雙肩並深長吐氣 (6秒)...';
     }
 
     if (isAIRescueActive) {
         const timeInRescue = performance.now() - aiRescueStartTime;
-        if (timeInRescue > 12000) { endAIRescue(); } 
-        else { const timeLeft = Math.ceil((12000 - timeInRescue) / 1000); if(dynamicModeTag) dynamicModeTag.innerText = `[ 視覺減壓緩衝 ${timeLeft}s ] 請深長吐氣並放鬆雙眼...`; }
+        if (timeInRescue > 10000) { endAIRescue(); } 
+        else { const timeLeft = Math.ceil((10000 - timeInRescue) / 1000); if(dynamicModeTag) dynamicModeTag.innerText = `[ 視覺減壓緩衝 ${timeLeft}s ] 請深長吐氣並放鬆雙眼...`; }
     }
 
     let currentAnim = '';
@@ -1025,15 +993,21 @@ function animate(time) {
         const secLeft = Math.max(0, Math.ceil((currentStageDurationMs - protocolTime) / 1000));
         const stageMaxStr = AIM_MATRIX[activeProtocol] ? AIM_MATRIX[activeProtocol].length : 10;
         if (stageIndicatorLabel) {
-            stageIndicatorLabel.innerText = `${activeProtocol.replace('Key','')} 模組｜Stage ${protocolStage + 1}/${stageMaxStr} (${secLeft}s)`;
+            stageIndicatorLabel.innerText = `${activeProtocol.replace('Key','')} 模組｜Stage ${protocolStage + 1}/${stageMaxStr} (剩餘 ${secLeft}s)`;
         }
 
-        // =====================================================================
-        // ⚡ 黑科技一：去抑制「左右紅藍顏色與圖形瞬間交換再變回 (swap_flash)」
-        // 每 7 秒 (fast 為 4.5 秒) 瞬間對調紅藍與十字組件 1.4 秒後彈回，強效喚醒抑制眼
-        // =====================================================================
+        // ⏳ 換關前最後 5 秒倒數計時膠囊提示
+        if (secLeft <= 5 && secLeft > 0) {
+            const nextStageIdx = (protocolStage + 1) % stageMaxStr;
+            stageCountdownBadge.style.display = 'block';
+            stageCountdownBadge.innerText = `⏳ 即將切換至 Stage ${nextStageIdx + 1}：倒數 ${secLeft} 秒（請自然眨眼吐氣）`;
+        } else {
+            stageCountdownBadge.style.display = 'none';
+        }
+
+        // ⚡ 去抑制「左右紅藍顏色與圖形瞬間交換再變回 (swap_flash)」
         if (currentAnim.includes('swap_flash')) {
-            const swapPeriod = currentAnim.includes('swap_flash_fast') ? 4500 : 7000;
+            const swapPeriod = currentAnim.includes('swap_flash_fast') ? 5000 : 7500;
             const cyclePos = protocolTime % swapPeriod;
             const shouldSwapNow = (cyclePos > (swapPeriod - 1400));
             if (shouldSwapNow !== colorPolaritySwapState) {
@@ -1049,10 +1023,7 @@ function animate(time) {
             updateOpticsFromUI();
         }
 
-        // =====================================================================
-        // 🌿 黑科技二：第 7 階「90 秒全向同心漣漪拮抗肌同步放鬆 (antagonist_relax)」
-        // 360 度對稱向外擴散之水波漣漪 + 溫和呼吸縮放，暫停方向鍵測驗讓眼外肌徹底休息
-        // =====================================================================
+        // 🌿 第 7 階「90 秒全向同心漣漪拮抗肌同步放鬆 (antagonist_relax)」
         if (currentAnim.includes('antagonist_relax')) {
             antagonistRippleGroup.visible = true;
             taskActive = false; cueGroupLeft.visible = false; cueGroupRight.visible = false;
@@ -1060,12 +1031,12 @@ function animate(time) {
                 const prog = ((time / 5500) + r.offset) % 1.0;
                 const s = 0.5 + prog * 3.8;
                 r.mesh.scale.set(s, s, 1);
-                r.mat.opacity = Math.sin(prog * Math.PI) * 0.22;
+                r.mat.opacity = Math.sin(prog * Math.PI) * 0.35;
             });
             const gentleBreathSize = currentSize * (0.88 + 0.22 * breathWave);
             updateScaleAndThickness(gentleBreathSize);
             siloPrompt.style.display = 'block';
-            siloPrompt.innerText = `🌿 第 7 階・全向拮抗肌放鬆站 (${secLeft}s)：請看中央同心水波向外舒展並深長吐氣`;
+            siloPrompt.innerText = `🌿 第 7 階・全向拮抗肌放鬆站 (剩餘 ${secLeft}s)：請看中央同心水波向外舒展並深長吐氣`;
             siloPrompt.style.borderColor = "#34d399";
         } else {
             antagonistRippleGroup.visible = false;
@@ -1135,14 +1106,13 @@ function animate(time) {
             }
         }
 
-        // 依據該階段設定之秒數 (60秒 或 第7階90秒) 準時切換下一階
+        // 嚴格滿 60 秒 (第 7 階 90 秒) 才切換至下一動作，絕不提早跳關！
         if (protocolTime >= currentStageDurationMs) {
             protocolStage = (protocolStage + 1) % stageMaxStr;
             loadMatrixStage(activeProtocol, protocolStage);
         }
     }
 
-    // 只要不是處於第 7 階拮抗肌放鬆站，即正常執行方向鍵閃爍測驗
     if (isTestModeActive && !currentAnim.includes('antagonist_relax')) {
         if (!taskActive) { timeSinceLastTask += dt; if (timeSinceLastTask > nextTaskInterval) spawnTask(); } 
         else { if (performance.now() - taskSpawnTime > 7500) handleTaskResult('miss'); }
@@ -1213,6 +1183,7 @@ function toggleTraining() {
         if(statusText) { statusText.innerText = "PAUSED"; statusText.style.color = '#D4AF37'; }
         cancelAnimationFrame(animationId);
         taskActive = false; cueGroupLeft.visible = false; cueGroupRight.visible = false;
+        stageCountdownBadge.style.display = 'none';
         forceRenderFrame();
     }
 }
@@ -1233,6 +1204,7 @@ function executeReset() {
     colorPolaritySwapState = false;
     dichopticSwapState = false;
     antagonistRippleGroup.visible = false;
+    stageCountdownBadge.style.display = 'none';
     cueGroupLeft.visible = false; cueGroupRight.visible = false;
     if (btnTestMode) {
         btnTestMode.innerHTML = "<strong>0</strong> 互動測驗: 開 (按方向鍵)";
@@ -1240,7 +1212,7 @@ function executeReset() {
     }
     consecutiveHits = 0; consecutiveMisses = 0;
     
-    currentSize = 320; currentSpeed = 14; currentStereo = 0.02; currentThick = 8.0;
+    currentSize = 340; currentSpeed = 14; currentStereo = 0.02; currentThick = 9.0;
     currentVertPrism = 0;
     currentDistractors = 0; 
     currentSaccadeX = 0; currentSaccadeY = 0; currentRoamX = 0; currentRoamY = 0; phase = 0;
@@ -1253,9 +1225,9 @@ function executeReset() {
     if(prismSlider) prismSlider.value = 0;
     if(prismValHud) prismValHud.innerText = "0.0 Δ (平光)";
     
-    if(redSlider) redSlider.value = 100; 
-    if(greenSlider) greenSlider.value = 100; 
-    if(blueSlider) blueSlider.value = 100;
+    if(redSlider) redSlider.value = 88; 
+    if(greenSlider) greenSlider.value = 85; 
+    if(blueSlider) blueSlider.value = 88;
     
     updateUIValues(); buildTargets(); updatePositions(0, '');
     forceRenderFrame();
@@ -1330,7 +1302,7 @@ document.addEventListener('keydown', (e) => {
             case 'Comma': protocolTime = 0; if(speedSlider) { speedSlider.value = Math.max(1, parseFloat(speedSlider.value) - (e.shiftKey ? 5 : 1)); speedSlider.dispatchEvent(new Event('input')); } break;
             
             case 'KeyW': protocolTime = 0; currentSize = Math.min(600, currentSize + 15); updateUIValues(); updateScaleAndThickness(); if(!isAIRescueActive) disableAI(); break;
-            case 'KeyS': protocolTime = 0; currentSize = Math.max(110, currentSize - 15); updateUIValues(); updateScaleAndThickness(); if(!isAIRescueActive) disableAI(); break;
+            case 'KeyS': protocolTime = 0; currentSize = Math.max(150, currentSize - 15); updateUIValues(); updateScaleAndThickness(); if(!isAIRescueActive) disableAI(); break;
             
             case 'KeyD': protocolTime = 0; currentThick = Math.min(10, currentThick + 0.5); updateUIValues(); buildTargets(); if(!isAIRescueActive) disableAI(); break;
             case 'KeyA': protocolTime = 0; currentThick = Math.max(2, currentThick - 0.5); updateUIValues(); buildTargets(); if(!isAIRescueActive) disableAI(); break;
