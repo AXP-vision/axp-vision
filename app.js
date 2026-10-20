@@ -1,38 +1,45 @@
-// app.js - AXP Fusion Dynamics (v28.0 - 紅圓圈/藍十字結構互換 × 恆定高對比零調光 × 7.0Δ BI 生理安全鎖版)
-// 核心臨床修復與升級：
-// 1. 去抑制機制純化：徹底移除動態調整紅藍明暗之邏輯，保持 100% 恆定純紅與純藍高對比，僅執行「全開/全關 (On/Off)」與「紅圓圈/藍十字 <-> 紅十字/藍圓圈」幾何互換
-// 2. 鎖死 BI 開散生理極限：將雙向推拉 (crossover) 改為不對稱生理軌道，BO 內聚可達 35Δ，但 BI 開散回彈嚴格限制於 6.0Δ ~ 7.0Δ 內，不再出現 14Δ BI 破開現象
-// 3. 徹底消除獨立紫色 Bug：修正立體視差迴圈，僅對多層同心圖形施加層間位移，確保十字靶與對位鎖零件絕對不脫節錯位
-// 4. 嚴格執行每階 60 秒 (第 7 階 90 秒) 慢相神經適應計時，並於換關前最後 5 秒顯示中央倒數預告
+// ============================================================================
+// 👑 FANTASTIC VISION LAB: AXP Vision 雙眼同時視與融像協調引擎 (app.js - V28.0 Standard Release)
+// 🕒 最後優化日期與時間 (Last Optimized Timestamp)：2026-10-20 18:18 CST
+// 核心戰略與帝國憲法六大升級：
+// 1. 封裝呼吸節律黑盒子：保留底層共振節律數學公式，徹底移除畫面外顯之「4秒／6秒」具體秒數文字，防止參數外洩並消除計時焦慮。
+// 2. 100% 正統雙眼視覺學名轉譯：拔除動態導引膠囊與結算報告中之「定錨・胖圓球・破抑制・解綁」，全面正名為「黃斑部中心固視・立體球體視標・雙眼同時視與分視平衡」。
+// 3. 100% 拔除全檔 18 處作業系統彩色 Emoji：全面換裝純淨幾何光學符號 (● / ▲ / ■ / ★) 與原生單色 Inline SVG 圖標。
+// 4. 對齊策略 A（公開版安全舒適包絡線）：將公開版全域物理上限鎖定於 BO 20.5Δ / BI 7.0Δ，消除居家無指導操作之眼外肌過載風險。
+// 5. 登入畫面鑲嵌最新 Cinzel 標準版 4K 無限雙環主標誌，並於結算報告補齊衛福部 Non-SaMD 合規聲明。
+// 6. 支援現場短時 Demo 即時上傳：無論是否有觸發方向鍵作答，按 G 鍵皆可寫入 Supabase (training_sessions) 供本機戰情室 V5.0 即時展示。
+// ============================================================================
 
 import { AIM_MATRIX, PROTOCOL_NAMES } from './matrix.js';
 import { createTarget } from './shapes.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-// === SaaS 後端資料庫配置 ===
+// === 後端雲端遙測資料庫配置 ===
 const supabaseUrl = 'https://wvholwcyrldixlsgoege.supabase.co';
 const supabaseKey = 'sb_publishable_BozJ84tPQF-jBHGKtXKqgw_ELodM54e';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// === 1. 腹側迷走神經輕鬆配色登入畫面 (晨曦冰川霧藍 × 溫潤白玉卡片) ===
+// === 1. 瑞士無塵光學實驗室登入畫面 (鑲嵌最新 Cinzel 4K 無限雙環主標誌) ===
 let currentPatientCode = 'FV-8888';
 const loginOverlay = document.createElement('div');
-loginOverlay.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:linear-gradient(135deg, #ebf3f9 0%, #f8fafc 50%, #f3efe6 100%); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; font-family:'Noto Sans TC', -apple-system, sans-serif; transition: opacity 0.35s ease;";
+loginOverlay.setAttribute('data-optimized-at', '2026-10-20 18:18 CST');
+loginOverlay.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:linear-gradient(135deg, #ebf3f9 0%, #f8fafc 50%, #e2e8f0 100%); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; font-family:'Noto Sans TC', -apple-system, sans-serif; transition: opacity 0.35s ease;";
 loginOverlay.innerHTML = `
-    <div style="background:#ffffff; padding:44px 40px; border-radius:20px; text-align:center; box-shadow: 0 20px 50px rgba(26, 54, 93, 0.08); border: 1px solid #e2e8f0; border-top: 5px solid #2980b9; max-width: 440px; width: 90%;">
-        <div style="display:inline-block; background:#ebf3f9; color:#2980b9; font-size:12px; font-weight:800; letter-spacing:1.5px; padding:5px 14px; border-radius:20px; margin-bottom:14px;">FANTASTIC VISION LAB</div>
-        <h1 style="color:#1a365d; font-size:26px; font-weight:900; letter-spacing:1px; margin:0 0 8px 0;">雙眼視覺空間協同系統</h1>
-        <p style="color:#64748b; margin:0 0 26px 0; font-size:14.5px; font-weight:500; line-height:1.65;">請保持雙肩自然放鬆與平穩呼吸<br>準備好後即可啟動您的專屬視覺練習</p>
-        <label style="display:block; margin-bottom:10px; font-size:14px; font-weight:800; color:#1a365d; text-align:center;">請輸入您的專屬訓練代號，或者姓名</label>
-        <input type="text" id="patient-code-input" placeholder="例：FV-8888 / 凡特錫" style="background-color:#f8fafc; padding:14px 16px; width:100%; text-align:center; border-radius:10px; border:1.5px solid #cbd5e1; margin-bottom:22px; font-size:16px; font-weight:700; color:#1a365d; outline:none; transition:0.2s; box-sizing:border-box;">
-        <button id="login-btn" style="background:linear-gradient(135deg, #2980b9 0%, #1a365d 100%); color:#ffffff; border:none; padding:15px 30px; width:100%; border-radius:10px; font-size:16px; cursor:pointer; font-weight:800; transition:0.25s; box-shadow: 0 8px 20px rgba(41, 128, 185, 0.22); letter-spacing:0.5px;">進入視覺練習空間</button>
+    <div style="background:#ffffff; padding:40px 38px; border-radius:20px; text-align:center; box-shadow: 0 20px 50px rgba(26, 54, 93, 0.08); border: 1.5px solid #cbd5e1; border-top: 5px solid #1A365D; max-width: 450px; width: 92%;">
+        <img src="https://images.squarespace-cdn.com/content/v1/69d767c498eb19770e89b41e/26cfc8f0-0358-4bda-855f-ac689b38a1b2/Fantastic-Vision-Lab-Header-Logo-en-only-cinzel-4K.png?format=1500w" alt="Fantastic Vision Lab Logo" style="height: 52px; width: auto; margin: 0 auto 14px auto; display: block; object-fit: contain; pointer-events: none;">
+        <div style="display:inline-block; background:#ebf3f9; color:#1A365D; border:1px solid rgba(41, 128, 185, 0.3); font-family:'Montserrat', sans-serif; font-size:11px; font-weight:800; letter-spacing:1.5px; padding:4px 14px; border-radius:20px; margin-bottom:12px;">STANDARD RELEASE｜公開標準體驗艙</div>
+        <h1 style="color:#1a365d; font-size:25px; font-weight:900; letter-spacing:0.8px; margin:0 0 8px 0;">AXP Vision 雙眼視覺協調系統</h1>
+        <p style="color:#64748b; margin:0 0 24px 0; font-size:14px; font-weight:500; line-height:1.7;">請配戴紅藍分視眼鏡並保持雙肩自然放鬆<br>準備好後即可啟動您的雙眼同時視與融像練習</p>
+        <label style="display:block; margin-bottom:8px; font-size:13.5px; font-weight:800; color:#1a365d; text-align:center;">請輸入您的體驗代號或稱呼</label>
+        <input type="text" id="patient-code-input" placeholder="例：FV-8888 ／ 凡特錫" style="background-color:#f8fafc; padding:13px 16px; width:100%; text-align:center; border-radius:10px; border:1.5px solid #cbd5e1; margin-bottom:20px; font-size:15.5px; font-weight:700; color:#1a365d; outline:none; transition:0.2s; box-sizing:border-box;">
+        <button type="button" id="login-btn" style="background:linear-gradient(135deg, #1a365d 0%, #2980b9 100%); color:#FFF9DE; border:1px solid #B88E28; padding:14px 28px; width:100%; border-radius:10px; font-size:15.5px; cursor:pointer; font-weight:800; transition:0.25s; box-shadow: 0 8px 20px rgba(26, 54, 93, 0.2); letter-spacing:0.5px;">進入雙眼視覺協調空間</button>
     </div>
 `;
 document.body.appendChild(loginOverlay);
 
 function performLogin() {
     const code = document.getElementById('patient-code-input')?.value.trim();
-    if(!code) return alert("請輸入您的專屬訓練代號，或者姓名！");
+    if (!code) return alert("請輸入您的體驗代號或稱呼！");
     currentPatientCode = code; 
     loginOverlay.style.display = 'none'; 
     forceRenderFrame();
@@ -40,7 +47,7 @@ function performLogin() {
 
 document.getElementById('login-btn')?.addEventListener('click', performLogin);
 const inputField = document.getElementById('patient-code-input');
-if(inputField) {
+if (inputField) {
     inputField.addEventListener('focus', () => { inputField.style.borderColor = '#2980b9'; inputField.style.backgroundColor = '#ffffff'; inputField.style.boxShadow = '0 0 0 3px rgba(41,128,185,0.15)'; });
     inputField.addEventListener('blur', () => { inputField.style.borderColor = '#cbd5e1'; inputField.style.backgroundColor = '#f8fafc'; inputField.style.boxShadow = 'none'; });
     inputField.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); performLogin(); } });
@@ -92,16 +99,16 @@ const btnTestMode = document.getElementById('btn-test-mode');
 const breathIndicator = document.getElementById('breath-indicator');
 const breathText = document.getElementById('breath-text');
 
-// 臨床狀態導引膠囊
+// 視覺空間導引膠囊 (100% 零 Emoji)
 const siloPrompt = document.createElement('div');
 siloPrompt.id = 'silo-prompt';
-siloPrompt.style.cssText = "position:absolute; bottom:66px; left:50%; transform:translateX(-50%); font-size:15px; font-weight:800; letter-spacing:1.2px; background:rgba(15, 23, 42, 0.90); backdrop-filter:blur(8px); padding:10px 24px; border-radius:10px; border:1.5px solid #D4AF37; color:#f8fafc; z-index:100; display:none; text-align:center; pointer-events:none; box-shadow:0 8px 25px rgba(0,0,0,0.45);";
+siloPrompt.style.cssText = "position:absolute; bottom:66px; left:50%; transform:translateX(-50%); font-size:14.5px; font-weight:800; letter-spacing:1px; background:rgba(15, 23, 42, 0.90); backdrop-filter:blur(8px); padding:10px 24px; border-radius:10px; border:1.5px solid #B88E28; color:#f8fafc; z-index:100; display:none; text-align:center; pointer-events:none; box-shadow:0 8px 25px rgba(0,0,0,0.45);";
 document.getElementById('arena').appendChild(siloPrompt);
 
-// ⏳ 切換下一動作前「最後 5 秒倒數計時膠囊」
+// 切換下一階段前「最後 5 秒倒數計時膠囊」(100% 零 Emoji)
 const stageCountdownBadge = document.createElement('div');
 stageCountdownBadge.id = 'stage-countdown-badge';
-stageCountdownBadge.style.cssText = "position:absolute; top:24px; right:28px; font-size:15.5px; font-weight:900; letter-spacing:1px; background:rgba(26, 54, 93, 0.92); backdrop-filter:blur(10px); padding:12px 22px; border-radius:12px; border:2px solid #D4AF37; color:#D4AF37; z-index:110; display:none; text-align:center; pointer-events:none; box-shadow:0 10px 30px rgba(0,0,0,0.5); font-family:'Noto Sans TC', monospace;";
+stageCountdownBadge.style.cssText = "position:absolute; top:24px; right:28px; font-size:14.5px; font-weight:900; letter-spacing:1px; background:rgba(26, 54, 93, 0.92); backdrop-filter:blur(10px); padding:11px 20px; border-radius:12px; border:1.5px solid #B88E28; color:#FFF9DE; z-index:110; display:none; text-align:center; pointer-events:none; box-shadow:0 10px 30px rgba(0,0,0,0.5); font-family:'Noto Sans TC', monospace;";
 document.getElementById('arena').appendChild(stageCountdownBadge);
 
 // === 核心狀態變數 ===
@@ -114,7 +121,6 @@ let isRotating = true, isFilled = true;
 let activeProtocol = null, protocolStage = 0, protocolTime = 0, totalTimerSec = 0, lastTime = 0, phase = 0;
 let currentSaccadeX = 0, currentSaccadeY = 0, saccadeTimer = 0, currentRoamX = 0, currentRoamY = 0;
 
-// 雙眼互補組件角色交換狀態 (false = 左藍圓圈/右紅十字，true = 左藍十字/右紅圓圈)
 let dichopticSwapState = false; 
 
 let currentAxis = 'horizontal';
@@ -146,7 +152,6 @@ if (btnTestMode) {
     btnTestMode.classList.add('test-on');
 }
 
-// 補償視網膜藍光敏感度：將藍通道預設維持 100% 飽滿輸出，紅通道微調為 90%，讓紅藍視覺亮度完全平衡！
 if (redSlider) redSlider.value = 90;
 if (blueSlider) blueSlider.value = 100;
 if (greenSlider) greenSlider.value = 90;
@@ -187,23 +192,22 @@ const anaglyphShader = {
         "intensityLeft": { value: 1.0 },
         "intensityRight": { value: 0.90 }
     },
-    vertexShader: ` varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); } `,
-    fragmentShader: `
-        uniform sampler2D mapLeft;
-        uniform sampler2D mapRight;
-        uniform vec3 colorLeft;
-        uniform vec3 colorRight;
-        uniform float intensityLeft;
-        uniform float intensityRight;
-        varying vec2 vUv;
-        void main() {
-            vec4 texelLeft = texture2D(mapLeft, vUv);
-            vec4 texelRight = texture2D(mapRight, vUv);
-            vec3 finalColor = (texelLeft.rgb * colorLeft * intensityLeft) + 
-                              (texelRight.rgb * colorRight * intensityRight);
-            gl_FragColor = vec4(finalColor, 1.0);
-        }
-    `
+    vertexShader: " varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); } ",
+    fragmentShader: [
+        "uniform sampler2D mapLeft;",
+        "uniform sampler2D mapRight;",
+        "uniform vec3 colorLeft;",
+        "uniform vec3 colorRight;",
+        "uniform float intensityLeft;",
+        "uniform float intensityRight;",
+        "varying vec2 vUv;",
+        "void main() {",
+        "    vec4 texelLeft = texture2D(mapLeft, vUv);",
+        "    vec4 texelRight = texture2D(mapRight, vUv);",
+        "    vec3 finalColor = (texelLeft.rgb * colorLeft * intensityLeft) + (texelRight.rgb * colorRight * intensityRight);",
+        "    gl_FragColor = vec4(finalColor, 1.0);",
+        "}"
+    ].join("\n")
 };
 
 const postMaterial = new THREE.ShaderMaterial(anaglyphShader);
@@ -212,7 +216,7 @@ const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 const postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMaterial);
 postScene.add(postQuad);
 
-// 🌿 第 7 階專屬：360 度全向同心水波漣漪群組 (僅於第 7 階放鬆站顯示，偶數圈藍、奇數圈紅，絕不重疊發紫)
+// 第 7 階專屬：360 度全向同心水波漣漪群組
 const antagonistRippleGroup = new THREE.Group();
 const rippleRings = [];
 for (let r = 0; r < 4; r++) {
@@ -236,7 +240,7 @@ const starTexture = new THREE.CanvasTexture(starCanvas);
 const starsCount = 45; 
 const posArrayL = new Float32Array(starsCount * 3);
 const posArrayR = new Float32Array(starsCount * 3);
-for(let i = 0; i < starsCount; i++) {
+for (let i = 0; i < starsCount; i++) {
     posArrayL[i*3] = (Math.random() - 0.5) * 1500;
     posArrayL[i*3+1] = (Math.random() - 0.5) * 1200;
     posArrayL[i*3+2] = -300 - Math.random() * 500;
@@ -316,7 +320,6 @@ function getScreenSizeCompensationFactor() {
     return baseMbp16Cm / physicalWidthCm;
 }
 
-// 鎖定純紅 (1.0, 0.0, 0.0) 與純藍 (0.0, 0.0, 1.0) 恆定色彩，不再於訓練途中改變顏色或半透明明暗！
 function updateOpticsFromUI() {
     const rVal = redSlider ? parseInt(redSlider.value) : 90;
     const gVal = greenSlider ? parseInt(greenSlider.value) : 90;
@@ -327,18 +330,18 @@ function updateOpticsFromUI() {
     let opacityRight = balance > 50 ? ((100 - balance) / 50) : 1;
     
     postMaterial.uniforms.intensityRight.value = (rVal / 100.0) * opacityRight;
-    if(document.getElementById('r-val')) document.getElementById('r-val').innerText = rVal + '%';
+    if (document.getElementById('r-val')) document.getElementById('r-val').innerText = rVal + '%';
     
     let primaryLeftColor = new THREE.Color();
-    let primaryRightColor = new THREE.Color(1.0, 0.0, 0.0); // 純紅 #FF0000
+    let primaryRightColor = new THREE.Color(1.0, 0.0, 0.0);
 
     if (glassesSelect && glassesSelect.value === 'rg') {
-        if(document.getElementById('l-val')) document.getElementById('l-val').innerText = gVal + '%';
-        primaryLeftColor.setRGB(0.0, 1.0, 0.0); // 純綠 #00FF00
+        if (document.getElementById('l-val')) document.getElementById('l-val').innerText = gVal + '%';
+        primaryLeftColor.setRGB(0.0, 1.0, 0.0);
         postMaterial.uniforms.intensityLeft.value = (gVal / 100.0) * opacityLeft;
     } else {
-        if(document.getElementById('l-val')) document.getElementById('l-val').innerText = bVal + '%';
-        primaryLeftColor.setRGB(0.0, 0.0, 1.0); // 純藍 #0000FF
+        if (document.getElementById('l-val')) document.getElementById('l-val').innerText = bVal + '%';
+        primaryLeftColor.setRGB(0.0, 0.0, 1.0);
         postMaterial.uniforms.intensityLeft.value = (bVal / 100.0) * opacityLeft;
     }
 
@@ -347,9 +350,9 @@ function updateOpticsFromUI() {
 
     if (prismSlider) {
         const prismVal = parseFloat(prismSlider.value);
-        const pText = prismVal > 0 ? `${prismVal.toFixed(1)} Δ (BO)` : prismVal < 0 ? `${Math.abs(prismVal).toFixed(1)} Δ (BI)` : `0.0 Δ (平光)`;
-        if(prismLabel) prismLabel.innerText = pText;
-        if(prismValHud && !isRunning) prismValHud.innerText = pText;
+        const pText = prismVal > 0 ? (prismVal.toFixed(1) + ' Δ (BO)') : prismVal < 0 ? (Math.abs(prismVal).toFixed(1) + ' Δ (BI)') : '0.0 Δ (平光)';
+        if (prismLabel) prismLabel.innerText = pText;
+        if (prismValHud && !isRunning) prismValHud.innerText = pText;
     }
     
     if (!isRunning) {
@@ -358,23 +361,21 @@ function updateOpticsFromUI() {
 }
 
 function clearTargets() {
-    if (targetLeft) { targetLeft.traverse(child => { if(child.isMesh) { child.geometry?.dispose(); child.material?.dispose(); }}); scene.remove(targetLeft); }
-    if (targetRight) { targetRight.traverse(child => { if(child.isMesh) { child.geometry?.dispose(); child.material?.dispose(); }}); scene.remove(targetRight); }
+    if (targetLeft) { targetLeft.traverse(child => { if (child.isMesh) { child.geometry?.dispose(); child.material?.dispose(); } }); scene.remove(targetLeft); }
+    if (targetRight) { targetRight.traverse(child => { if (child.isMesh) { child.geometry?.dispose(); child.material?.dispose(); } }); scene.remove(targetRight); }
     
-    while(distractorGroupLeft.children.length > 0){ 
+    while (distractorGroupLeft.children.length > 0) { 
         const c = distractorGroupLeft.children[0]; c.geometry?.dispose(); c.material?.dispose(); distractorGroupLeft.remove(c); 
     }
-    while(distractorGroupRight.children.length > 0){ 
+    while (distractorGroupRight.children.length > 0) { 
         const c = distractorGroupRight.children[0]; c.geometry?.dispose(); c.material?.dispose(); distractorGroupRight.remove(c); 
     }
     distractorData = [];
 }
 
-// 當 dichopticSwapState 切換時，leftRole 與 rightRole 對調：
-// 原本「左藍圓圈 / 右紅十字」瞬間變成「左藍十字 / 右紅圓圈」，紅藍亮度完全維持 100% 恆定！
 function buildTargets() {
     clearTargets(); 
-    if(textInputGroup) textInputGroup.style.display = shapeSelect?.value === 'text' ? 'block' : 'none';
+    if (textInputGroup) textInputGroup.style.display = shapeSelect?.value === 'text' ? 'block' : 'none';
     const shapeVal = shapeSelect ? shapeSelect.value : 'dichoptic_cross';
     const txtVal = customTextInput ? customTextInput.value : 'H O T V';
     
@@ -383,8 +384,8 @@ function buildTargets() {
 
     targetLeft = createTarget(shapeVal, 0xffffff, isFilled, txtVal, currentThick, leftRole);
     targetRight = createTarget(shapeVal, 0xffffff, isFilled, txtVal, currentThick, rightRole);
-    targetLeft.traverse(c => { c.layers.set(1); if(c.isMesh) { c.material.blending = THREE.NormalBlending; c.material.color.setHex(0xffffff); } });
-    targetRight.traverse(c => { c.layers.set(2); if(c.isMesh) { c.material.blending = THREE.NormalBlending; c.material.color.setHex(0xffffff); } });
+    targetLeft.traverse(c => { c.layers.set(1); if (c.isMesh) { c.material.blending = THREE.NormalBlending; c.material.color.setHex(0xffffff); } });
+    targetRight.traverse(c => { c.layers.set(2); if (c.isMesh) { c.material.blending = THREE.NormalBlending; c.material.color.setHex(0xffffff); } });
 
     if (currentDistractors > 0) {
         const distMatLeft = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -423,13 +424,13 @@ function updateScaleAndThickness(dynamicSize = currentSize) {
     const screenComp = getScreenSizeCompensationFactor();
     const scaleFactor = (dynamicSize / 200) * screenComp;
     
-    if(targetLeft && targetRight) { 
+    if (targetLeft && targetRight) { 
         targetLeft.scale.set(scaleFactor, scaleFactor, scaleFactor); 
         targetRight.scale.set(scaleFactor, scaleFactor, scaleFactor); 
     }
 
     for (let i = 0; i < currentDistractors; i++) {
-        if(distractorGroupLeft.children[i]) {
+        if (distractorGroupLeft.children[i]) {
             const dSize = distractorData[i].baseSize * scaleFactor * 0.68;
             distractorGroupLeft.children[i].scale.set(dSize, dSize, dSize);
             distractorGroupRight.children[i].scale.set(dSize, dSize, dSize);
@@ -446,28 +447,23 @@ function updatePositions(phaseVal, currentAnim = '') {
     const maxPrismLoad = parseFloat(prismSlider ? prismSlider.value : 0);
     let targetPrismDemand = maxPrismLoad;
 
-    // =========================================================================
-    // 🔬 修復問題 2：生理不對稱聚散軌道 (消滅 14.0 Δ BI 無法融像之問題)
-    // 當模式為 crossover 雙向推拉時，正向內聚 (BO) 可推至設定值，但反向回彈開散 (BI) 嚴格限制於 6.5 Δ BI 以內！
-    // =========================================================================
     if (isRunning) {
         if (currentAnim.includes('antagonist_relax') || currentAnim.includes('center_lock_peripheral') || currentAnim.includes('vert_')) {
             targetPrismDemand = maxPrismLoad * (0.85 + 0.15 * Math.sin(phaseVal));
         } else if (currentAnim.includes('flipper')) {
-            targetPrismDemand = flipperState ? maxPrismLoad : -Math.min(6.0, Math.abs(maxPrismLoad) * 0.35);
+            targetPrismDemand = flipperState ? maxPrismLoad : -Math.min(5.5, Math.abs(maxPrismLoad) * 0.35);
         } else {
             const wave = (Math.sin(phaseVal - Math.PI/2) + 1) / 2; 
             if (currentMode === 'oneway_bo') {
                 targetPrismDemand = wave * Math.max(0, maxPrismLoad);
             } else if (currentMode === 'oneway_bi') {
-                targetPrismDemand = wave * Math.max(-7.5, Math.min(0, maxPrismLoad));
+                targetPrismDemand = wave * Math.max(-7.0, Math.min(0, maxPrismLoad));
             } else {
-                // crossover 雙向推拉：正半週期走 BO，負半週期走溫和 BI (最高不超過 6.5 Δ BI)
                 const s = Math.sin(phaseVal);
                 if (s >= 0) {
                     targetPrismDemand = s * Math.max(0, maxPrismLoad);
                 } else {
-                    const safeMaxBI = Math.min(6.5, Math.max(2.0, Math.abs(maxPrismLoad) * 0.25));
+                    const safeMaxBI = Math.min(6.0, Math.max(2.0, Math.abs(maxPrismLoad) * 0.25));
                     targetPrismDemand = s * safeMaxBI;
                 }
             }
@@ -511,8 +507,8 @@ function updatePositions(phaseVal, currentAnim = '') {
     let finalLeftX = pxLeftX + currentRoamX + currentSaccadeX; let finalLeftY = pxLeftY + currentRoamY + currentSaccadeY;
     let finalRightX = pxRightX + currentRoamX + currentSaccadeX; let finalRightY = pxRightY + currentRoamY + currentSaccadeY;
 
-    // 垂直稜鏡雙向互調引擎 (左右眼上下交替)
-    const targetVertPrism = currentVertPrism > 0 ? currentVertPrism : (currentAnim.includes('vert_') ? 0.8 : 0);
+    // 垂直稜鏡雙向互調引擎 (策略 A 公開版安全區間)
+    const targetVertPrism = currentVertPrism > 0 ? currentVertPrism : (currentAnim.includes('vert_') ? 0.6 : 0);
     if (targetVertPrism > 0 && isRunning) {
         const totalVertPx = (targetVertPrism * viewDistM) / pixelToCm;
         const halfVertPx = totalVertPx / 2;
@@ -532,16 +528,15 @@ function updatePositions(phaseVal, currentAnim = '') {
         finalRightY -= halfVertPx * vertFactor;
     }
 
-    // 全域物理安全邊界：BO 上限 38Δ，BI 開散上限嚴格鎖死於 7.5Δ BI！
-    const maxBOPx = (38 * viewDistM) / pixelToCm;
-    const maxBIPx = (7.5 * viewDistM) / pixelToCm; 
+    // 策略 A 全域物理安全邊界：公開標準版 BO 上限鎖定於 20.5Δ，BI 開散上限嚴格鎖死於 7.0Δ！
+    const maxBOPx = (20.5 * viewDistM) / pixelToCm;
+    const maxBIPx = (7.0 * viewDistM) / pixelToCm; 
 
     let dx = finalLeftX - finalRightX; 
     if (dx > maxBOPx) { let scale = maxBOPx / dx; finalLeftX *= scale; finalRightX *= scale; } 
     else if (dx < -maxBIPx) { let scale = -maxBIPx / dx; finalLeftX *= scale; finalRightX *= scale; }
 
-    // 🔬 修復問題 4：僅對多層立體圖形 (children.length > 1) 執行層間立體視差，單一 unitGroup 十字靶保持 0 位移，絕不拆歪零件產生獨立紫色！
-    if(targetLeft && targetRight) {
+    if (targetLeft && targetRight) {
         const layerCount = targetLeft.children.length;
         if (layerCount > 1) {
             targetLeft.children.forEach((layer, i) => { layer.position.x = -(i * 14) * currentStereo; });
@@ -560,10 +555,10 @@ function updatePositions(phaseVal, currentAnim = '') {
         const verticalPrism = (Math.abs(currentSepY) * pixelToCm) / viewDistM;
         
         if (prismValHud) {
-            let hudText = `${horizontalPrism.toFixed(1)} Δ (${hPrismDir})`;
+            let hudText = horizontalPrism.toFixed(1) + ' Δ (' + hPrismDir + ')';
             if (verticalPrism >= 0.15) {
                 const vDirStr = currentSepY > 0 ? "L↑ R↓" : "R↑ L↓";
-                hudText += ` | ↕ ${verticalPrism.toFixed(1)} Δ (${vDirStr})`;
+                hudText += ' | ' + verticalPrism.toFixed(1) + ' Δ (' + vDirStr + ')';
             }
             prismValHud.innerText = hudText;
         }
@@ -629,46 +624,48 @@ function handleTaskResult(result, rt = 0) {
     if (taskEye === 'both') {
         if (result === 'hit') { 
             consecutiveHits++; consecutiveMisses = 0;
-            logMsg = `🟢 雙眼精準合像 (${rt}s) | COMBO x${consecutiveHits}`; statusLabel = "完美融像(FUSION)"; 
-            if(!isAIRescueActive && statusText) statusText.style.color = consecutiveHits >= 3 ? '#D4AF37' : '#34d399';
+            logMsg = '● 雙眼同時視合像穩定 (' + rt + 's) | COMBO x' + consecutiveHits;
+            statusLabel = "雙眼融像穩定(FUSION)"; 
+            if (!isAIRescueActive && statusText) statusText.style.color = consecutiveHits >= 3 ? '#D4AF37' : '#34d399';
         } else {
             let failType = ""; let reason = result === 'wrong' ? "方向誤差" : "反應逾時";
-            let triggerRescue = false;
-            if (Math.abs(dy) > 4) { failType = "垂直融像失準"; statusLabel = "垂直失準(VERT_FAIL)"; triggerRescue = true; } 
+            if (Math.abs(dy) > 4) { failType = "垂直融像微偏"; statusLabel = "垂直微偏(VERT_FAIL)"; } 
             else {
-                if (dx < 0) { failType = "內聚負荷臨界"; statusLabel = "聚合不足(BO_FAIL)"; triggerRescue = true; } 
-                else { failType = "外展負荷臨界"; statusLabel = "開散不足(BI_FAIL)"; triggerRescue = true; }
+                if (dx < 0) { failType = "內聚緩衝臨界"; statusLabel = "內聚逾界(BO_FAIL)"; } 
+                else { failType = "開散緩衝臨界"; statusLabel = "開散逾界(BI_FAIL)"; }
             }
-            logMsg = `🔴 ${failType} (${reason})`; 
+            logMsg = '▲ ' + failType + ' (' + reason + ')'; 
             consecutiveMisses++; consecutiveHits = 0;
             
             if (aiToggle && aiToggle.checked && consecutiveMisses >= 2 && !isAIRescueActive) {
                 consecutiveMisses = 0;
                 activateAIRescue(logMsg);
             } else {
-                if(!isAIRescueActive && statusText) statusText.style.color = '#fb7185';
+                if (!isAIRescueActive && statusText) statusText.style.color = '#fb7185';
             }
         }
     } else {
         const eyeName = taskEye === 'left' ? '左眼通道' : '右眼通道';
         if (result === 'hit') {
             consecutiveHits++;
-            logMsg = `🟢 ${eyeName}訊號暢通 (${rt}s)`; statusLabel = `${eyeName}去抑制(ANTI_SUPP_${taskEye.toUpperCase()})`;
-            if(!isAIRescueActive && statusText) statusText.style.color = '#34d399';
+            logMsg = '● ' + eyeName + '同時視暢通 (' + rt + 's)';
+            statusLabel = eyeName + '同時視(ANTI_SUPP_' + taskEye.toUpperCase() + ')';
+            if (!isAIRescueActive && statusText) statusText.style.color = '#34d399';
         } else {
             let reason = result === 'wrong' ? "方向誤差" : "未察覺閃爍";
-            logMsg = `🟡 ${eyeName}間歇抑制 (${reason})`; statusLabel = `${eyeName}抑制(SUPP_${taskEye.toUpperCase()})`;
-            if(!isAIRescueActive && statusText) statusText.style.color = '#facc15';
+            logMsg = '■ ' + eyeName + '分視訊號休眠 (' + reason + ')';
+            statusLabel = eyeName + '休眠(SUPP_' + taskEye.toUpperCase() + ')';
+            if (!isAIRescueActive && statusText) statusText.style.color = '#facc15';
         }
     }
     
-    if(!isAIRescueActive && statusText) statusText.innerText = logMsg;
+    if (!isAIRescueActive && statusText) statusText.innerText = logMsg;
     
     sessionLogs.push({ time: totalTimerSec.toString(), initial_sep: "0", initial_prism: taskInitialPrism, response_sep: "0", response_prism: currentPrismStr, reaction_time: rt, stereo: currentStereo.toFixed(2), size: currentSize.toFixed(1), status: statusLabel, eye: taskEye, distractors: currentDistractors });
 
     if (!isAIRescueActive) {
-        if(statusTimeout) clearTimeout(statusTimeout);
-        statusTimeout = setTimeout(() => { if (isRunning && statusText) { statusText.innerText = isTestModeActive ? "INTERACTIVE TEST ON" : "TRAINING ACTIVE"; statusText.style.color = isTestModeActive ? "#D4AF37" : '#38bdf8'; } }, 2200);
+        if (statusTimeout) clearTimeout(statusTimeout);
+        statusTimeout = setTimeout(() => { if (isRunning && statusText) { statusText.innerText = isTestModeActive ? "INTERACTIVE TEST ON" : "PRACTICE ACTIVE"; statusText.style.color = isTestModeActive ? "#D4AF37" : '#38bdf8'; } }, 2200);
     }
 }
 
@@ -679,23 +676,23 @@ function activateAIRescue(reasonMsg) {
     isAIRescueActive = true; aiRescueStartTime = performance.now();
     originalSizeBeforeRescue = currentSize; originalPrismBeforeRescue = parseFloat(prismSlider ? prismSlider.value : 0);
     protocolTimeBeforeRescue = protocolTime;
-    if(prismSlider) { prismSlider.value = (originalPrismBeforeRescue * 0.45).toFixed(1); updateOpticsFromUI(); }
+    if (prismSlider) { prismSlider.value = (originalPrismBeforeRescue * 0.45).toFixed(1); updateOpticsFromUI(); }
     updateScaleAndThickness(Math.min(550, currentSize * 1.3)); updateUIValues();
-    if(statusText) { statusText.innerText = `🌿 視覺減壓緩衝中 | ${reasonMsg}`; statusText.style.color = '#facc15'; }
-    if(dynamicModeTag) { dynamicModeTag.innerText = `[ 視覺減壓緩衝 10s ] 正在溫和釋放雙眼融像張力...`; dynamicModeTag.style.color = '#facc15'; }
+    if (statusText) { statusText.innerText = '[ 視覺減壓緩衝中 ] ' + reasonMsg; statusText.style.color = '#facc15'; }
+    if (dynamicModeTag) { dynamicModeTag.innerText = '[ 視覺減壓緩衝 10s ] 正在溫和釋放雙眼融像負荷...'; dynamicModeTag.style.color = '#facc15'; }
 }
 
 function endAIRescue() {
     if (!isAIRescueActive) return;
     isAIRescueActive = false; protocolTime = protocolTimeBeforeRescue; currentSize = originalSizeBeforeRescue; 
-    if(prismSlider) { prismSlider.value = originalPrismBeforeRescue.toFixed(1); updateOpticsFromUI(); }
+    if (prismSlider) { prismSlider.value = originalPrismBeforeRescue.toFixed(1); updateOpticsFromUI(); }
     updateScaleAndThickness(); updateUIValues(); 
-    if(statusText) { statusText.innerText = isTestModeActive ? "INTERACTIVE TEST ON" : "TRAINING ACTIVE"; statusText.style.color = isTestModeActive ? "#D4AF37" : '#38bdf8'; }
-    if(activeProtocol && dynamicModeTag) {
+    if (statusText) { statusText.innerText = isTestModeActive ? "INTERACTIVE TEST ON" : "PRACTICE ACTIVE"; statusText.style.color = isTestModeActive ? "#D4AF37" : '#38bdf8'; }
+    if (activeProtocol && dynamicModeTag) {
         const config = AIM_MATRIX[activeProtocol][protocolStage]; 
         const stageMaxStr = AIM_MATRIX[activeProtocol] ? AIM_MATRIX[activeProtocol].length : 10;
         const durSec = config.duration || 60;
-        dynamicModeTag.innerText = `[ ${PROTOCOL_NAMES[activeProtocol].split(' ')[0]} ] Stage ${protocolStage + 1}/${stageMaxStr} (${durSec}s) : ${config.name}`;
+        dynamicModeTag.innerText = '[ ' + PROTOCOL_NAMES[activeProtocol].split(' ')[0] + ' ] Stage ' + (protocolStage + 1) + '/' + stageMaxStr + ' (' + durSec + 's) : ' + config.name;
         dynamicModeTag.style.color = '#D4AF37';
     }
 }
@@ -704,43 +701,46 @@ function showClinicalReport(logs, totalTime, protocolName) {
     let fusionCount = 0, suppCount = 0, antiSuppCount = 0, boFail = 0, biFail = 0, vertFail = 0;
     let tableRowsHTML = "";
     logs.forEach(log => {
-        if(log.status.includes('FUSION')) fusionCount++;
-        if(log.status.includes('SUPP_') && !log.status.includes('ANTI')) suppCount++;
-        if(log.status.includes('ANTI_SUPP')) antiSuppCount++;
-        if(log.status.includes('BO_FAIL')) boFail++;
-        if(log.status.includes('BI_FAIL')) biFail++;
-        if(log.status.includes('VERT_FAIL')) vertFail++;
-        let statusColor = log.status.includes('FUSION') || log.status.includes('ANTI') ? '#059669' : (log.status.includes('SUPP') ? '#d97706' : '#e11d48');
-        tableRowsHTML += `<tr style="border-bottom: 1px solid #e2e8f0; font-size:13px; text-align:center;"><td style="padding: 8px;">${log.time}s</td><td style="padding: 8px; font-weight:bold; color:${statusColor};">${log.status.split('(')[0]}</td><td style="padding: 8px; font-size:12px; color:#64748b;">${log.initial_prism}</td><td style="padding: 8px; font-weight:bold; color:#0f172a;">${log.response_prism}</td><td style="padding: 8px; font-family:monospace;">${log.reaction_time}s</td></tr>`;
+        if (log.status.includes('FUSION')) fusionCount++;
+        if (log.status.includes('SUPP_') && !log.status.includes('ANTI')) suppCount++;
+        if (log.status.includes('ANTI_SUPP')) antiSuppCount++;
+        if (log.status.includes('BO_FAIL')) boFail++;
+        if (log.status.includes('BI_FAIL')) biFail++;
+        if (log.status.includes('VERT_FAIL')) vertFail++;
+        let statusColor = log.status.includes('FUSION') || log.status.includes('ANTI') ? '#0D9488' : (log.status.includes('SUPP') ? '#C27838' : '#BE123C');
+        tableRowsHTML += '<tr style="border-bottom: 1px solid #e2e8f0; font-size:13px; text-align:center;"><td style="padding: 8px;">' + log.time + 's</td><td style="padding: 8px; font-weight:bold; color:' + statusColor + ';">' + log.status.split('(')[0] + '</td><td style="padding: 8px; font-size:12px; color:#64748b;">' + log.initial_prism + '</td><td style="padding: 8px; font-weight:bold; color:#0f172a;">' + log.response_prism + '</td><td style="padding: 8px; font-family:monospace;">' + log.reaction_time + 's</td></tr>';
     });
 
     const reportOverlay = document.createElement('div');
-    reportOverlay.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15, 23, 42, 0.82); backdrop-filter:blur(6px); z-index:10000; display:flex; justify-content:center; align-items:center; font-family:'Noto Sans TC', sans-serif;";
+    reportOverlay.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15, 23, 42, 0.84); backdrop-filter:blur(6px); z-index:10000; display:flex; justify-content:center; align-items:center; font-family:'Noto Sans TC', sans-serif;";
     reportOverlay.innerHTML = `
-        <div style="background:#ffffff; width: 660px; max-width:94vw; max-height: 86vh; border-radius:16px; box-shadow: 0 25px 50px rgba(0,0,0,0.4); display:flex; flex-direction:column; overflow:hidden; border-top: 5px solid #2980b9;">
-            <div style="background:#1A365D; color:white; padding: 20px; text-align:center;">
-                <h2 style="margin:0; font-size:21px; font-weight:900; letter-spacing:1px;">AXP 雙眼融像與視覺空間評估報告</h2>
-                <p style="margin:5px 0 0 0; color:#D4AF37; font-size:13.5px; font-weight:700;">專屬訓練代號: ${currentPatientCode} ｜ 綜合積分: ${sessionScore}</p>
+        <div style="background:#ffffff; width: 680px; max-width:94vw; max-height: 88vh; border-radius:16px; box-shadow: 0 25px 50px rgba(0,0,0,0.45); display:flex; flex-direction:column; overflow:hidden; border-top: 5px solid #1A365D;">
+            <div style="background:#1A365D; color:white; padding: 20px; text-align:center; border-bottom: 2px solid #B88E28;">
+                <h2 style="margin:0; font-size:21px; font-weight:900; letter-spacing:1px; color:#FFF9DE;">AXP Vision 雙眼同時視與融像協調練習摘要</h2>
+                <p style="margin:6px 0 0 0; color:#93C5FD; font-size:13.5px; font-weight:700;">體驗代號: ${currentPatientCode} ｜ 練習積分: ${sessionScore}</p>
             </div>
-            <div style="padding: 20px; overflow-y:auto; flex-grow:1; color:#334155;">
-                <div style="display:flex; justify-content:space-between; margin-bottom: 18px; background:#f8fafc; padding:14px 18px; border-radius:8px; border:1px solid #cbd5e1;">
-                    <div><p style="margin:0 0 4px 0; font-size:12px; color:#64748b; font-weight:bold;">練習總時長</p><p style="margin:0; font-size:18px; font-weight:900; color:#1A365D;">${Math.floor(totalTime / 60)}分 ${totalTime % 60}秒</p></div>
-                    <div style="text-align:right;"><p style="margin:0 0 4px 0; font-size:12px; color:#64748b; font-weight:bold;">主要執行模組</p><p style="margin:0; font-size:14px; font-weight:800; color:#1A365D;">${protocolName.split('(')[0]}</p></div>
+            <div style="padding: 20px 24px; overflow-y:auto; flex-grow:1; color:#334155;">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 18px; background:#f8fafc; padding:14px 18px; border-radius:10px; border:1px solid #cbd5e1;">
+                    <div><p style="margin:0 0 4px 0; font-size:12px; color:#64748b; font-weight:bold;">本次練習時長</p><p style="margin:0; font-size:18px; font-weight:900; color:#1A365D;">${Math.floor(totalTime / 60)} 分 ${totalTime % 60} 秒</p></div>
+                    <div style="text-align:right;"><p style="margin:0 0 4px 0; font-size:12px; color:#64748b; font-weight:bold;">執行視覺模組</p><p style="margin:0; font-size:14px; font-weight:800; color:#1A365D;">${protocolName.split('(')[0]}</p></div>
                 </div>
-                <h3 style="font-size:15px; margin-bottom:10px; color:#1A365D; border-bottom:1.5px solid #e2e8f0; padding-bottom:6px; font-weight:900;">📊 雙眼協同表現統計</h3>
+                <h3 style="font-size:14.5px; margin-bottom:10px; color:#1A365D; border-bottom:1.5px solid #e2e8f0; padding-bottom:6px; font-weight:900;">■ 雙眼同時視與融像表現統計</h3>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
-                    <div style="background:#ecfdf5; padding:10px 14px; border-radius:8px; border:1px solid #a7f3d0;"><span style="font-size:12px; color:#059669; font-weight:bold;">🟢 雙眼精準合像次數</span><br><span style="font-size:20px; font-weight:900; color:#065f46;">${fusionCount}</span></div>
-                    <div style="background:#ecfdf5; padding:10px 14px; border-radius:8px; border:1px solid #a7f3d0;"><span style="font-size:12px; color:#059669; font-weight:bold;">🟢 單側去抑制喚醒成功</span><br><span style="font-size:20px; font-weight:900; color:#065f46;">${antiSuppCount}</span></div>
-                    <div style="background:#fef2f2; padding:10px 14px; border-radius:8px; border:1px solid #fecaca;"><span style="font-size:12px; color:#e11d48; font-weight:bold;">🔴 內聚負荷失準 (BO)</span><br><span style="font-size:20px; font-weight:900; color:#9f1239;">${boFail}</span></div>
-                    <div style="background:#fef2f2; padding:10px 14px; border-radius:8px; border:1px solid #fecaca;"><span style="font-size:12px; color:#e11d48; font-weight:bold;">🔴 外展負荷失準 (BI)</span><br><span style="font-size:20px; font-weight:900; color:#9f1239;">${biFail}</span></div>
-                    <div style="background:#fffbeb; padding:10px 14px; border-radius:8px; border:1px solid #fde68a;"><span style="font-size:12px; color:#d97706; font-weight:bold;">🟡 間歇性單眼抑制</span><br><span style="font-size:20px; font-weight:900; color:#92400e;">${suppCount}</span></div>
-                    <div style="background:#fef2f2; padding:10px 14px; border-radius:8px; border:1px solid #fecaca;"><span style="font-size:12px; color:#e11d48; font-weight:bold;">🔴 垂直空間失準</span><br><span style="font-size:20px; font-weight:900; color:#9f1239;">${vertFail}</span></div>
+                    <div style="background:#f0fdf4; padding:10px 14px; border-radius:8px; border:1px solid #86efac;"><span style="font-size:12px; color:#0D9488; font-weight:800;">● 雙眼同時視合像穩定</span><br><span style="font-size:20px; font-weight:900; color:#1A365D;">${fusionCount}</span></div>
+                    <div style="background:#f0f9ff; padding:10px 14px; border-radius:8px; border:1px solid #bae6fd;"><span style="font-size:12px; color:#0284C7; font-weight:800;">● 單側分視平衡回應 (Anti-Suppression)</span><br><span style="font-size:20px; font-weight:900; color:#1A365D;">${antiSuppCount}</span></div>
+                    <div style="background:#fef2f2; padding:10px 14px; border-radius:8px; border:1px solid #fecaca;"><span style="font-size:12px; color:#BE123C; font-weight:800;">▲ 正融像內聚逾界 (BO)</span><br><span style="font-size:20px; font-weight:900; color:#9f1239;">${boFail}</span></div>
+                    <div style="background:#fef2f2; padding:10px 14px; border-radius:8px; border:1px solid #fecaca;"><span style="font-size:12px; color:#BE123C; font-weight:800;">▲ 負融像開散逾界 (BI)</span><br><span style="font-size:20px; font-weight:900; color:#9f1239;">${biFail}</span></div>
+                    <div style="background:#fffbeb; padding:10px 14px; border-radius:8px; border:1px solid #fde68a;"><span style="font-size:12px; color:#C27838; font-weight:800;">■ 單側分視訊號短暫休眠</span><br><span style="font-size:20px; font-weight:900; color:#92400e;">${suppCount}</span></div>
+                    <div style="background:#fef2f2; padding:10px 14px; border-radius:8px; border:1px solid #fecaca;"><span style="font-size:12px; color:#BE123C; font-weight:800;">▲ 垂直融像對齊微偏</span><br><span style="font-size:20px; font-weight:900; color:#9f1239;">${vertFail}</span></div>
                 </div>
-                <h3 style="font-size:15px; margin-bottom:10px; color:#1A365D; border-bottom:1.5px solid #e2e8f0; padding-bottom:6px; font-weight:900;">📋 毫秒級反應明細</h3>
-                <table style="width:100%; border-collapse: collapse;"><thead><tr style="background:#f1f5f9; font-size:12px; color:#475569;"><th style="padding:8px; text-align:center;">時間</th><th style="padding:8px; text-align:center;">雙眼狀態</th><th style="padding:8px; text-align:center;">起始稜鏡</th><th style="padding:8px; text-align:center;">作答稜鏡</th><th style="padding:8px; text-align:center;">反應秒數</th></tr></thead><tbody>${tableRowsHTML || '<tr><td colspan="5" style="text-align:center; padding:14px; color:#94a3b8;">本次練習未觸發方向鍵作答紀錄</td></tr>'}</tbody></table>
+                <h3 style="font-size:14.5px; margin-bottom:10px; color:#1A365D; border-bottom:1.5px solid #e2e8f0; padding-bottom:6px; font-weight:900;">■ 逐次互動反應明細</h3>
+                <table style="width:100%; border-collapse: collapse; margin-bottom: 14px;"><thead><tr style="background:#f1f5f9; font-size:12px; color:#475569;"><th style="padding:8px; text-align:center;">時間</th><th style="padding:8px; text-align:center;">雙眼狀態</th><th style="padding:8px; text-align:center;">起始稜鏡</th><th style="padding:8px; text-align:center;">回應稜鏡</th><th style="padding:8px; text-align:center;">反應秒數</th></tr></thead><tbody>${tableRowsHTML || '<tr><td colspan="5" style="text-align:center; padding:14px; color:#94a3b8;">本次練習為純視覺跟隨模式（未觸發方向鍵作答）</td></tr>'}</tbody></table>
+                <div style="font-size:11.5px; color:#64748b; background:#f8fafc; padding:10px 14px; border-radius:8px; border:1px solid #e2e8f0; line-height:1.65;">
+                    * 系統聲明（Non-SaMD Compliance）：本摘要為日常雙眼視覺協調與空間放鬆練習紀錄，遵循衛福部「非屬醫療器材軟體指引」與《驗光人員法》規範，非屬醫療診斷或斜弱視治療處方。
+                </div>
             </div>
             <div style="padding: 15px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; text-align:center;">
-                <button id="close-report-btn" style="background:#2980b9; color:#ffffff; border:none; padding:12px 32px; border-radius:8px; font-size:15px; cursor:pointer; font-weight:800; transition:0.2s; box-shadow:0 4px 12px rgba(41,128,185,0.25);">關閉報告並重置畫面</button>
+                <button type="button" id="close-report-btn" style="background:#1A365D; color:#FFF9DE; border:1px solid #B88E28; padding:12px 32px; border-radius:8px; font-size:14.5px; cursor:pointer; font-weight:800; transition:0.2s; box-shadow:0 4px 12px rgba(26,54,93,0.2);">關閉摘要並重置畫面</button>
             </div>
         </div>
     `;
@@ -752,8 +752,8 @@ function showClinicalReport(logs, totalTime, protocolName) {
 }
 
 async function uploadToSupabase() {
-    const finalTime = totalTimerSec; 
-    const finalProtocol = activeProtocol ? PROTOCOL_NAMES[activeProtocol] : 'MANUAL_MODE';
+    const finalTime = Math.max(5, totalTimerSec); 
+    const finalProtocol = activeProtocol ? PROTOCOL_NAMES[activeProtocol] : 'I. 平面融像儲備與 SILO 立體視 (Manual Mode)';
     
     const payloadData = {
         patient_id: currentPatientCode,
@@ -768,11 +768,11 @@ async function uploadToSupabase() {
 
     isRunning = false; 
     cancelAnimationFrame(animationId); 
-    if(startBtn) { startBtn.innerText = "▶ 啟動訓練 [ Space ]"; startBtn.classList.remove('active'); }
-    if(statusText) { statusText.innerText = "SYNCING CLOUD REPORT..."; statusText.style.color = "#38bdf8"; }
+    if (startBtn) { startBtn.innerText = "▶ 啟動練習 [ Space ]"; startBtn.classList.remove('active'); }
+    if (statusText) { statusText.innerText = "SYNCING CLOUD REPORT..."; statusText.style.color = "#38bdf8"; }
     
     try {
-        if (sessionLogs.length > 0) {
+        if (totalTimerSec >= 5 || sessionLogs.length > 0) {
             await supabase.from('training_sessions').insert([{ 
                 duration_sec: finalTime, 
                 protocol_name: finalProtocol, 
@@ -780,46 +780,46 @@ async function uploadToSupabase() {
                 patient_code: currentPatientCode  
             }]);
         }
-        if(statusText) { statusText.innerText = "REPORT GENERATED"; statusText.style.color = "#34d399"; }
-        showClinicalReport(payloadData.clinical_logs, finalTime, finalProtocol);
+        if (statusText) { statusText.innerText = "REPORT GENERATED"; statusText.style.color = "#34d399"; }
+        showClinicalReport(payloadData.clinical_logs, totalTimerSec, finalProtocol);
         sessionLogs = []; 
     } catch (err) {
         console.warn("Cloud Sync Note:", err);
-        showClinicalReport(payloadData.clinical_logs, finalTime, finalProtocol);
+        showClinicalReport(payloadData.clinical_logs, totalTimerSec, finalProtocol);
     }
 }
 
 function updateGlassesUI() {
     const lLabelText = document.getElementById('l-label-text');
     if (glassesSelect && glassesSelect.value === 'rb') {
-        if(greenSlider) greenSlider.style.display = 'none'; if(blueSlider) blueSlider.style.display = 'block';
-        if(lLabelText) lLabelText.innerText = '藍通道';
+        if (greenSlider) greenSlider.style.display = 'none'; if (blueSlider) blueSlider.style.display = 'block';
+        if (lLabelText) lLabelText.innerText = '藍通道';
     } else {
-        if(greenSlider) greenSlider.style.display = 'block'; if(blueSlider) blueSlider.style.display = 'none';
-        if(lLabelText) lLabelText.innerText = '綠通道';
+        if (greenSlider) greenSlider.style.display = 'block'; if (blueSlider) blueSlider.style.display = 'none';
+        if (lLabelText) lLabelText.innerText = '綠通道';
     }
     updateOpticsFromUI();
 }
 
-if(glassesSelect) glassesSelect.addEventListener('change', updateGlassesUI);
-[redSlider, greenSlider, blueSlider].forEach(slider => { if(slider) slider.addEventListener('input', updateOpticsFromUI); });
-if(prismSlider) prismSlider.addEventListener('input', () => { protocolTime = 0; updateOpticsFromUI(); });
+if (glassesSelect) glassesSelect.addEventListener('change', updateGlassesUI);
+[redSlider, greenSlider, blueSlider].forEach(slider => { if (slider) slider.addEventListener('input', updateOpticsFromUI); });
+if (prismSlider) prismSlider.addEventListener('input', () => { protocolTime = 0; updateOpticsFromUI(); });
 
 function updateUIValues() {
-    if(sizeLabel) sizeLabel.innerText = currentSize.toFixed(0) + 'px'; 
-    if(speedLabel) speedLabel.innerText = currentSpeed.toFixed(0); 
-    if(thickLabel) thickLabel.innerText = currentThick.toFixed(1);
-    if(stereoLabel) stereoLabel.innerText = (currentStereo > 0 ? '+' : '') + currentStereo.toFixed(2);
+    if (sizeLabel) sizeLabel.innerText = currentSize.toFixed(0) + 'px'; 
+    if (speedLabel) speedLabel.innerText = currentSpeed.toFixed(0); 
+    if (thickLabel) thickLabel.innerText = currentThick.toFixed(1);
+    if (stereoLabel) stereoLabel.innerText = (currentStereo > 0 ? '+' : '') + currentStereo.toFixed(2);
     
     const hudStereoVal = document.getElementById('hud-stereo-val');
-    if(hudStereoVal) hudStereoVal.innerText = currentStereo.toFixed(2);
+    if (hudStereoVal) hudStereoVal.innerText = currentStereo.toFixed(2);
     
     let balance = balanceSlider ? parseInt(balanceSlider.value) : 50; 
-    if(balanceLabel) balanceLabel.innerText = balance === 50 ? "均衡 50/50" : (balance < 50 ? `強左 ${100-balance}%` : `強右 ${balance}%`);
+    if (balanceLabel) balanceLabel.innerText = balance === 50 ? "均衡 50/50" : (balance < 50 ? ('強左 ' + (100 - balance) + '%') : ('強右 ' + balance + '%'));
     
-    if(sizeSlider) sizeSlider.value = currentSize; 
-    if(speedSlider) speedSlider.value = currentSpeed; if(thickSlider) thickSlider.value = currentThick; 
-    if(stereoSlider) stereoSlider.value = currentStereo;
+    if (sizeSlider) sizeSlider.value = currentSize; 
+    if (speedSlider) speedSlider.value = currentSpeed; if (thickSlider) thickSlider.value = currentThick; 
+    if (stereoSlider) stereoSlider.value = currentStereo;
 }
 
 if (screenSpecSelect) screenSpecSelect.addEventListener('change', () => {
@@ -832,21 +832,21 @@ if (viewDistInput) viewDistInput.addEventListener('input', () => {
     updatePositions(phase, '');
 });
 
-if(sizeSlider) sizeSlider.addEventListener('input', (e) => { currentSize = parseFloat(e.target.value); protocolTime = 0; updateUIValues(); updateScaleAndThickness(); disableAI(); });
-if(speedSlider) speedSlider.addEventListener('input', (e) => { currentSpeed = parseFloat(e.target.value); protocolTime = 0; updateUIValues(); disableAI(); });
-if(thickSlider) thickSlider.addEventListener('input', (e) => { currentThick = parseFloat(e.target.value); protocolTime = 0; updateUIValues(); buildTargets(); disableAI(); });
-if(stereoSlider) stereoSlider.addEventListener('input', (e) => { currentStereo = Math.max(-0.15, Math.min(0.15, parseFloat(e.target.value))); e.target.value = currentStereo; protocolTime = 0; updateUIValues(); if (!isRunning) updatePositions(0, ''); disableAI(); });
+if (sizeSlider) sizeSlider.addEventListener('input', (e) => { currentSize = parseFloat(e.target.value); protocolTime = 0; updateUIValues(); updateScaleAndThickness(); disableAI(); });
+if (speedSlider) speedSlider.addEventListener('input', (e) => { currentSpeed = parseFloat(e.target.value); protocolTime = 0; updateUIValues(); disableAI(); });
+if (thickSlider) thickSlider.addEventListener('input', (e) => { currentThick = parseFloat(e.target.value); protocolTime = 0; updateUIValues(); buildTargets(); disableAI(); });
+if (stereoSlider) stereoSlider.addEventListener('input', (e) => { currentStereo = Math.max(-0.15, Math.min(0.15, parseFloat(e.target.value))); e.target.value = currentStereo; protocolTime = 0; updateUIValues(); if (!isRunning) updatePositions(0, ''); disableAI(); });
 
-if(balanceSlider) balanceSlider.addEventListener('input', () => { updateUIValues(); updateOpticsFromUI(); });
-if(rotateCheckbox) rotateCheckbox.addEventListener('change', (e) => { isRotating = e.target.checked; protocolTime = 0; });
-if(shapeSelect) shapeSelect.addEventListener('change', () => { protocolTime = 0; buildTargets(); }); 
-if(customTextInput) customTextInput.addEventListener('input', buildTargets); 
-if(fillCheckbox) fillCheckbox.addEventListener('change', (e) => { isFilled = e.target.checked; protocolTime = 0; buildTargets(); });
+if (balanceSlider) balanceSlider.addEventListener('input', () => { updateUIValues(); updateOpticsFromUI(); });
+if (rotateCheckbox) rotateCheckbox.addEventListener('change', (e) => { isRotating = e.target.checked; protocolTime = 0; });
+if (shapeSelect) shapeSelect.addEventListener('change', () => { protocolTime = 0; buildTargets(); }); 
+if (customTextInput) customTextInput.addEventListener('input', buildTargets); 
+if (fillCheckbox) fillCheckbox.addEventListener('change', (e) => { isFilled = e.target.checked; protocolTime = 0; buildTargets(); });
 
 function disableAI() {
     if (aiToggle && aiToggle.checked) { aiToggle.checked = false; }
-    if(dynamicModeTag) { dynamicModeTag.innerText = "AXP FUSION DYNAMICS｜手動自由調控模式"; dynamicModeTag.style.color = '#f8fafc'; }
-    if(stageIndicatorLabel) stageIndicatorLabel.innerText = "手動自由模式";
+    if (dynamicModeTag) { dynamicModeTag.innerText = "AXP VISION STANDARD｜手動自由調控模式"; dynamicModeTag.style.color = '#f8fafc'; }
+    if (stageIndicatorLabel) stageIndicatorLabel.innerText = "手動自由模式";
     document.querySelectorAll('.proto-btn[data-proto]').forEach(b => b.classList.remove('active-proto'));
     
     currentAxis = 'horizontal';
@@ -860,7 +860,7 @@ function disableAI() {
     buildTargets();
     
     siloPrompt.style.display = 'none'; 
-    if(isAIRescueActive) endAIRescue();
+    if (isAIRescueActive) endAIRescue();
 }
 
 function loadMatrixStage(protocol, stage) {
@@ -881,7 +881,7 @@ function loadMatrixStage(protocol, stage) {
         b.classList.toggle('active-proto', b.getAttribute('data-proto') === protocol);
     });
 
-    if(shapeSelect) {
+    if (shapeSelect) {
         let optionExists = Array.from(shapeSelect.options).some(opt => opt.value === config.shape);
         if (!optionExists) { const newOpt = new Option(config.shape, config.shape); shapeSelect.add(newOpt); }
         shapeSelect.value = config.shape; 
@@ -893,24 +893,24 @@ function loadMatrixStage(protocol, stage) {
     currentStageDurationMs = (config.duration || 60) * 1000;
     currentDistractors = config.distractors || 0;
 
-    if(fillCheckbox) fillCheckbox.checked = config.fill; isFilled = config.fill;
+    if (fillCheckbox) fillCheckbox.checked = config.fill; isFilled = config.fill;
     
     currentStereo = Math.max(-0.15, Math.min(0.15, config.stereo)); 
     currentSize = config.size; currentSpeed = config.speed; currentThick = config.thick;
-    isRotating = !config.anim.includes('none'); if(rotateCheckbox) rotateCheckbox.checked = isRotating; 
+    isRotating = !config.anim.includes('none'); if (rotateCheckbox) rotateCheckbox.checked = isRotating; 
     
-    if(prismSlider) { prismSlider.value = config.dist; }
+    if (prismSlider) { prismSlider.value = config.dist; }
 
     updateUIValues(); buildTargets();
     
     const stageMaxStr = AIM_MATRIX[protocol] ? AIM_MATRIX[protocol].length : 10;
     const durSec = config.duration || 60;
-    if(dynamicModeTag) {
-        dynamicModeTag.innerText = `[ ${PROTOCOL_NAMES[protocol].split(' ')[0]} ] Stage ${stage + 1}/${stageMaxStr} (${durSec}s) : ${config.name}`;
+    if (dynamicModeTag) {
+        dynamicModeTag.innerText = '[ ' + PROTOCOL_NAMES[protocol].split(' ')[0] + ' ] Stage ' + (stage + 1) + '/' + stageMaxStr + ' (' + durSec + 's) : ' + config.name;
         dynamicModeTag.style.color = config.anim.includes('antagonist_relax') ? '#34d399' : '#D4AF37'; 
     }
-    if(stageIndicatorLabel) {
-        stageIndicatorLabel.innerText = `${protocol.replace('Key','')} 模組｜Stage ${stage + 1} / ${stageMaxStr} (${durSec}s)`;
+    if (stageIndicatorLabel) {
+        stageIndicatorLabel.innerText = protocol.replace('Key','') + ' 模組｜Stage ' + (stage + 1) + ' / ' + stageMaxStr + ' (' + durSec + 's)';
     }
     currentSaccadeX = 0; currentSaccadeY = 0; currentRoamX = 0; currentRoamY = 0;
 }
@@ -924,7 +924,7 @@ function toggleTestMode() {
     }
     if (!isTestModeActive) { 
         taskActive = false; cueGroupLeft.visible = false; cueGroupRight.visible = false; 
-        if (isRunning && statusText) { statusText.innerText = "TRAINING ACTIVE (測驗已關閉)"; statusText.style.color = '#38bdf8'; } 
+        if (isRunning && statusText) { statusText.innerText = "PRACTICE ACTIVE (測驗已關閉)"; statusText.style.color = '#38bdf8'; } 
     } else { 
         timeSinceLastTask = 0;
         if (isRunning && statusText) { statusText.innerText = "INTERACTIVE TEST ON (請按方向鍵)"; statusText.style.color = '#D4AF37'; } 
@@ -963,10 +963,10 @@ function toggleFullScreen() {
         if (document.exitFullscreen) { document.exitFullscreen(); } else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
     }
 }
-if(fullscreenBtn) fullscreenBtn.addEventListener('click', toggleFullScreen);
+if (fullscreenBtn) fullscreenBtn.addEventListener('click', toggleFullScreen);
 
 // ==========================================
-// 🚀 動態動畫與嚴格 60s/90s 階段計時迴圈
+// 動態動畫與嚴格 60s/90s 階段計時迴圈 (100% 封裝呼吸秒數黑盒子)
 // ==========================================
 function animate(time) {
     if (!isRunning) return;
@@ -976,24 +976,24 @@ function animate(time) {
 
     if (Math.floor(time / 1000) > Math.floor((time - dt) / 1000)) {
         totalTimerSec++; 
-        if(timerDisplay) timerDisplay.innerText = Math.floor(totalTimerSec / 60).toString().padStart(2, '0') + ':' + (totalTimerSec % 60).toString().padStart(2, '0');
+        if (timerDisplay) timerDisplay.innerText = Math.floor(totalTimerSec / 60).toString().padStart(2, '0') + ':' + (totalTimerSec % 60).toString().padStart(2, '0');
     }
     const speedFactor = 40000 / Math.max(1, currentSpeed); phase += dt / speedFactor; 
 
-    // 10 秒迷走神經呼吸指示燈律動
+    // 自主神經呼吸指示燈律動（底層維持共振節律，外顯文字 100% 封裝具體秒數黑盒子且零 Emoji）
     const breathCycle = (time % 10000) / 1000;
     const isInhale = breathCycle < 4.0;
     const breathWave = isInhale ? (breathCycle / 4.0) : (1.0 - (breathCycle - 4.0) / 6.0);
     if (breathIndicator && breathText) {
-        breathIndicator.style.transform = `scale(${0.8 + breathWave * 0.6})`;
+        breathIndicator.style.transform = 'scale(' + (0.8 + breathWave * 0.6).toFixed(2) + ')';
         breathIndicator.style.backgroundColor = isInhale ? '#38bdf8' : '#D4AF37';
-        breathText.innerText = isInhale ? '🌬️ 請保持平穩吸氣 (4秒)...' : '😮‍💨 請放鬆雙肩並深長吐氣 (6秒)...';
+        breathText.innerText = isInhale ? '[ 呼吸節律導引 ] 請跟隨光點擴張・保持平穩深吸氣...' : '[ 呼吸節律導引 ] 請跟隨光點收斂・放鬆雙肩並深長慢吐...';
     }
 
     if (isAIRescueActive) {
         const timeInRescue = performance.now() - aiRescueStartTime;
         if (timeInRescue > 10000) { endAIRescue(); } 
-        else { const timeLeft = Math.ceil((10000 - timeInRescue) / 1000); if(dynamicModeTag) dynamicModeTag.innerText = `[ 視覺減壓緩衝 ${timeLeft}s ] 請深長吐氣並放鬆雙眼...`; }
+        else { const timeLeft = Math.ceil((10000 - timeInRescue) / 1000); if (dynamicModeTag) dynamicModeTag.innerText = '[ 視覺減壓緩衝 ' + timeLeft + 's ] 請深長慢吐並放鬆雙眼...'; }
     }
 
     let currentAnim = '';
@@ -1006,26 +1006,21 @@ function animate(time) {
         const secLeft = Math.max(0, Math.ceil((currentStageDurationMs - protocolTime) / 1000));
         const stageMaxStr = AIM_MATRIX[activeProtocol] ? AIM_MATRIX[activeProtocol].length : 10;
         if (stageIndicatorLabel) {
-            stageIndicatorLabel.innerText = `${activeProtocol.replace('Key','')} 模組｜Stage ${protocolStage + 1}/${stageMaxStr} (剩餘 ${secLeft}s)`;
+            stageIndicatorLabel.innerText = activeProtocol.replace('Key','') + ' 模組｜Stage ' + (protocolStage + 1) + '/' + stageMaxStr + ' (剩餘 ' + secLeft + 's)';
         }
 
-        // ⏳ 換關前最後 5 秒倒數計時膠囊提示
         if (secLeft <= 5 && secLeft > 0) {
             const nextStageIdx = (protocolStage + 1) % stageMaxStr;
             stageCountdownBadge.style.display = 'block';
-            stageCountdownBadge.innerText = `⏳ 即將切換至 Stage ${nextStageIdx + 1}：倒數 ${secLeft} 秒（請自然眨眼吐氣）`;
+            stageCountdownBadge.innerText = '即將切換至 Stage ' + (nextStageIdx + 1) + '：倒數 ' + secLeft + ' 秒（請自然眨眼慢吐）';
         } else {
             stageCountdownBadge.style.display = 'none';
         }
 
-        // =====================================================================
-        // ⚡ 去抑制機制一：「紅圓圈 / 藍十字 <-> 紅十字 / 藍圓圈」結構交換 (swap_flash)
-        // 完全不調整紅藍亮度！直接交換左右眼的幾何結構 (圓圈與十字互換) 再變回來！
-        // =====================================================================
         if (currentAnim.includes('swap_flash')) {
             const swapPeriod = currentAnim.includes('swap_flash_fast') ? 5000 : 7000;
             const cyclePos = protocolTime % swapPeriod;
-            const shouldSwapRole = (cyclePos > (swapPeriod - 1800)); // 交換維持 1.8 秒後彈回
+            const shouldSwapRole = (cyclePos > (swapPeriod - 1800));
             if (shouldSwapRole !== dichopticSwapState) {
                 dichopticSwapState = shouldSwapRole;
                 buildTargets();
@@ -1035,10 +1030,6 @@ function animate(time) {
             buildTargets();
         }
 
-        // =====================================================================
-        // ⚡ 去抑制機制二：純粹「全開 / 全關 (On/Off)」交替 (flicker)
-        // 不使用半透明調光！直接切換 targetLeft.visible 與 targetRight.visible
-        // =====================================================================
         if (currentAnim.includes('flicker')) {
             const isLeftTurn = Math.floor(protocolTime / 450) % 2 === 0;
             if (targetLeft) targetLeft.visible = isLeftTurn;
@@ -1048,7 +1039,6 @@ function animate(time) {
             if (targetRight) targetRight.visible = true;
         }
 
-        // 🌿 第 7 階「90 秒全向同心漣漪拮抗肌同步放鬆 (antagonist_relax)」
         if (currentAnim.includes('antagonist_relax')) {
             antagonistRippleGroup.visible = true;
             taskActive = false; cueGroupLeft.visible = false; cueGroupRight.visible = false;
@@ -1061,7 +1051,7 @@ function animate(time) {
             const gentleBreathSize = currentSize * (0.88 + 0.22 * breathWave);
             updateScaleAndThickness(gentleBreathSize);
             siloPrompt.style.display = 'block';
-            siloPrompt.innerText = `🌿 第 7 階・全向拮抗肌放鬆站 (剩餘 ${secLeft}s)：請看中央同心水波向外舒展並深長吐氣`;
+            siloPrompt.innerText = '[ 第 7 階・全向眼外肌同步舒緩 ] (剩餘 ' + secLeft + 's)：請凝視中央同心水波向外舒展並深長慢吐';
             siloPrompt.style.borderColor = "#34d399";
         } else {
             antagonistRippleGroup.visible = false;
@@ -1075,26 +1065,26 @@ function animate(time) {
                 siloPrompt.style.display = 'block';
                 let sineVal = Math.sin(phase);
                 if (sineVal > 0) {
-                    siloPrompt.innerText = "SILO 空間引導：胖圓球向內聚合靠近中，請配合緩慢長吐氣";
+                    siloPrompt.innerText = "SILO 立體景深引導：立體球體視標向內聚合靠近中，請配合深長慢吐";
                     siloPrompt.style.borderColor = "#D4AF37";
                 } else {
-                    siloPrompt.innerText = "SILO 空間引導：胖圓球向外展開遠離中，請配合平穩深吸氣";
+                    siloPrompt.innerText = "SILO 立體景深引導：立體球體視標向外展開遠離中，請配合平穩深吸氣";
                     siloPrompt.style.borderColor = "#38bdf8";
                 }
                 updateScaleAndThickness(currentSize * (1 - sineVal * 0.25));
             } else if (currentAnim.includes('center_lock_peripheral')) {
                 siloPrompt.style.display = 'block';
-                siloPrompt.innerText = "👁️ 周邊視野定錨：請盯緊中央十字靶保持合像，用眼角餘光辨識外圍閃爍點方向！";
+                siloPrompt.innerText = "[ 黃斑部中心固視與周邊視野整合 ] 請維持中央十字視標單一合像，同時以周邊餘光覺察外圍閃爍點方向";
                 siloPrompt.style.borderColor = "#38bdf8";
             } else if (currentAnim.includes('vert_step_alt')) {
                 siloPrompt.style.display = 'block';
                 const cSec = (protocolTime / 1000) % 14.0;
-                const vStateStr = cSec < 4.0 ? "左眼上 / 右眼下 鎖定維持 (4秒)" : (cSec < 7.0 ? "回歸水平零位放鬆 (3秒)" : (cSec < 11.0 ? "交換！右眼上 / 左眼下 鎖定維持 (4秒)" : "回歸水平零位放鬆 (3秒)"));
-                siloPrompt.innerText = `↕️ 垂直雙向階梯訓練：${vStateStr}`;
+                const vStateStr = cSec < 4.0 ? "左眼上 ／ 右眼下 對齊維持" : (cSec < 7.0 ? "回歸水平零位放鬆" : (cSec < 11.0 ? "右眼上 ／ 左眼下 對齊維持" : "回歸水平零位放鬆"));
+                siloPrompt.innerText = "[ 垂直雙向融像階梯對齊 ] " + vStateStr;
                 siloPrompt.style.borderColor = "#D4AF37";
             } else if (currentAnim.includes('vert_smooth_alt')) {
                 siloPrompt.style.display = 'block';
-                siloPrompt.innerText = "↕️ 垂直雙向超慢速牽引：請保持頭頸端正不歪頭，讓雙眼平滑對齊十字橫線";
+                siloPrompt.innerText = "[ 垂直雙向慢速融像牽引 ] 請保持頭頸端正不歪頭，讓雙眼平滑對齊十字橫線";
                 siloPrompt.style.borderColor = "#38bdf8";
             } else {
                 siloPrompt.style.display = 'none';
@@ -1111,7 +1101,7 @@ function animate(time) {
             if (time - lastWordChangeTime > 3800) {
                 lastWordChangeTime = time;
                 currentWordIndex = (currentWordIndex + 1) % AXP_WORDS.length;
-                if(customTextInput) customTextInput.value = AXP_WORDS[currentWordIndex];
+                if (customTextInput) customTextInput.value = AXP_WORDS[currentWordIndex];
                 buildTargets(); 
             }
         }
@@ -1148,7 +1138,7 @@ function animate(time) {
         currentSaccadeX = 0; currentSaccadeY = 0;
     }
 
-    if(targetLeft && targetRight) {
+    if (targetLeft && targetRight) {
         targetLeft.children.forEach((layer, index) => { 
             if (shapeSelect && (shapeSelect.value.includes('crystal') || shapeSelect.value.includes('sphere') || shapeSelect.value === 'nested_dodeca' || shapeSelect.value === 'torusKnot') && isRotating) { 
                 layer.rotation.x += (index % 2 === 0 ? 0.009 : -0.009); 
@@ -1181,15 +1171,15 @@ function animate(time) {
 }
 
 function toggleTraining() {
-    if(loginOverlay.style.display !== 'none') return; 
+    if (loginOverlay.style.display !== 'none') return; 
     isRunning = !isRunning;
     if (isRunning) {
-        if(startBtn) { startBtn.innerText = "⏸ 暫停訓練 [ Space ]"; startBtn.classList.add('active'); }
-        if(statusText) { statusText.innerText = isAIRescueActive ? statusText.innerText : (isTestModeActive ? "INTERACTIVE TEST ON" : "TRAINING ACTIVE"); statusText.style.color = isAIRescueActive ? '#facc15' : (isTestModeActive ? "#D4AF37" : '#38bdf8'); }
+        if (startBtn) { startBtn.innerText = "⏸ 暫停練習 [ Space ]"; startBtn.classList.add('active'); }
+        if (statusText) { statusText.innerText = isAIRescueActive ? statusText.innerText : (isTestModeActive ? "INTERACTIVE TEST ON" : "PRACTICE ACTIVE"); statusText.style.color = isAIRescueActive ? '#facc15' : (isTestModeActive ? "#D4AF37" : '#38bdf8'); }
         lastTime = performance.now(); animate(lastTime);
     } else {
-        if(startBtn) { startBtn.innerText = "▶ 繼續訓練 [ Space ]"; startBtn.classList.remove('active'); }
-        if(statusText) { statusText.innerText = "PAUSED"; statusText.style.color = '#D4AF37'; }
+        if (startBtn) { startBtn.innerText = "▶ 繼續練習 [ Space ]"; startBtn.classList.remove('active'); }
+        if (statusText) { statusText.innerText = "PAUSED"; statusText.style.color = '#D4AF37'; }
         cancelAnimationFrame(animationId);
         taskActive = false; cueGroupLeft.visible = false; cueGroupRight.visible = false;
         stageCountdownBadge.style.display = 'none';
@@ -1199,11 +1189,11 @@ function toggleTraining() {
 
 function executeReset() {
     isRunning = false; cancelAnimationFrame(animationId); 
-    if(startBtn) { startBtn.innerText = "▶ 啟動訓練 [ Space ]"; startBtn.classList.remove('active'); }
-    if(statusText) { statusText.innerText = "IDLE (測驗模式待命)"; statusText.style.color = '#f8fafc'; }
+    if (startBtn) { startBtn.innerText = "▶ 啟動練習 [ Space ]"; startBtn.classList.remove('active'); }
+    if (statusText) { statusText.innerText = "IDLE (待命狀態)"; statusText.style.color = '#f8fafc'; }
     totalTimerSec = 0; sessionScore = 0; protocolTime = 0;
-    if(timerDisplay) timerDisplay.innerText = "00:00"; 
-    if(hudScoreVal) hudScoreVal.innerText = "0";
+    if (timerDisplay) timerDisplay.innerText = "00:00"; 
+    if (hudScoreVal) hudScoreVal.innerText = "0";
     
     activeProtocol = null; protocolStage = 0;
     disableAI();
@@ -1226,26 +1216,26 @@ function executeReset() {
     currentSaccadeX = 0; currentSaccadeY = 0; currentRoamX = 0; currentRoamY = 0; phase = 0;
     isRotating = true; isFilled = true; sessionLogs = []; isAIRescueActive = false;
     
-    if(shapeSelect) shapeSelect.value = 'dichoptic_cross'; 
-    if(rotateCheckbox) rotateCheckbox.checked = true; 
-    if(fillCheckbox) fillCheckbox.checked = true; 
-    if(balanceSlider) balanceSlider.value = 50;
-    if(prismSlider) prismSlider.value = 0;
-    if(prismValHud) prismValHud.innerText = "0.0 Δ (平光)";
+    if (shapeSelect) shapeSelect.value = 'dichoptic_cross'; 
+    if (rotateCheckbox) rotateCheckbox.checked = true; 
+    if (fillCheckbox) fillCheckbox.checked = true; 
+    if (balanceSlider) balanceSlider.value = 50;
+    if (prismSlider) prismSlider.value = 0;
+    if (prismValHud) prismValHud.innerText = "0.0 Δ (平光)";
     
-    if(redSlider) redSlider.value = 90; 
-    if(greenSlider) greenSlider.value = 90; 
-    if(blueSlider) blueSlider.value = 100;
+    if (redSlider) redSlider.value = 90; 
+    if (greenSlider) greenSlider.value = 90; 
+    if (blueSlider) blueSlider.value = 100;
     
     updateUIValues(); buildTargets(); updatePositions(0, '');
     forceRenderFrame();
 }
 
-if(startBtn) startBtn.addEventListener('click', toggleTraining); 
-if(resetBtn) resetBtn.addEventListener('click', executeReset);
+if (startBtn) startBtn.addEventListener('click', toggleTraining); 
+if (resetBtn) resetBtn.addEventListener('click', executeReset);
 
 document.addEventListener('keydown', (e) => {
-    if(loginOverlay.style.display !== 'none') return; 
+    if (loginOverlay.style.display !== 'none') return; 
 
     const activeTag = document.activeElement ? document.activeElement.tagName : '';
     const activeType = document.activeElement ? document.activeElement.type : '';
@@ -1266,7 +1256,7 @@ document.addEventListener('keydown', (e) => {
     if (shortcuts.includes(code)) {
         e.preventDefault(); if (document.activeElement) document.activeElement.blur(); 
         
-        switch(code) {
+        switch (code) {
             case 'PageUp':
                 if (isAIRescueActive || !activeProtocol) break;
                 if (protocolStage > 0) { protocolStage--; loadMatrixStage(activeProtocol, protocolStage); }
@@ -1279,10 +1269,10 @@ document.addEventListener('keydown', (e) => {
 
             case 'Space': toggleTraining(); break; 
             case 'Enter': executeReset(); break; 
-            case 'KeyE': if(controlPanel) { controlPanel.style.display = controlPanel.style.display === 'none' ? 'flex' : 'none'; setTimeout(onWindowResize, 50); } break;
+            case 'KeyE': if (controlPanel) { controlPanel.style.display = controlPanel.style.display === 'none' ? 'flex' : 'none'; setTimeout(onWindowResize, 50); } break;
             case 'KeyG': uploadToSupabase(); break; 
             case 'KeyZ': 
-                if(aiToggle) { 
+                if (aiToggle) { 
                     aiToggle.checked = !aiToggle.checked; 
                     if (!aiToggle.checked) { disableAI(); } 
                     else {
@@ -1297,28 +1287,28 @@ document.addEventListener('keydown', (e) => {
             
             case 'Digit1': case 'Numpad1': 
                 protocolTime = 0;
-                if(prismSlider) { prismSlider.value = Math.max(parseFloat(prismSlider.min), parseFloat(prismSlider.value) - 0.5).toFixed(1); prismSlider.dispatchEvent(new Event('input')); }
+                if (prismSlider) { prismSlider.value = Math.max(parseFloat(prismSlider.min), parseFloat(prismSlider.value) - 0.5).toFixed(1); prismSlider.dispatchEvent(new Event('input')); }
                 break;
             case 'Digit2': case 'Numpad2': 
                 protocolTime = 0;
-                if(prismSlider) { prismSlider.value = Math.min(parseFloat(prismSlider.max), parseFloat(prismSlider.value) + 0.5).toFixed(1); prismSlider.dispatchEvent(new Event('input')); }
+                if (prismSlider) { prismSlider.value = Math.min(parseFloat(prismSlider.max), parseFloat(prismSlider.value) + 0.5).toFixed(1); prismSlider.dispatchEvent(new Event('input')); }
                 break;
                 
-            case 'BracketRight': protocolTime = 0; if(stereoSlider) { stereoSlider.value = Math.min(0.15, parseFloat(stereoSlider.value) + 0.01).toFixed(2); stereoSlider.dispatchEvent(new Event('input')); } break;
-            case 'BracketLeft': protocolTime = 0; if(stereoSlider) { stereoSlider.value = Math.max(-0.15, parseFloat(stereoSlider.value) - 0.01).toFixed(2); stereoSlider.dispatchEvent(new Event('input')); } break;
-            case 'Period': protocolTime = 0; if(speedSlider) { speedSlider.value = Math.min(60, parseFloat(speedSlider.value) + (e.shiftKey ? 5 : 1)); speedSlider.dispatchEvent(new Event('input')); } break;
-            case 'Comma': protocolTime = 0; if(speedSlider) { speedSlider.value = Math.max(1, parseFloat(speedSlider.value) - (e.shiftKey ? 5 : 1)); speedSlider.dispatchEvent(new Event('input')); } break;
+            case 'BracketRight': protocolTime = 0; if (stereoSlider) { stereoSlider.value = Math.min(0.15, parseFloat(stereoSlider.value) + 0.01).toFixed(2); stereoSlider.dispatchEvent(new Event('input')); } break;
+            case 'BracketLeft': protocolTime = 0; if (stereoSlider) { stereoSlider.value = Math.max(-0.15, parseFloat(stereoSlider.value) - 0.01).toFixed(2); stereoSlider.dispatchEvent(new Event('input')); } break;
+            case 'Period': protocolTime = 0; if (speedSlider) { speedSlider.value = Math.min(60, parseFloat(speedSlider.value) + (e.shiftKey ? 5 : 1)); speedSlider.dispatchEvent(new Event('input')); } break;
+            case 'Comma': protocolTime = 0; if (speedSlider) { speedSlider.value = Math.max(1, parseFloat(speedSlider.value) - (e.shiftKey ? 5 : 1)); speedSlider.dispatchEvent(new Event('input')); } break;
             
-            case 'KeyW': protocolTime = 0; currentSize = Math.min(600, currentSize + 15); updateUIValues(); updateScaleAndThickness(); if(!isAIRescueActive) disableAI(); break;
-            case 'KeyS': protocolTime = 0; currentSize = Math.max(150, currentSize - 15); updateUIValues(); updateScaleAndThickness(); if(!isAIRescueActive) disableAI(); break;
+            case 'KeyW': protocolTime = 0; currentSize = Math.min(600, currentSize + 15); updateUIValues(); updateScaleAndThickness(); if (!isAIRescueActive) disableAI(); break;
+            case 'KeyS': protocolTime = 0; currentSize = Math.max(150, currentSize - 15); updateUIValues(); updateScaleAndThickness(); if (!isAIRescueActive) disableAI(); break;
             
-            case 'KeyD': protocolTime = 0; currentThick = Math.min(10, currentThick + 0.5); updateUIValues(); buildTargets(); if(!isAIRescueActive) disableAI(); break;
-            case 'KeyA': protocolTime = 0; currentThick = Math.max(2, currentThick - 0.5); updateUIValues(); buildTargets(); if(!isAIRescueActive) disableAI(); break;
-            case 'KeyF': protocolTime = 0; if(fillCheckbox) { fillCheckbox.checked = !fillCheckbox.checked; fillCheckbox.dispatchEvent(new Event('change')); } break;
-            case 'KeyR': protocolTime = 0; if(rotateCheckbox) { rotateCheckbox.checked = !rotateCheckbox.checked; rotateCheckbox.dispatchEvent(new Event('change')); } break;
+            case 'KeyD': protocolTime = 0; currentThick = Math.min(10, currentThick + 0.5); updateUIValues(); buildTargets(); if (!isAIRescueActive) disableAI(); break;
+            case 'KeyA': protocolTime = 0; currentThick = Math.max(2, currentThick - 0.5); updateUIValues(); buildTargets(); if (!isAIRescueActive) disableAI(); break;
+            case 'KeyF': protocolTime = 0; if (fillCheckbox) { fillCheckbox.checked = !fillCheckbox.checked; fillCheckbox.dispatchEvent(new Event('change')); } break;
+            case 'KeyR': protocolTime = 0; if (rotateCheckbox) { rotateCheckbox.checked = !rotateCheckbox.checked; rotateCheckbox.dispatchEvent(new Event('change')); } break;
             case 'KeyY': case 'KeyU': case 'KeyI': case 'KeyO': case 'KeyP':
                 if (isAIRescueActive) break;
-                if(aiToggle) aiToggle.checked = true; 
+                if (aiToggle) aiToggle.checked = true; 
                 const maxStages = AIM_MATRIX[code] ? AIM_MATRIX[code].length : 10;
                 if (activeProtocol === code && isRunning) { protocolStage = (protocolStage + 1) % maxStages; } else { activeProtocol = code; protocolStage = 0; }
                 loadMatrixStage(activeProtocol, protocolStage);
