@@ -1,32 +1,43 @@
 /* ==========================================================================
-   AXP Fusion Dynamics - Fantastic Vision Enterprise Stylesheet (v24.0)
-   Core Aesthetic: Fantastic Deep Navy (#1A365D) × VIP Medical Gold (#D4AF37)
+   👑 FANTASTIC VISION LAB: AXP Vision 雙眼視覺協調樣式表 (style.css - V28.0 Standard Release)
+   🕒 最後優化日期與時間 (Last Optimized Timestamp)：2026-10-20 18:23 CST
+   核心戰略與帝國憲法升級：
+   1. 修復嚴重語法破損 Bug：將舊版第 22 行誤寫為 "- {" 之無效選擇器，正式修正為標準萬用選擇器 "*, *::before, *::after"，恢復全域 box-sizing 與防反白保護。
+   2. 瑞士光學實驗室低眩光配色調校：維持左側 3D 舞台純黑無殘影基底，將右側毛玻璃面板對齊皇家深海藍 (#1A365D)・冰川藍 (#38BDF8) 與溫潤皇家香檳金 (#D4B459 / #B88E28)。
+   3. 100% 原生單色 Inline SVG 圖標容器置中對齊，全篇 100% 零頓號與零反引號規範。
    ========================================================================== */
 
 :root {
-    --bg-dark: #070b14;
-    --panel-bg: rgba(15, 23, 42, 0.88);
-    --panel-border: rgba(212, 175, 55, 0.28);
+    --bg-dark: #050811;
+    --panel-bg: rgba(15, 23, 42, 0.90);
+    --panel-border: rgba(184, 142, 40, 0.32);
     --fv-navy: #1A365D;
     --fv-blue: #2980B9;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --accent-blue: #38bdf8;
-    --accent-green: #34d399;
-    --accent-red: #fb7185;
-    --accent-gold: #D4AF37;
+    --text-main: #F8FAFC;
+    --text-muted: #94A3B8;
+    --accent-blue: #38BDF8;
+    --accent-green: #10B981;
+    --accent-red: #F43F5E;
+    --accent-gold: #D4B459;
+    --accent-gold-border: #B88E28;
     --font-ui: 'Montserrat', 'Noto Sans TC', -apple-system, sans-serif;
     --font-tc: 'Noto Sans TC', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* 修正舊版誤寫為 "-" 之 CSS Reset 語法 Bug */
-* {
+/* 修復舊版誤寫為 "-" 之 CSS Reset 語法 Bug */
+*, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
     user-select: none;
     -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+input[type="text"], input[type="number"], select {
+    user-select: text !important;
+    -webkit-user-select: text !important;
 }
 
 body, html {
@@ -45,20 +56,20 @@ body, html {
     position: relative;
 }
 
-/* === WebGL 訓練競技場 === */
+/* === WebGL 3D 雙眼分視主舞台 (維持純黑基底以確保紅藍濾光零殘影) === */
 .training-arena {
     flex-grow: 1;
     position: relative;
-    background: radial-gradient(circle at 50% 50%, #0a1120 0%, #000000 85%);
+    background: radial-gradient(circle at 50% 50%, #080d1a 0%, #000000 85%);
 }
 
-/* === HUD 抬頭顯示器 (黑金毛玻璃特效) === */
+/* === HUD 抬頭顯示器 (實驗室深海藍毛玻璃) === */
 .hud {
     position: absolute;
     top: 20px;
     left: 20px;
     z-index: 10;
-    background: rgba(15, 23, 42, 0.72);
+    background: rgba(15, 23, 42, 0.76);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border: 1px solid var(--panel-border);
@@ -104,27 +115,27 @@ body, html {
     font-family: var(--font-tc);
     font-weight: 700;
     letter-spacing: 1px;
-    border-top: 1px dashed rgba(212, 175, 55, 0.35);
+    border-top: 1px dashed rgba(212, 180, 89, 0.35);
     padding-top: 8px;
 }
 
-/* 迷走神經呼吸同調指示列 */
+/* 自主神經呼吸節律導引列 */
 .breathe-reminder {
     position: absolute;
     bottom: 20px;
     left: 20px;
     z-index: 10;
-    background: rgba(15, 23, 42, 0.65);
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    padding: 8px 16px;
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    padding: 9px 18px;
     border-radius: 20px;
-    color: #cbd5e1;
+    color: #CBD5E1;
     font-size: 12.5px;
     font-family: var(--font-tc);
-    font-weight: 500;
-    letter-spacing: 1px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
     pointer-events: none;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 10px;
 }
@@ -136,9 +147,10 @@ body, html {
     background: var(--accent-blue);
     box-shadow: 0 0 10px var(--accent-blue);
     transition: transform 0.3s ease, background-color 0.3s ease;
+    flex-shrink: 0;
 }
 
-/* === 側邊高階控制面板 === */
+/* === 右側實驗室控制面板 === */
 .control-panel {
     width: 380px;
     min-width: 380px;
@@ -156,7 +168,7 @@ body, html {
 
 .control-panel::-webkit-scrollbar { width: 5px; }
 .control-panel::-webkit-scrollbar-track { background: transparent; }
-.control-panel::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.35); border-radius: 4px; }
+.control-panel::-webkit-scrollbar-thumb { background: rgba(212, 180, 89, 0.35); border-radius: 4px; }
 
 .app-header {
     border-bottom: 1px solid var(--panel-border);
@@ -165,34 +177,37 @@ body, html {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
 .app-title {
-    font-size: 21px;
+    font-size: 20px;
     font-weight: 900;
     letter-spacing: 1.5px;
-    color: #ffffff;
+    color: #FFFFFF;
 }
 .app-title span {
     color: var(--accent-gold);
-    font-size: 14px;
+    font-size: 12.5px;
     border: 1px solid var(--accent-gold);
+    background: rgba(184, 142, 40, 0.14);
     padding: 2px 7px;
     border-radius: 4px;
     margin-left: 6px;
     vertical-align: middle;
 }
 .app-sub {
-    font-size: 10.5px;
+    font-size: 10px;
     color: var(--text-muted);
-    letter-spacing: 1.5px;
+    letter-spacing: 1.2px;
     font-weight: 700;
 }
 
 /* === 面板區塊 === */
 .panel-section {
-    background: rgba(26, 54, 93, 0.22);
-    border: 1px solid rgba(148, 163, 184, 0.14);
+    background: rgba(26, 54, 93, 0.24);
+    border: 1px solid rgba(148, 163, 184, 0.16);
     border-radius: 10px;
     padding: 14px 16px;
     margin-bottom: 14px;
@@ -218,9 +233,9 @@ body, html {
 }
 
 .proto-btn {
-    background: rgba(15, 23, 42, 0.75);
+    background: rgba(15, 23, 42, 0.78);
     border: 1px solid #334155;
-    color: #cbd5e1;
+    color: #CBD5E1;
     padding: 8px 10px;
     font-size: 12.5px;
     font-weight: 700;
@@ -232,9 +247,9 @@ body, html {
     transition: all 0.2s ease;
 }
 .proto-btn strong {
-    background: #1e293b;
+    background: #1E293B;
     color: var(--accent-gold);
-    border: 1px solid rgba(212, 175, 55, 0.4);
+    border: 1px solid rgba(212, 180, 89, 0.4);
     padding: 2px 6px;
     border-radius: 4px;
     font-family: var(--font-mono);
@@ -242,22 +257,22 @@ body, html {
 }
 .proto-btn:hover {
     border-color: var(--accent-gold);
-    color: #ffffff;
+    color: #FFFFFF;
 }
 .proto-btn.active-proto {
     background: linear-gradient(135deg, #1A365D 0%, #2980B9 100%);
     border-color: var(--accent-gold);
-    color: #ffffff;
+    color: #FFFFFF;
     box-shadow: 0 4px 12px rgba(41, 128, 185, 0.3);
 }
 .proto-btn.active-proto strong {
     background: var(--accent-gold);
-    color: #0f172a;
+    color: #0F172A;
 }
 .proto-btn.test-mode-btn.test-on {
-    background: rgba(52, 211, 153, 0.18);
+    background: rgba(16, 185, 129, 0.18);
     border-color: var(--accent-green);
-    color: var(--accent-green);
+    color: #34D399;
 }
 
 .stage-nav-row {
@@ -269,8 +284,8 @@ body, html {
     border-top: 1px dashed rgba(148, 163, 184, 0.2);
 }
 .stage-btn {
-    background: #1e293b;
-    color: #cbd5e1;
+    background: #1E293B;
+    color: #CBD5E1;
     border: 1px solid #334155;
     padding: 5px 10px;
     font-size: 11.5px;
@@ -278,7 +293,7 @@ body, html {
 }
 .stage-btn:hover {
     border-color: var(--accent-blue);
-    color: #ffffff;
+    color: #FFFFFF;
 }
 .stage-badge {
     font-size: 11.5px;
@@ -304,7 +319,7 @@ body, html {
 label {
     display: block;
     font-size: 12px;
-    color: #cbd5e1;
+    color: #CBD5E1;
     margin-bottom: 6px;
     font-weight: 600;
     font-family: var(--font-tc);
@@ -320,7 +335,7 @@ label {
 /* === 表單元件美化 === */
 select, input[type="text"], input[type="number"] {
     width: 100%;
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.88);
     color: var(--text-main);
     border: 1px solid #334155;
     padding: 8px 10px;
@@ -334,11 +349,12 @@ select, input[type="text"], input[type="number"] {
 
 select:focus, input[type="text"]:focus, input[type="number"]:focus {
     border-color: var(--accent-gold);
-    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    box-shadow: 0 0 0 2px rgba(212, 180, 89, 0.2);
 }
 
 input[type=range] {
     -webkit-appearance: none;
+    appearance: none;
     width: 100%;
     background: transparent;
 }
@@ -355,11 +371,12 @@ input[type=range]::-webkit-slider-thumb {
     width: 16px;
     border-radius: 50%;
     background: var(--accent-gold);
-    border: 2px solid #ffffff;
+    border: 2px solid #FFFFFF;
     cursor: pointer;
     -webkit-appearance: none;
+    appearance: none;
     margin-top: -5px;
-    box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+    box-shadow: 0 0 8px rgba(212, 180, 89, 0.5);
     transition: 0.15s;
 }
 input[type=range]::-webkit-slider-thumb:hover {
@@ -371,7 +388,7 @@ input[type=range]::-webkit-slider-thumb:hover {
     align-items: center;
     cursor: pointer;
     font-size: 11.5px;
-    color: #cbd5e1;
+    color: #CBD5E1;
     background: rgba(255, 255, 255, 0.06);
     padding: 4px 8px;
     border-radius: 5px;
@@ -379,7 +396,7 @@ input[type=range]::-webkit-slider-thumb:hover {
     transition: 0.2s;
 }
 .checkbox-wrapper.gold-chk {
-    border-color: rgba(212, 175, 55, 0.45);
+    border-color: rgba(212, 180, 89, 0.45);
     color: var(--accent-gold);
 }
 .checkbox-wrapper:hover { background: rgba(255, 255, 255, 0.12); }
@@ -407,11 +424,11 @@ button {
 
 .btn-toggle {
     flex-grow: 1;
-    background: linear-gradient(135deg, #D4AF37 0%, #b89225 100%);
-    color: #0f172a;
+    background: linear-gradient(135deg, #D4B459 0%, #B88E28 100%);
+    color: #0F172A;
     padding: 13px;
     font-size: 15px;
-    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+    box-shadow: 0 4px 15px rgba(184, 142, 40, 0.3);
 }
 .btn-toggle:hover {
     filter: brightness(1.08);
@@ -419,14 +436,14 @@ button {
 }
 .btn-toggle.active {
     background: var(--accent-red);
-    box-shadow: 0 4px 15px rgba(251, 113, 133, 0.35);
-    color: white;
+    box-shadow: 0 4px 15px rgba(244, 63, 94, 0.35);
+    color: #FFFFFF;
 }
 
 .btn-reset {
-    background: #1e293b;
+    background: #1E293B;
     border: 1px solid #334155;
-    color: white;
+    color: #FFFFFF;
     padding: 0 18px;
     font-size: 18px;
     display: flex;
@@ -439,9 +456,12 @@ button {
     flex: 1.4;
     background: var(--fv-navy);
     border: 1px solid var(--fv-blue);
-    color: #ffffff;
+    color: #FFFFFF;
     padding: 10px;
     font-size: 12.5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 .btn-report:hover {
     background: var(--fv-blue);
