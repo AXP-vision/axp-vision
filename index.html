@@ -1,18 +1,30 @@
 <!DOCTYPE html>
+<!-- =========================================================================
+     👑 FANTASTIC VISION LAB: AXP Vision 雙眼同時視與融像協調系統 (index.html - V28.0 Standard Release)
+     🕒 最後優化日期與時間 (Last Optimized Timestamp)：2026-10-20 18:13 CST
+     核心戰略與帝國憲法六大升級：
+     1. 區隔公開標準版與 Pro 旗艦版：面板頂部正名為 AXP VISION STD (STANDARD RELEASE)，消除版本混淆。
+     2. 100% 正統視光學名對齊：拔除「調節解綁・破抑制」等詞彙，五顆快捷鈕統一為「同時視分視・固視與周邊・融像與立體・跳視與垂直・調節與聚散」。
+     3. 執行策略 A（公開版安全稜鏡上限）：將手動稜鏡滑桿 (#prism-slider) 收斂鎖定於 -8.0Δ (BI) ~ +20.0Δ (BO) 安全舒適範圍，將 +35Δ 極限負載保留予 Pro 旗艦版。
+     4. 修復 shapes.js 視標對應 Bug：將原本會導致畫面空白之 glossysphere 修正為 shapes.js 原生支援之 sphere3 (三層立體晶球)。
+     5. 100% 拔除全頁 6 處作業系統彩色 Emoji：全面換裝絕對圓心鎖定之原生單色 Inline SVG 向量圖標，並綁定白底楷書「凡」字皇家圓章 Favicon。
+     6. Non-SaMD 合規微調：將「啟動訓練／臨床訓練模組」溫和轉譯為「啟動練習／雙眼視覺協調模組」，全篇 100% 零頓號與零反引號。
+     ========================================================================= -->
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AXP Fusion Dynamics | 凡特錫雙眼融像與視覺空間動態系統</title>
+    <title>AXP Vision (Standard Release)｜凡特錫雙眼同時視與融像協調系統</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="https://static1.squarespace.com/static/69d767c498eb19770e89b41e/t/6ad726e84a34f44a11ea794e/1792485096501/Fantastic-Vision-Royal-Seal-fan-kaiti-192x192+%281%29.png">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
-<body>
+<body data-optimized-at="2026-10-20 18:13 CST">
 
 <div id="fv-fusion-app">
-    <!-- 左側 WebGL 3D 視覺訓練主舞台 -->
+    <!-- 左側 WebGL 3D 雙眼視覺協調主舞台 -->
     <div class="training-arena" id="arena">
         <div class="hud" id="hud-display">
             <div class="hud-top-row">
@@ -24,41 +36,44 @@
                 <span>STEREO: <strong id="hud-stereo-val">0.00</strong></span>
                 <span>SCORE: <strong id="hud-score-val" style="color:#D4AF37;">0</strong></span>
             </div>
-            <span class="lab-tag" id="dynamic-mode-tag">AXP FUSION DYNAMICS｜雙眼空間協同矩陣</span>
+            <span class="lab-tag" id="dynamic-mode-tag">AXP VISION STANDARD｜雙眼同時視與融像協調矩陣</span>
         </div>
         
         <div id="webgl-container" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;"></div>
         
-        <!-- 迷走神經呼吸節律同步導引列 -->
+        <!-- 自主神經呼吸節律同步導引列 (100% 封裝秒數黑盒子・零 Emoji) -->
         <div class="breathe-reminder" id="breathe-guide-bar">
             <span class="breath-dot" id="breath-indicator"></span>
-            <span id="breath-text">💡 練習中請跟隨中央微光環保持平穩呼吸，切勿憋氣</span>
+            <span id="breath-text">練習中請跟隨中央微光環保持平穩深長呼吸，自然放鬆雙肩不憋氣</span>
         </div>
     </div>
 
-    <!-- 右側臨床級毛玻璃控制面板 -->
+    <!-- 右側實驗室級毛玻璃控制面板 -->
     <div class="control-panel" style="z-index: 20;">
         <div class="app-header">
-            <div class="app-title">AXP FUSION <span>PRO</span></div>
-            <div class="app-sub">FANTASTIC VISION LAB</div>
+            <div class="app-title">AXP VISION <span>STD</span></div>
+            <div class="app-sub">STANDARD RELEASE｜FANTASTIC VISION LAB</div>
         </div>
 
-        <!-- 區塊 1：五大臨床模組與互動測驗快捷面板 (滑鼠與鍵盤雙棲) -->
+        <!-- 區塊 1：五大正統雙眼視覺模組與互動回應面板 -->
         <div class="panel-section">
             <div class="section-title">
-                <span>🎯 臨床訓練模組 [ Y U I O P ]</span>
-                <label class="checkbox-wrapper gold-chk" id="ai-toggle-wrapper" title="按 Z 鍵開啟 AI 動態階梯闖關">
-                    <input type="checkbox" id="ai-toggle"> AI 闖關 [Z]
+                <span style="display:inline-flex; align-items:center; gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span>雙眼視覺協調模組 [ Y U I O P ]</span>
+                </span>
+                <label class="checkbox-wrapper gold-chk" id="ai-toggle-wrapper" title="按 Z 鍵開啟自動階段引導">
+                    <input type="checkbox" id="ai-toggle"> 自動進階 [Z]
                 </label>
             </div>
             
             <div class="protocol-btn-grid">
-                <button type="button" class="proto-btn" data-proto="KeyY" title="破除單眼抑制與雙眼互補鎖定"><strong>Y</strong> 去抑制平衡</button>
-                <button type="button" class="proto-btn" data-proto="KeyU" title="平滑追視與多目標空間穩定"><strong>U</strong> 追視與周邊</button>
-                <button type="button" class="proto-btn" data-proto="KeyI" title="平滑聚散推拉與 SILO 景深"><strong>I</strong> 立體融像</button>
-                <button type="button" class="proto-btn" data-proto="KeyO" title="階躍融像翻轉與垂直微調"><strong>O</strong> 跳視與垂直</button>
-                <button type="button" class="proto-btn" data-proto="KeyP" title="大字體對焦收放與聚散解綁"><strong>P</strong> 調節解綁</button>
-                <button type="button" class="proto-btn test-mode-btn" id="btn-test-mode" title="按 0 鍵開啟四向方向鍵破抑制測驗"><strong>0</strong> 互動測驗: 關</button>
+                <button type="button" class="proto-btn" data-proto="KeyY" title="雙眼同時視與分視平衡 (Dichoptic Anti-Suppression)"><strong>Y</strong> 同時視分視</button>
+                <button type="button" class="proto-btn" data-proto="KeyU" title="黃斑部中心固視與周邊視野整合 (Central Fixation)"><strong>U</strong> 固視與周邊</button>
+                <button type="button" class="proto-btn" data-proto="KeyI" title="平面融像儲備與 SILO 立體景深 (Fusional Vergence)"><strong>I</strong> 融像與立體</button>
+                <button type="button" class="proto-btn" data-proto="KeyO" title="精準跳視控制與垂直融像對齊 (Saccadic &amp; Vertical)"><strong>O</strong> 跳視與垂直</button>
+                <button type="button" class="proto-btn" data-proto="KeyP" title="遠近調節靈敏度與相對聚散協調 (Accommodative Facility)"><strong>P</strong> 調節與聚散</button>
+                <button type="button" class="proto-btn test-mode-btn" id="btn-test-mode" title="按 0 鍵開啟四向方向鍵互動辨識"><strong>0</strong> 互動測驗: 開</button>
             </div>
 
             <div class="stage-nav-row">
@@ -70,24 +85,29 @@
 
         <!-- 區塊 2：視標幾何與尺寸控制 -->
         <div class="panel-section">
-            <div class="section-title">🎨 視標幾何與雙眼互補結構</div>
+            <div class="section-title">
+                <span style="display:inline-flex; align-items:center; gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                    <span>視標幾何與雙眼分視結構</span>
+                </span>
+            </div>
             <div class="control-group">
                 <select id="shape-select">
-                    <optgroup label="雙眼去抑制互補視標 (Dichoptic Anti-Suppression)">
-                        <option value="dichoptic_lock" selected>雙眼互補對位鎖 (左框右核・破抑制專用)</option>
-                        <option value="dichoptic_cross">雙眼互補十字準星 (水平垂直分視校準)</option>
+                    <optgroup label="雙眼同時視分視互補視標 (Dichoptic Anti-Suppression)">
+                        <option value="dichoptic_lock" selected>雙眼分視對位視標 (外框與中心核・同時視專用)</option>
+                        <option value="dichoptic_cross">雙眼分視十字視標 (同心圓與十字・分視平衡)</option>
                     </optgroup>
-                    <optgroup label="高階 3D 空間幾何 (WebGL 3D)">
-                        <option value="sphere5">3D 經緯網格球體 (5-Sphere)</option>
-                        <option value="glossysphere">高光澤立體晶球 (SILO 專用)</option>
+                    <optgroup label="立體空間幾何視標 (WebGL 3D)">
+                        <option value="sphere5">3D 五層經緯網格球體 (5-Layer Sphere)</option>
+                        <option value="sphere3">3D 三層立體晶球 (SILO 景深專用)</option>
                         <option value="crystal8">3D 雙層八面晶體 (Octa-Crystal)</option>
-                        <option value="torusKnot">3D 莫比烏斯連續軌跡 (Torus Knot)</option>
+                        <option value="torusKnot">3D 雙環連續軌跡 (Torus Knot)</option>
                         <option value="nested_dodeca">3D 雙層十二面體 (Dodecahedron)</option>
                     </optgroup>
-                    <optgroup label="經典平面融像與清晰大視標">
-                        <option value="circle5">五層同心圓環 (5-Rings)</option>
-                        <option value="star5">五層立體星芒 (5-Stars)</option>
-                        <option value="text">高對比清晰大視標 (Large Optotype)</option>
+                    <optgroup label="經典平面融像與清晰字體視標">
+                        <option value="circle5">五層同心圓環 (5-Concentric Rings)</option>
+                        <option value="star5">五層立體星芒 (5-Layer Stars)</option>
+                        <option value="text">高對比清晰字體視標 (Large Optotype)</option>
                     </optgroup>
                 </select>
             </div>
@@ -97,41 +117,46 @@
             </div>
 
             <div class="control-group" style="margin-top: 10px;">
-                <label>視標物理尺寸 [ W 放大 / S 縮小 ] <span class="val-display" id="size-label">280px</span></label>
-                <input type="range" id="size-slider" min="150" max="600" step="5" value="280">
+                <label>視標物理尺寸 [ W 放大 / S 縮小 ] <span class="val-display" id="size-label">340px</span></label>
+                <input type="range" id="size-slider" min="150" max="600" step="5" value="340">
             </div>
             <div class="control-group">
                 <label style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>線條粗細 [ A / D ] <span class="val-display" id="thick-label">8.0</span></span>
+                    <span>線條粗細 [ A / D ] <span class="val-display" id="thick-label">8.5</span></span>
                     <div style="display:flex; gap:6px;">
                         <label class="checkbox-wrapper"><input type="checkbox" id="rotate-checkbox" checked> 旋轉[R]</label>
-                        <label class="checkbox-wrapper"><input type="checkbox" id="fill-checkbox"> 實體[F]</label>
+                        <label class="checkbox-wrapper"><input type="checkbox" id="fill-checkbox" checked> 實體[F]</label>
                     </div>
                 </label>
-                <input type="range" id="thick-slider" min="2" max="10" step="0.5" value="8">
+                <input type="range" id="thick-slider" min="2" max="10" step="0.5" value="8.5">
             </div>
         </div>
 
-        <!-- 區塊 3：稜鏡度與空間運動參數 -->
+        <!-- 區塊 3：稜鏡緩衝需求與空間深度參數 (策略 A：公開版安全上限 -8Δ ~ +20Δ) -->
         <div class="panel-section">
-            <div class="section-title">🚀 稜鏡負載與空間深度</div>
+            <div class="section-title">
+                <span style="display:inline-flex; align-items:center; gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <span>雙眼融像緩衝與立體景深</span>
+                </span>
+            </div>
             
             <div class="control-group prism-highlight-box">
                 <label style="color: #93c5fd; margin-bottom: 6px; display: flex; justify-content: space-between;">
-                    <span>稜鏡訓練需求 [ 1 開散 / 2 聚合 ]</span>
+                    <span>融像緩衝需求 [ 1 開散 / 2 內聚 ]</span>
                     <span class="val-display" id="prism-label">0.0 Δ (平光)</span>
                 </label>
                 <div style="display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-bottom: 4px; font-family: 'Montserrat', monospace;">
-                    <span>BI 開散 (-12Δ)</span>
+                    <span>BI 開散 (-8Δ)</span>
                     <span>0Δ</span>
-                    <span>BO 聚合 (+35Δ)</span>
+                    <span>BO 內聚 (+20Δ)</span>
                 </div>
-                <input type="range" id="prism-slider" min="-12" max="35" step="0.5" value="0">
+                <input type="range" id="prism-slider" min="-8" max="20" step="0.5" value="0">
             </div>
 
             <div class="control-group">
-                <label>運動律動速度 [ , 慢 / . 快 ] <span class="val-display" id="speed-label">18.0</span></label>
-                <input type="range" id="speed-slider" min="1" max="60" step="1" value="18">
+                <label>運動律動速度 [ , 慢 / . 快 ] <span class="val-display" id="speed-label">14</span></label>
+                <input type="range" id="speed-slider" min="1" max="60" step="1" value="14">
             </div>
             
             <div class="control-group" style="margin-top: 4px;">
@@ -140,9 +165,14 @@
             </div>
         </div>
 
-        <!-- 區塊 4：螢幕尺寸物理校準與紅藍/紅綠濾光平衡 -->
+        <!-- 區塊 4：螢幕尺寸物理校準與紅藍分視濾光平衡 -->
         <div class="panel-section">
-            <div class="section-title">🔬 螢幕尺寸校準與雙眼亮度平衡</div>
+            <div class="section-title">
+                <span style="display:inline-flex; align-items:center; gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    <span>螢幕尺寸校準與紅藍分視平衡</span>
+                </span>
+            </div>
             <div class="control-group">
                 <label>您的螢幕尺寸與觀看距離 (cm)</label>
                 <div style="display: flex; gap: 8px;">
@@ -159,29 +189,31 @@
 
             <div class="control-group">
                 <select id="glasses-select">
-                    <option value="rb" selected>紅藍分視濾鏡 (左藍 / 右紅)</option>
-                    <option value="rg">紅綠分視濾鏡 (左綠 / 右紅)</option>
+                    <option value="rb" selected>專業紅藍分視濾鏡 (左藍 ／ 右紅)</option>
                 </select>
             </div>
             <div class="control-group">
-                <label>強弱眼對比平衡 (破抑制微調) <span class="val-display" id="balance-label">均衡 50/50</span></label>
+                <label>雙眼分視對比平衡 (同時視微調) <span class="val-display" id="balance-label">均衡 50/50</span></label>
                 <input type="range" id="balance-slider" min="10" max="90" value="50" style="background: linear-gradient(to right, #2980b9, #ef4444); border-radius: 4px;">
             </div>
             <div class="control-group">
-                <label>底色疊影消除校正 <span class="val-display"><span id="l-label-text">藍通道</span>:<span id="l-val">100%</span> | 紅通道:<span id="r-val">100%</span></span></label>
+                <label>紅藍通道亮度校準 <span class="val-display"><span id="l-label-text">藍通道</span>:<span id="l-val">100%</span> | 紅通道:<span id="r-val">90%</span></span></label>
                 <input type="range" id="blue-slider" min="10" max="100" value="100" style="accent-color: #38bdf8; margin-bottom: 5px;">
-                <input type="range" id="green-slider" min="10" max="100" value="100" style="accent-color: #4ade80; display: none; margin-bottom: 5px;">
-                <input type="range" id="red-slider" min="10" max="100" value="100" style="accent-color: #f87171;">
+                <input type="range" id="green-slider" min="10" max="100" value="90" style="accent-color: #4ade80; display: none; margin-bottom: 5px;">
+                <input type="range" id="red-slider" min="10" max="100" value="90" style="accent-color: #f87171;">
             </div>
         </div>
 
-        <!-- 底部主控制按鈕群 -->
+        <!-- 底部主控制按鈕群 (100% 零彩色 Emoji) -->
         <div class="btn-row">
-            <button type="button" class="btn-toggle" id="start-btn">▶ 啟動訓練 [ Space ]</button>
+            <button type="button" class="btn-toggle" id="start-btn">▶ 啟動練習 [ Space ]</button>
             <button type="button" class="btn-reset" id="reset-btn" title="歸零重置 [ Enter ]">↺</button>
         </div>
         <div class="btn-sub-row">
-            <button type="button" class="btn-report" id="report-btn" title="按 G 鍵結算並上傳練習報告">📊 結算練習報告 [ G ]</button>
+            <button type="button" class="btn-report" id="report-btn" title="按 G 鍵結算並檢視練習摘要">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <span>結算練習報告 [ G ]</span>
+            </button>
             <button type="button" class="btn-fullscreen" id="fullscreen-btn" title="按 Q 鍵切換全螢幕">⛶ 全螢幕 [ Q ]</button>
         </div>
     </div>
