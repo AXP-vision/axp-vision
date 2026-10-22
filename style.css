@@ -1,21 +1,24 @@
 /* ==========================================================================
-   👑 FANTASTIC VISION LAB: AXP Vision 雙眼視覺協調樣式表 (style.css - V28.0 Standard Release)
-   🕒 最後優化日期與時間 (Last Optimized Timestamp)：2026-10-20 18:23 CST
-   核心戰略與帝國憲法升級：
-   1. 修復嚴重語法破損 Bug：將舊版第 22 行誤寫為 "- {" 之無效選擇器，正式修正為標準萬用選擇器 "*, *::before, *::after"，恢復全域 box-sizing 與防反白保護。
-   2. 瑞士光學實驗室低眩光配色調校：維持左側 3D 舞台純黑無殘影基底，將右側毛玻璃面板對齊皇家深海藍 (#1A365D)・冰川藍 (#38BDF8) 與溫潤皇家香檳金 (#D4B459 / #B88E28)。
-   3. 100% 原生單色 Inline SVG 圖標容器置中對齊，全篇 100% 零頓號與零反引號規範。
+   👑 FANTASTIC VISION LAB: AXP Vision 雙眼視覺協調樣式表 (style.css - V1.0 Dual-Engine Release)
+   🕒 最後優化日期與時間 (Last Optimized Timestamp)：2026-10-22 19:10 CST
+   核心戰略與帝國憲法升級重點 (V1.0 實體鍵盤 × 觸控螢幕雙棲元年初版)：
+   1. [凡特錫色盤 100% 純化] 徹底移除舊版 #2980B9 與禁用之刺眼螢光青 #38BDF8，全面鎖定凡特錫藍 (#1E75BB / #2988D6 / #7CC2F5)・皇家深海藍 (#1A365D) 與皇家香檳金 (#B88E28 / #D4B459)。
+   2. [V1.0 鍵盤／觸控雙棲介面] 新增面板頂部「實體鍵盤 ／ 觸控螢幕」雙模切換膠囊 (.input-mode-switcher)・舞台右上角懸浮快捷艙 (.arena-top-right-dock) 與右下角「消光暗室級虛擬十字方向舵 (.touch-dpad-container)」。
+   3. [跨尺寸螢幕與觸控防誤觸工程] 針對 iPad 平板與 43"~55" 立式觸控大螢幕，加入 touch-action: none 防畫面拖拽捲動保護，以及右側面板平滑收合機制。
+   4. 100% 原生單色 Inline SVG 圖標容器置中對齊，全篇 100% 零頓號與零反引號規範。
    ========================================================================== */
 
 :root {
     --bg-dark: #050811;
-    --panel-bg: rgba(15, 23, 42, 0.90);
-    --panel-border: rgba(184, 142, 40, 0.32);
+    --panel-bg: rgba(15, 23, 42, 0.92);
+    --panel-border: rgba(184, 142, 40, 0.34);
     --fv-navy: #1A365D;
-    --fv-blue: #2980B9;
+    --fv-blue: #1E75BB;
+    --fv-blue-light: #2988D6;
+    --fv-blue-soft: #7CC2F5;
     --text-main: #F8FAFC;
     --text-muted: #94A3B8;
-    --accent-blue: #38BDF8;
+    --accent-blue: #2988D6;
     --accent-green: #10B981;
     --accent-red: #F43F5E;
     --accent-gold: #D4B459;
@@ -25,7 +28,7 @@
     --font-mono: 'JetBrains Mono', monospace;
 }
 
-/* 修復舊版誤寫為 "-" 之 CSS Reset 語法 Bug */
+/* 全域防反白與觸控高亮淨化 */
 *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
@@ -47,6 +50,7 @@ body, html {
     background-color: var(--bg-dark);
     font-family: var(--font-ui);
     color: var(--text-main);
+    touch-action: manipulation;
 }
 
 #fv-fusion-app {
@@ -54,6 +58,7 @@ body, html {
     width: 100vw;
     height: 100vh;
     position: relative;
+    overflow: hidden;
 }
 
 /* === WebGL 3D 雙眼分視主舞台 (維持純黑基底以確保紅藍濾光零殘影) === */
@@ -61,15 +66,17 @@ body, html {
     flex-grow: 1;
     position: relative;
     background: radial-gradient(circle at 50% 50%, #080d1a 0%, #000000 85%);
+    touch-action: none;
+    overflow: hidden;
 }
 
-/* === HUD 抬頭顯示器 (實驗室深海藍毛玻璃) === */
+/* === 左上角 HUD 抬頭顯示器 (實驗室深海藍毛玻璃) === */
 .hud {
     position: absolute;
     top: 20px;
     left: 20px;
     z-index: 10;
-    background: rgba(15, 23, 42, 0.76);
+    background: rgba(15, 23, 42, 0.78);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border: 1px solid var(--panel-border);
@@ -81,7 +88,8 @@ body, html {
     line-height: 1.75;
     color: var(--text-muted);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-    min-width: 340px;
+    min-width: 335px;
+    pointer-events: none;
 }
 
 .hud-top-row, .hud-mid-row {
@@ -98,7 +106,7 @@ body, html {
 }
 
 #status-text {
-    color: var(--accent-blue);
+    color: var(--fv-blue-soft);
     font-weight: 800;
 }
 
@@ -119,14 +127,51 @@ body, html {
     padding-top: 8px;
 }
 
-/* 自主神經呼吸節律導引列 */
+/* === 右上角舞台懸浮快捷艙 (收合面板 [E] 與 全螢幕 [Q]) === */
+.arena-top-right-dock {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.arena-dock-btn {
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(30, 117, 187, 0.55);
+    color: #E2E8F0;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 800;
+    font-family: var(--font-tc);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    transition: all 0.2s ease;
+}
+
+.arena-dock-btn:hover, .arena-dock-btn:active {
+    background: linear-gradient(135deg, #1A365D 0%, #1E75BB 100%);
+    border-color: var(--accent-gold);
+    color: #FFF9DE;
+    transform: translateY(-1px);
+}
+
+/* === 左下角：自主神經呼吸節律導引列 === */
 .breathe-reminder {
     position: absolute;
     bottom: 20px;
     left: 20px;
     z-index: 10;
-    background: rgba(15, 23, 42, 0.72);
-    border: 1px solid rgba(56, 189, 248, 0.28);
+    background: rgba(15, 23, 42, 0.76);
+    border: 1px solid rgba(30, 117, 187, 0.42);
     padding: 9px 18px;
     border-radius: 20px;
     color: #CBD5E1;
@@ -138,32 +183,139 @@ body, html {
     display: inline-flex;
     align-items: center;
     gap: 10px;
+    max-width: calc(100% - 260px);
 }
 
 .breath-dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: var(--accent-blue);
-    box-shadow: 0 0 10px var(--accent-blue);
+    background: var(--fv-blue-light);
+    box-shadow: 0 0 10px var(--fv-blue-light);
     transition: transform 0.3s ease, background-color 0.3s ease;
     flex-shrink: 0;
 }
 
+/* ==========================================================================
+   ✨ V1.0 觸控螢幕專屬：右下角「消光暗室級虛擬十字方向舵 (Touch D-Pad HUD)」
+   ========================================================================== */
+.touch-dpad-container {
+    position: absolute;
+    bottom: 20px;
+    right: 22px;
+    z-index: 16;
+    background: rgba(11, 21, 40, 0.74);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1.5px solid rgba(30, 117, 187, 0.48);
+    border-top: 2px solid var(--accent-gold-border);
+    border-radius: 18px;
+    padding: 10px 12px 12px 12px;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 當系統處於觸控螢幕模式時自動顯示 */
+body.touch-mode-active .touch-dpad-container,
+.touch-dpad-container.is-visible {
+    display: flex;
+}
+
+.touch-dpad-header {
+    width: 100%;
+    text-align: center;
+    border-bottom: 1px dashed rgba(124, 194, 245, 0.25);
+    padding-bottom: 5px;
+}
+
+.touch-dpad-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--accent-gold);
+    letter-spacing: 0.8px;
+}
+
+.touch-dpad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 54px);
+    grid-template-rows: repeat(3, 54px);
+    gap: 6px;
+    align-items: center;
+    justify-items: center;
+}
+
+.dpad-empty {
+    width: 54px;
+    height: 54px;
+    pointer-events: none;
+}
+
+.dpad-btn {
+    width: 54px;
+    height: 54px;
+    border-radius: 13px;
+    background: rgba(26, 54, 93, 0.65);
+    border: 1.5px solid rgba(124, 194, 245, 0.35);
+    color: #F8FAFC;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+    touch-action: manipulation;
+}
+
+.dpad-btn:hover {
+    background: rgba(30, 117, 187, 0.75);
+    border-color: var(--accent-gold);
+}
+
+.dpad-btn:active,
+.dpad-btn.dpad-pressed {
+    background: linear-gradient(135deg, #1E75BB 0%, #2988D6 100%);
+    border-color: #FFF9DE;
+    color: #FFF9DE;
+    transform: scale(0.92);
+    box-shadow: 0 0 16px rgba(30, 117, 187, 0.75);
+}
+
+.dpad-btn.dpad-center {
+    background: rgba(184, 142, 40, 0.24);
+    border: 1.5px solid var(--accent-gold);
+    color: var(--accent-gold);
+    border-radius: 50%;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+}
+
+.dpad-btn.dpad-center:active {
+    background: var(--accent-gold);
+    color: #0F172A;
+}
+
 /* === 右側實驗室控制面板 === */
 .control-panel {
-    width: 380px;
-    min-width: 380px;
+    width: 385px;
+    min-width: 385px;
     background: var(--panel-bg);
     backdrop-filter: blur(22px);
     -webkit-backdrop-filter: blur(22px);
     border-left: 1px solid var(--panel-border);
     display: flex;
     flex-direction: column;
-    padding: 20px 22px;
+    padding: 18px 20px;
     overflow-y: auto;
     z-index: 20;
     box-shadow: -12px 0 35px rgba(0, 0, 0, 0.6);
+    transition: margin-right 0.3s ease, opacity 0.25s ease;
 }
 
 .control-panel::-webkit-scrollbar { width: 5px; }
@@ -172,8 +324,8 @@ body, html {
 
 .app-header {
     border-bottom: 1px solid var(--panel-border);
-    padding-bottom: 12px;
-    margin-bottom: 16px;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -182,14 +334,14 @@ body, html {
 }
 
 .app-title {
-    font-size: 20px;
+    font-size: 19.5px;
     font-weight: 900;
-    letter-spacing: 1.5px;
+    letter-spacing: 1.4px;
     color: #FFFFFF;
 }
 .app-title span {
     color: var(--accent-gold);
-    font-size: 12.5px;
+    font-size: 11.5px;
     border: 1px solid var(--accent-gold);
     background: rgba(184, 142, 40, 0.14);
     padding: 2px 7px;
@@ -200,8 +352,49 @@ body, html {
 .app-sub {
     font-size: 10px;
     color: var(--text-muted);
-    letter-spacing: 1.2px;
+    letter-spacing: 1.1px;
     font-weight: 700;
+    margin-top: 3px;
+}
+
+/* === V1.0 實體鍵盤 vs. 觸控螢幕 雙模切換器 === */
+.input-mode-switcher {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    background: rgba(8, 13, 26, 0.72);
+    border: 1px solid rgba(30, 117, 187, 0.42);
+    padding: 4px;
+    border-radius: 9px;
+    margin-bottom: 13px;
+}
+
+.mode-switch-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    font-family: var(--font-tc);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mode-switch-btn:hover {
+    color: #FFFFFF;
+}
+
+.mode-switch-btn.active {
+    background: linear-gradient(135deg, #1A365D 0%, #1E75BB 100%);
+    border-color: var(--accent-gold);
+    color: #FFF9DE;
+    box-shadow: 0 3px 10px rgba(30, 117, 187, 0.35);
 }
 
 /* === 面板區塊 === */
@@ -209,14 +402,14 @@ body, html {
     background: rgba(26, 54, 93, 0.24);
     border: 1px solid rgba(148, 163, 184, 0.16);
     border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 14px;
+    padding: 13px 15px;
+    margin-bottom: 12px;
 }
 
 .section-title {
-    font-size: 13px;
+    font-size: 12.8px;
     color: var(--accent-gold);
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     font-weight: 800;
     letter-spacing: 0.8px;
     display: flex;
@@ -260,10 +453,10 @@ body, html {
     color: #FFFFFF;
 }
 .proto-btn.active-proto {
-    background: linear-gradient(135deg, #1A365D 0%, #2980B9 100%);
+    background: linear-gradient(135deg, #1A365D 0%, #1E75BB 100%);
     border-color: var(--accent-gold);
     color: #FFFFFF;
-    box-shadow: 0 4px 12px rgba(41, 128, 185, 0.3);
+    box-shadow: 0 4px 12px rgba(30, 117, 187, 0.35);
 }
 .proto-btn.active-proto strong {
     background: var(--accent-gold);
@@ -292,7 +485,7 @@ body, html {
     border-radius: 5px;
 }
 .stage-btn:hover {
-    border-color: var(--accent-blue);
+    border-color: var(--fv-blue-light);
     color: #FFFFFF;
 }
 .stage-badge {
@@ -303,14 +496,14 @@ body, html {
 }
 
 .control-group {
-    margin-bottom: 12px;
+    margin-bottom: 11px;
 }
 .control-group:last-child {
     margin-bottom: 0;
 }
 
 .prism-highlight-box {
-    background: rgba(41, 128, 185, 0.14);
+    background: rgba(30, 117, 187, 0.16);
     padding: 10px 12px;
     border-radius: 8px;
     border-left: 3px solid var(--accent-gold);
@@ -367,15 +560,15 @@ input[type=range]::-webkit-slider-runnable-track {
     border-radius: 3px;
 }
 input[type=range]::-webkit-slider-thumb {
-    height: 16px;
-    width: 16px;
+    height: 17px;
+    width: 17px;
     border-radius: 50%;
     background: var(--accent-gold);
     border: 2px solid #FFFFFF;
     cursor: pointer;
     -webkit-appearance: none;
     appearance: none;
-    margin-top: -5px;
+    margin-top: -5.5px;
     box-shadow: 0 0 8px rgba(212, 180, 89, 0.5);
     transition: 0.15s;
 }
@@ -478,4 +671,23 @@ button {
 .btn-fullscreen:hover {
     background: rgba(255, 255, 255, 0.06);
     color: var(--text-main);
+}
+
+/* === 觸控平板 (iPad 10.9" / 12.9") 響應式微調 === */
+@media (max-width: 1024px) {
+    .control-panel {
+        width: 340px;
+        min-width: 340px;
+        padding: 14px 16px;
+    }
+    .hud {
+        min-width: 280px;
+        padding: 10px 16px;
+        font-size: 12px;
+    }
+    .breathe-reminder {
+        font-size: 11.5px;
+        padding: 7px 14px;
+        max-width: calc(100% - 220px);
+    }
 }
