@@ -1,31 +1,31 @@
 <!DOCTYPE html>
 <!-- =========================================================================
-     👑 FANTASTIC VISION LAB: AXP Vision 雙眼同時視與融像協調系統 (index.html - V28.0 Standard Release)
-     🕒 最後優化日期與時間 (Last Optimized Timestamp)：2026-10-20 18:13 CST
-     核心戰略與帝國憲法六大升級：
-     1. 區隔公開標準版與 Pro 旗艦版：面板頂部正名為 AXP VISION STD (STANDARD RELEASE)，消除版本混淆。
-     2. 100% 正統視光學名對齊：拔除「調節解綁・破抑制」等詞彙，五顆快捷鈕統一為「同時視分視・固視與周邊・融像與立體・跳視與垂直・調節與聚散」。
-     3. 執行策略 A（公開版安全稜鏡上限）：將手動稜鏡滑桿 (#prism-slider) 收斂鎖定於 -8.0Δ (BI) ~ +20.0Δ (BO) 安全舒適範圍，將 +35Δ 極限負載保留予 Pro 旗艦版。
-     4. 修復 shapes.js 視標對應 Bug：將原本會導致畫面空白之 glossysphere 修正為 shapes.js 原生支援之 sphere3 (三層立體晶球)。
-     5. 100% 拔除全頁 6 處作業系統彩色 Emoji：全面換裝絕對圓心鎖定之原生單色 Inline SVG 向量圖標，並綁定白底楷書「凡」字皇家圓章 Favicon。
-     6. Non-SaMD 合規微調：將「啟動訓練／臨床訓練模組」溫和轉譯為「啟動練習／雙眼視覺協調模組」，全篇 100% 零頓號與零反引號。
+     👑 FANTASTIC VISION LAB: AXP Vision 雙眼同時視與融像協調系統 (index.html - V1.0 Dual-Engine Release)
+     🕒 最後優化日期與時間 (Last Optimized Timestamp)：2026-10-22 19:08 CST
+     核心戰略與帝國憲法升級重點 (V1.0 實體鍵盤 × 觸控螢幕雙棲元年初版)：
+     1. [V1.0 鍵盤／觸控雙棲引擎] 頂部新增「實體鍵盤 [Key] ／ 觸控螢幕 [Touch]」雙模切換器；左側 3D 舞台植入消光暗室級「虛擬十字方向舵 (Touch D-Pad HUD)」與右上角「收合面板 [E] ／ 全螢幕 [Q]」懸浮快捷膠囊。
+     2. [螢幕尺寸比例尺重構] 依戰略指示取消 14" 與 24" 檔位，精準配置 11" 平板・12.9" iPad Pro・16" 筆電・27" 桌機・32" 大螢幕與 43"~55" 門市立式觸控大螢幕共 6 大物理校準檔位。
+     3. [商業定價黑盒子保護] 紅藍濾光鏡選項定錨為「專業光譜校準紅藍濾光鏡 (左藍／右紅・非消費級色片)」，不暴露國外機構採購來源，確保光學配件溢價。
+     4. [凡特錫色盤純化] 拔除行內殘留之 #38bdf8 螢光青與 #2980b9 舊色碼，全面換裝凡特錫藍 (#1E75BB / #2988D6) 與皇家香檳金 (#B88E28 / #D4B459)。
+     5. 100% 繁體中文・100% 原生單色 Inline SVG・零頓號・零反引號・Non-SaMD 合規表述。
      ========================================================================= -->
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AXP Vision (Standard Release)｜凡特錫雙眼同時視與融像協調系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AXP Vision V1.0｜凡特錫雙眼同時視與融像協調系統 (鍵盤／觸控雙棲版)</title>
     <link rel="icon" type="image/png" sizes="192x192" href="https://static1.squarespace.com/static/69d767c498eb19770e89b41e/t/6ad726e84a34f44a11ea794e/1792485096501/Fantastic-Vision-Royal-Seal-fan-kaiti-192x192+%281%29.png">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
-<body data-optimized-at="2026-10-20 18:13 CST">
+<body data-version="V1.0" data-optimized-at="2026-10-22 19:08 CST">
 
 <div id="fv-fusion-app">
     <!-- 左側 WebGL 3D 雙眼視覺協調主舞台 -->
     <div class="training-arena" id="arena">
+        <!-- 左上角 HUD 抬頭顯示器 -->
         <div class="hud" id="hud-display">
             <div class="hud-top-row">
                 <span>STATUS: <strong id="status-text">IDLE</strong></span>
@@ -34,25 +34,82 @@
             <div class="hud-mid-row">
                 <span>PRISM: <strong id="prism-val-hud">0.0 Δ</strong></span>
                 <span>STEREO: <strong id="hud-stereo-val">0.00</strong></span>
-                <span>SCORE: <strong id="hud-score-val" style="color:#D4AF37;">0</strong></span>
+                <span>SCORE: <strong id="hud-score-val" style="color:#D4B459;">0</strong></span>
             </div>
-            <span class="lab-tag" id="dynamic-mode-tag">AXP VISION STANDARD｜雙眼同時視與融像協調矩陣</span>
+            <span class="lab-tag" id="dynamic-mode-tag">AXP VISION V1.0｜雙眼同時視與融像協調矩陣</span>
+        </div>
+
+        <!-- 右上角舞台懸浮快捷艙 (觸控與滑鼠皆可一鍵收合面板 [E] 或切換全螢幕 [Q]) -->
+        <div class="arena-top-right-dock" id="arena-quick-dock">
+            <button type="button" class="arena-dock-btn" id="btn-toggle-panel" title="隱藏或展開右側控制面板 [快捷鍵 E]">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                <span id="toggle-panel-text">收合面板 [E]</span>
+            </button>
+            <button type="button" class="arena-dock-btn" id="btn-arena-fs" title="切換全螢幕視野 [快捷鍵 Q]">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                <span>全螢幕 [Q]</span>
+            </button>
         </div>
         
+        <!-- WebGL 畫布容器 (支援觸控模式下直接用手指上下左右滑動 Swipe 回應閃爍視標) -->
         <div id="webgl-container" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1;"></div>
         
-        <!-- 自主神經呼吸節律同步導引列 (100% 封裝秒數黑盒子・零 Emoji) -->
+        <!-- 左下角：自主神經呼吸節律同步導引列 (100% 封裝秒數黑盒子・零 Emoji) -->
         <div class="breathe-reminder" id="breathe-guide-bar">
             <span class="breath-dot" id="breath-indicator"></span>
             <span id="breath-text">練習中請跟隨中央微光環保持平穩深長呼吸，自然放鬆雙肩不憋氣</span>
         </div>
+
+        <!-- 右下角：V1.0 觸控螢幕專屬「消光暗室級虛擬十字方向舵 (Touch D-Pad HUD)」 -->
+        <div class="touch-dpad-container" id="touch-dpad-hud" aria-label="觸控螢幕方向互動控制器">
+            <div class="touch-dpad-header">
+                <span class="touch-dpad-title">TOUCH HUD｜畫面滑動或點擊方向</span>
+            </div>
+            <div class="touch-dpad-grid">
+                <div class="dpad-empty"></div>
+                <button type="button" class="dpad-btn dpad-up" data-dir="ArrowUp" aria-label="上方閃爍點回應">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                </button>
+                <div class="dpad-empty"></div>
+
+                <button type="button" class="dpad-btn dpad-left" data-dir="ArrowLeft" aria-label="左方閃爍點回應">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <button type="button" class="dpad-btn dpad-center" id="dpad-space-btn" title="開始或暫停練習 [Space]">
+                    <span id="dpad-center-label">START</span>
+                </button>
+                <button type="button" class="dpad-btn dpad-right" data-dir="ArrowRight" aria-label="右方閃爍點回應">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+
+                <div class="dpad-empty"></div>
+                <button type="button" class="dpad-btn dpad-down" data-dir="ArrowDown" aria-label="下方閃爍點回應">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="dpad-empty"></div>
+            </div>
+        </div>
     </div>
 
     <!-- 右側實驗室級毛玻璃控制面板 -->
-    <div class="control-panel" style="z-index: 20;">
+    <div class="control-panel" id="main-control-panel" style="z-index: 20;">
         <div class="app-header">
-            <div class="app-title">AXP VISION <span>STD</span></div>
-            <div class="app-sub">STANDARD RELEASE｜FANTASTIC VISION LAB</div>
+            <div>
+                <div class="app-title">AXP VISION <span>STD V1.0</span></div>
+                <div class="app-sub">DUAL-ENGINE RELEASE｜FANTASTIC VISION LAB</div>
+            </div>
+        </div>
+
+        <!-- V1.0 關鍵中樞：實體鍵盤 vs. 觸控螢幕 雙模切換器 -->
+        <div class="input-mode-switcher" id="input-mode-bar">
+            <button type="button" class="mode-switch-btn active" id="mode-btn-keyboard" data-mode="keyboard">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><line x1="8" y1="12" x2="8.01" y2="12"/><line x1="12" y1="12" x2="12.01" y2="12"/><line x1="16" y1="12" x2="16.01" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg>
+                <span>實體鍵盤模式</span>
+            </button>
+            <button type="button" class="mode-switch-btn" id="mode-btn-touch" data-mode="touch">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+                <span>觸控螢幕模式</span>
+            </button>
         </div>
 
         <!-- 區塊 1：五大正統雙眼視覺模組與互動回應面板 -->
@@ -62,7 +119,7 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
                     <span>雙眼視覺協調模組 [ Y U I O P ]</span>
                 </span>
-                <label class="checkbox-wrapper gold-chk" id="ai-toggle-wrapper" title="按 Z 鍵開啟自動階段引導">
+                <label class="checkbox-wrapper gold-chk" id="ai-toggle-wrapper" title="按 Z 鍵或點擊開啟自動階段引導">
                     <input type="checkbox" id="ai-toggle"> 自動進階 [Z]
                 </label>
             </div>
@@ -73,7 +130,7 @@
                 <button type="button" class="proto-btn" data-proto="KeyI" title="平面融像儲備與 SILO 立體景深 (Fusional Vergence)"><strong>I</strong> 融像與立體</button>
                 <button type="button" class="proto-btn" data-proto="KeyO" title="精準跳視控制與垂直融像對齊 (Saccadic &amp; Vertical)"><strong>O</strong> 跳視與垂直</button>
                 <button type="button" class="proto-btn" data-proto="KeyP" title="遠近調節靈敏度與相對聚散協調 (Accommodative Facility)"><strong>P</strong> 調節與聚散</button>
-                <button type="button" class="proto-btn test-mode-btn" id="btn-test-mode" title="按 0 鍵開啟四向方向鍵互動辨識"><strong>0</strong> 互動測驗: 開</button>
+                <button type="button" class="proto-btn test-mode-btn" id="btn-test-mode" title="按 0 鍵或點擊切換四向閃爍點互動辨識"><strong>0</strong> 互動測驗: 開</button>
             </div>
 
             <div class="stage-nav-row">
@@ -142,7 +199,7 @@
             </div>
             
             <div class="control-group prism-highlight-box">
-                <label style="color: #93c5fd; margin-bottom: 6px; display: flex; justify-content: space-between;">
+                <label style="color: #7CC2F5; margin-bottom: 6px; display: flex; justify-content: space-between;">
                     <span>融像緩衝需求 [ 1 開散 / 2 內聚 ]</span>
                     <span class="val-display" id="prism-label">0.0 Δ (平光)</span>
                 </label>
@@ -165,7 +222,7 @@
             </div>
         </div>
 
-        <!-- 區塊 4：螢幕尺寸物理校準與紅藍分視濾光平衡 -->
+        <!-- 區塊 4：螢幕尺寸物理校準與紅藍分視濾光平衡 (已移除 14" 與 24"，新增觸控平板與 43"~55" 大螢幕) -->
         <div class="panel-section">
             <div class="section-title">
                 <span style="display:inline-flex; align-items:center; gap:6px;">
@@ -177,29 +234,30 @@
                 <label>您的螢幕尺寸與觀看距離 (cm)</label>
                 <div style="display: flex; gap: 8px;">
                     <select id="screen-spec" style="flex: 2.2;">
-                        <option value="laptop14">13" ~ 14" 筆電或平板 (30.5cm)</option>
-                        <option value="mbp16" selected>15" ~ 16" 筆電 MacBook Pro (34.5cm)</option>
-                        <option value="desktop24">24" 桌上型螢幕 (53.1cm)</option>
+                        <option value="tablet11">10.9" ~ 11" 觸控平板 iPad (24.0cm)</option>
+                        <option value="tablet13">12.9" ~ 13" 平板 iPad Pro / Surface (28.0cm)</option>
+                        <option value="mbp16" selected>15" ~ 16" 筆電螢幕 MacBook Pro (34.5cm)</option>
                         <option value="desktop27">27" 桌上型螢幕 (59.8cm)</option>
                         <option value="desktop32">32" 大型螢幕 (70.8cm)</option>
+                        <option value="touch55">43" ~ 55" 立式觸控大螢幕 (105.0cm)</option>
                     </select>
-                    <input type="number" id="view-dist" value="50" min="30" max="100" style="flex: 0.8; text-align: center;" title="眼睛與螢幕距離(cm)">
+                    <input type="number" id="view-dist" value="50" min="30" max="150" style="flex: 0.8; text-align: center;" title="眼睛與螢幕距離(cm)">
                 </div>
             </div>
 
             <div class="control-group">
                 <select id="glasses-select">
-                    <option value="rb" selected>專業紅藍分視濾鏡 (左藍 ／ 右紅)</option>
+                    <option value="rb" selected>專業光譜校準紅藍濾光鏡 (左藍／右紅・非消費級色片)</option>
                 </select>
             </div>
             <div class="control-group">
                 <label>雙眼分視對比平衡 (同時視微調) <span class="val-display" id="balance-label">均衡 50/50</span></label>
-                <input type="range" id="balance-slider" min="10" max="90" value="50" style="background: linear-gradient(to right, #2980b9, #ef4444); border-radius: 4px;">
+                <input type="range" id="balance-slider" min="10" max="90" value="50" style="background: linear-gradient(to right, #1E75BB, #ef4444); border-radius: 4px;">
             </div>
             <div class="control-group">
                 <label>紅藍通道亮度校準 <span class="val-display"><span id="l-label-text">藍通道</span>:<span id="l-val">100%</span> | 紅通道:<span id="r-val">90%</span></span></label>
-                <input type="range" id="blue-slider" min="10" max="100" value="100" style="accent-color: #38bdf8; margin-bottom: 5px;">
-                <input type="range" id="green-slider" min="10" max="100" value="90" style="accent-color: #4ade80; display: none; margin-bottom: 5px;">
+                <input type="range" id="blue-slider" min="10" max="100" value="100" style="accent-color: #2988D6; margin-bottom: 5px;">
+                <input type="range" id="green-slider" min="10" max="100" value="90" style="accent-color: #10B981; display: none; margin-bottom: 5px;">
                 <input type="range" id="red-slider" min="10" max="100" value="90" style="accent-color: #f87171;">
             </div>
         </div>
@@ -210,11 +268,11 @@
             <button type="button" class="btn-reset" id="reset-btn" title="歸零重置 [ Enter ]">↺</button>
         </div>
         <div class="btn-sub-row">
-            <button type="button" class="btn-report" id="report-btn" title="按 G 鍵結算並檢視練習摘要">
+            <button type="button" class="btn-report" id="report-btn" title="按 G 鍵或點擊結算並檢視練習摘要">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 <span>結算練習報告 [ G ]</span>
             </button>
-            <button type="button" class="btn-fullscreen" id="fullscreen-btn" title="按 Q 鍵切換全螢幕">⛶ 全螢幕 [ Q ]</button>
+            <button type="button" class="btn-fullscreen" id="fullscreen-btn" title="按 Q 鍵或點擊切換全螢幕">⛶ 全螢幕 [ Q ]</button>
         </div>
     </div>
 </div>
