@@ -40,8 +40,7 @@ document.body.appendChild(loginOverlay);
 function performLogin() {
     const codeInput = document.getElementById('patient-code-input');
     const code = codeInput ? codeInput.value.trim() : '';
-    if (!code) return alert("請輸入您的體驗代號或稱呼！");
-    currentPatientCode = code;
+    currentPatientCode = code || 'GUEST-VIP';
     loginOverlay.style.display = 'none';
     onWindowResize();
     forceRenderFrame();
