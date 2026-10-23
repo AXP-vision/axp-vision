@@ -1,35 +1,35 @@
 // ============================================================================
-// 👑 FANTASTIC VISION LAB: AXP Vision 雙眼同時視與融像協調引擎 (app.js - V1.0 Dual-Engine Release)
-// 🕒 最後優化日期與時間 (Last Optimized Timestamp)：2026-10-22 19:13 CST
-// 核心戰略與帝國憲法升級重點 (V1.0 實體鍵盤 × 觸控螢幕雙棲元年初版)：
-// 1. [V1.0 鍵盤／觸控雙棲調度引擎] 新增「實體鍵盤模式 ／ 觸控螢幕模式」切換器與觸控裝置自動偵測；綁定舞台右下角「虛擬十字方向舵 (#touch-dpad-hud)」與「3D 畫布全螢幕直覺滑動手勢 (Swipe Up/Down/Left/Right)」，保護雙眼中央融像不因低頭看按鍵而中斷。
-// 2. [黃金 6 檔螢幕物理尺寸與觀距聯動] 移除 14" 與 24" 檔位，精準配置 11" 平板 (24cm/40cm)・12.9" iPad Pro (28cm/45cm)・16" 筆電 (34.5cm/50cm)・27" 桌機 (59.8cm/60cm)・32" 螢幕 (70.8cm/65cm) 與 43"~55" 立式觸控大螢幕 (105cm/80cm)。
-// 3. [舞台右上角懸浮快捷艙] 完整綁定「收合面板 [E] (#btn-toggle-panel)」與「全螢幕 [Q] (#btn-arena-fs)」，收合時自動重新計算 WebGL 3D 視埠比例確保視標 100% 居中不變形。
-// 4. [凡特錫色盤純化與黑盒子保護] 100% 拔除舊版 #38bdf8 螢光青與 #2980b9，全面換裝凡特錫藍 (#1E75BB / #2988D6 / #7CC2F5) 與皇家香檳金 (#B88E28 / #D4B459)；封裝呼吸秒數與紅藍鏡片採購來源。
-// 5. 100% 繁體中文・100% 零彩色 Emoji・零頓號・零反引號・Non-SaMD 合規聲明。
+// 👑 FANTASTIC VISION LAB: AXP Vision 雙眼同時視與融像協調引擎 (app.js - Dual-Engine Release)
+// 🕒 最後優化日期與時間 (Last Optimized Timestamp)：2026-10-23 14:38 CST
+// 🗄️ 對應雲端資料表：Supabase (public.axp_vision)
+// 核心戰略與瑞士無塵光學實驗室升級重點：
+// 1. [對接全新 Supabase 資料表 public.axp_vision] 正式指向 from('axp_vision') 寫入練習時長・執行模組・環境參數與逐次反應明細，與本機端 AXP_Vision.html 戰情室 100% 同步。
+// 2. [鍵盤／觸控雙棲調度引擎] 完整綁定「實體鍵盤模式 ／ 觸控螢幕模式」切換器與觸控裝置自動偵測；綁定舞台右下角「虛擬十字方向舵 (#touch-dpad-hud)」與「3D 畫布全螢幕直覺滑動手勢 (Swipe Up/Down/Left/Right)」，保護雙眼中央融像不因低頭看按鍵而中斷。
+// 3. [黃金 6 檔螢幕物理尺寸與觀距聯動] 精準配置 11" 平板 (24cm/40cm)・12.9" iPad Pro (28cm/45cm)・16" 筆電 (34.5cm/50cm)・27" 桌機 (59.8cm/60cm)・32" 螢幕 (70.8cm/65cm) 與 43"~55" 立式觸控大螢幕 (105cm/80cm)。
+// 4. [凡特錫色盤純化與黑盒子保護] 全面換裝凡特錫藍 (#1E75BB / #2988D6 / #7CC2F5) 與皇家香檳金 (#B88E28 / #D4B459)；徹底移除外顯版本號・體驗艙字眼並封裝呼吸秒數黑盒子。
+// 5. 100% 繁體中文（嚴格零簡體字）・100% 零彩色 Emoji・零頓號・零反引號・Non-SaMD 合規聲明。
 // ============================================================================
 
 import { AIM_MATRIX, PROTOCOL_NAMES } from './matrix.js';
 import { createTarget } from './shapes.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-// === 後端雲端遙測資料庫配置 ===
+// === 後端雲端遙測資料庫配置 (正式對接全新表名 public.axp_vision) ===
 const supabaseUrl = 'https://wvholwcyrldixlsgoege.supabase.co';
 const supabaseKey = 'sb_publishable_BozJ84tPQF-jBHGKtXKqgw_ELodM54e';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// === 1. 瑞士無塵光學實驗室登入畫面 (鑲嵌最新 Cinzel 4K 無限雙環主標誌・凡特錫藍色盤) ===
+// === 1. 瑞士無塵光學實驗室登入畫面 (鑲嵌最新 Cinzel 4K 無限雙環主標誌・無外顯版本號) ===
 let currentPatientCode = 'FV-8888';
 const loginOverlay = document.createElement('div');
-loginOverlay.setAttribute('data-version', 'V1.0');
-loginOverlay.setAttribute('data-optimized-at', '2026-10-22 19:13 CST');
-loginOverlay.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:linear-gradient(135deg, #ebf3f9 0%, #f8fafc 50%, #e2e8f0 100%); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; font-family:'Noto Sans TC', -apple-system, sans-serif; transition: opacity 0.35s ease;";
+loginOverlay.setAttribute('data-optimized-at', '2026-10-23 14:38 CST');
+loginOverlay.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:linear-gradient(135deg, #ebf3f9 0%, #f8fafc 50%, #e2e8f0 100%); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; font-family:'Noto Sans TC', -apple-system, sans-serif; transition: opacity 0.35s ease; user-select:none; -webkit-user-select:none;";
 loginOverlay.innerHTML = [
     '<div style="background:#ffffff; padding:38px 36px; border-radius:20px; text-align:center; box-shadow: 0 20px 50px rgba(26, 54, 93, 0.10); border: 1.5px solid #cbd5e1; border-top: 5px solid #1E75BB; max-width: 450px; width: 92%;">',
     '    <img src="https://images.squarespace-cdn.com/content/v1/69d767c498eb19770e89b41e/26cfc8f0-0358-4bda-855f-ac689b38a1b2/Fantastic-Vision-Lab-Header-Logo-en-only-cinzel-4K.png?format=1500w" alt="Fantastic Vision Lab Logo" style="height: 50px; width: auto; margin: 0 auto 14px auto; display: block; object-fit: contain; pointer-events: none;">',
-    '    <div style="display:inline-block; background:#ebf3f9; color:#1E75BB; border:1px solid rgba(30, 117, 187, 0.35); font-family:\'Montserrat\', sans-serif; font-size:11px; font-weight:800; letter-spacing:1.4px; padding:4px 14px; border-radius:20px; margin-bottom:12px;">STANDARD V1.0｜鍵盤與觸控雙棲體驗艙</div>',
-    '    <h1 style="color:#1A365D; font-size:24px; font-weight:900; letter-spacing:0.8px; margin:0 0 8px 0;">AXP Vision 雙眼視覺協調系統</h1>',
-    '    <p style="color:#475569; margin:0 0 22px 0; font-size:13.8px; font-weight:500; line-height:1.7;">請配戴專業光譜校準紅藍分視濾光鏡並保持雙肩放鬆<br>支援電腦實體鍵盤・觸控螢幕虛擬方向舵與畫面滑動操作</p>',
+    '    <div style="display:inline-block; background:#ebf3f9; color:#1E75BB; border:1px solid rgba(30, 117, 187, 0.35); font-family:\'Montserrat\', sans-serif; font-size:11px; font-weight:800; letter-spacing:1.4px; padding:4px 14px; border-radius:20px; margin-bottom:12px;">FANTASTIC VISION LAB｜BINOCULAR SYNERGY</div>',
+    '    <h1 style="color:#1A365D; font-size:24px; font-weight:900; letter-spacing:0.8px; margin:0 0 8px 0;">AXP Vision <span style="color:#1E75BB;">雙眼視覺協調系統</span></h1>',
+    '    <p style="color:#475569; margin:0 0 22px 0; font-size:13.8px; font-weight:500; line-height:1.7;">請配戴專業級紅藍眼鏡並保持雙肩放鬆<br>支援電腦實體鍵盤・觸控螢幕虛擬方向舵與畫面滑動操作</p>',
     '    <label style="display:block; margin-bottom:8px; font-size:13.5px; font-weight:800; color:#1A365D; text-align:center;">請輸入您的體驗代號或稱呼</label>',
     '    <input type="text" id="patient-code-input" placeholder="例：FV-8888 ／ 凡特錫貴賓" style="background-color:#f8fafc; padding:13px 16px; width:100%; text-align:center; border-radius:10px; border:1.5px solid #cbd5e1; margin-bottom:18px; font-size:15.5px; font-weight:700; color:#1A365D; outline:none; transition:0.2s; box-sizing:border-box;">',
     '    <button type="button" id="login-btn" style="background:linear-gradient(135deg, #1A365D 0%, #1E75BB 100%); color:#FFF9DE; border:1px solid #B88E28; padding:14px 28px; width:100%; border-radius:10px; font-size:15.5px; cursor:pointer; font-weight:800; transition:0.25s; box-shadow: 0 8px 20px rgba(30, 117, 187, 0.24); letter-spacing:0.5px;">進入雙眼視覺協調空間</button>',
@@ -69,7 +69,7 @@ const togglePanelText = document.getElementById('toggle-panel-text');
 const statusText = document.getElementById('status-text');
 const hudScoreVal = document.getElementById('hud-score-val');
 
-// V1.0 雙模切換與觸控方向舵元素
+// 雙模切換與觸控方向舵元素
 const modeBtnKeyboard = document.getElementById('mode-btn-keyboard');
 const modeBtnTouch = document.getElementById('mode-btn-touch');
 const touchDpadHud = document.getElementById('touch-dpad-hud');
@@ -119,7 +119,7 @@ siloPrompt.id = 'silo-prompt';
 siloPrompt.style.cssText = "position:absolute; bottom:66px; left:50%; transform:translateX(-50%); font-size:14px; font-weight:800; letter-spacing:1px; background:rgba(15, 23, 42, 0.90); backdrop-filter:blur(8px); padding:10px 22px; border-radius:10px; border:1.5px solid #B88E28; color:#f8fafc; z-index:100; display:none; text-align:center; pointer-events:none; box-shadow:0 8px 25px rgba(0,0,0,0.45); max-width:88%;";
 arenaEl.appendChild(siloPrompt);
 
-// 切換下一階段前「最後 5 秒倒數計時膠囊」(位置避開右上角懸浮艙)
+// 切換下一階段前「最後 5 秒倒數計時膠囊」
 const stageCountdownBadge = document.createElement('div');
 stageCountdownBadge.id = 'stage-countdown-badge';
 stageCountdownBadge.style.cssText = "position:absolute; top:68px; right:20px; font-size:13.5px; font-weight:900; letter-spacing:1px; background:rgba(26, 54, 93, 0.92); backdrop-filter:blur(10px); padding:10px 18px; border-radius:12px; border:1.5px solid #B88E28; color:#FFF9DE; z-index:110; display:none; text-align:center; pointer-events:none; box-shadow:0 10px 30px rgba(0,0,0,0.5); font-family:'Noto Sans TC', monospace;";
@@ -127,7 +127,7 @@ arenaEl.appendChild(stageCountdownBadge);
 
 // === 核心狀態變數 ===
 let isRunning = false, animationId;
-let currentInputMode = 'keyboard'; // 'keyboard' | 'touch'
+let currentInputMode = 'keyboard';
 let currentSize = 340, currentSpeed = 14, currentStereo = 0.02, currentThick = 8.5;
 let currentVertPrism = 0;
 let currentStageDurationMs = 60000;
@@ -167,7 +167,7 @@ if (blueSlider) blueSlider.value = 100;
 if (greenSlider) greenSlider.value = 90;
 
 // ============================================================================
-// ✨ V1.0 實體鍵盤 vs. 觸控螢幕 雙模切換與自動偵測中樞
+// ✨ 實體鍵盤 vs. 觸控螢幕 雙模切換與自動偵測中樞
 // ============================================================================
 function updateTestModeButtonLabel() {
     if (!btnTestMode) return;
@@ -190,7 +190,6 @@ function setInputMode(mode) {
 if (modeBtnKeyboard) modeBtnKeyboard.addEventListener('click', () => setInputMode('keyboard'));
 if (modeBtnTouch) modeBtnTouch.addEventListener('click', () => setInputMode('touch'));
 
-// 智慧偵測：若為 iPad / 平板 / 觸控螢幕，預設自動開啟觸控模式與對應螢幕尺寸
 (function autoDetectTouchDevice() {
     const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     const screenW = Math.max(window.screen.width || 0, window.innerWidth || 0);
@@ -351,7 +350,7 @@ function forceRenderFrame() {
 }
 
 // ============================================================================
-// 📐 V1.0 黃金 6 檔螢幕物理尺寸與觀看距離校準矩陣 (已移除 14" 與 24")
+// 📐 黃金 6 檔螢幕物理尺寸與觀看距離校準矩陣
 // ============================================================================
 const SCREEN_SPEC_CONFIG = {
     'tablet11':  { widthCm: 24.0, defaultDistCm: 40 },
@@ -376,7 +375,6 @@ function getPhysicalPixelToCm() {
 function getScreenSizeCompensationFactor() {
     const physicalWidthCm = getPhysicalScreenWidthCm();
     const baseMbp16Cm = 34.5;
-    // 在超大螢幕 (touch55) 與平板 (tablet11) 上進行溫和視角比例錨定，防止視標過小或溢出邊界
     const rawRatio = baseMbp16Cm / physicalWidthCm;
     return Math.max(0.52, Math.min(1.22, rawRatio));
 }
@@ -568,7 +566,6 @@ function updatePositions(phaseVal, currentAnim = '') {
     let finalLeftX = pxLeftX + currentRoamX + currentSaccadeX; let finalLeftY = pxLeftY + currentRoamY + currentSaccadeY;
     let finalRightX = pxRightX + currentRoamX + currentSaccadeX; let finalRightY = pxRightY + currentRoamY + currentSaccadeY;
 
-    // 垂直稜鏡雙向互調引擎 (策略 A 公開版安全區間)
     const targetVertPrism = currentVertPrism > 0 ? currentVertPrism : (currentAnim.includes('vert_') ? 0.6 : 0);
     if (targetVertPrism > 0 && isRunning) {
         const totalVertPx = (targetVertPrism * viewDistM) / pixelToCm;
@@ -589,7 +586,7 @@ function updatePositions(phaseVal, currentAnim = '') {
         finalRightY -= halfVertPx * vertFactor;
     }
 
-    // 策略 A 全域物理安全邊界：公開標準版 BO 上限鎖定於 20.5Δ，BI 開散上限嚴格鎖死於 7.0Δ！
+    // 公開標準版安全邊界：BO 上限鎖定於 20.5Δ，BI 開散上限鎖定於 7.0Δ
     const maxBOPx = (20.5 * viewDistM) / pixelToCm;
     const maxBIPx = (7.0 * viewDistM) / pixelToCm;
 
@@ -671,7 +668,6 @@ function spawnTask() {
     taskEye = eyes[Math.floor(Math.random() * eyes.length)];
 }
 
-// 統一處理四向閃爍點回應 (鍵盤方向鍵・虛擬十字方向舵・畫布滑動手勢共用)
 function submitDirectionAnswer(dirCode) {
     if (!taskActive || !isRunning || !isTestModeActive) return;
     const rt = ((performance.now() - taskSpawnTime) / 1000).toFixed(2);
@@ -784,11 +780,11 @@ function showClinicalReport(logs, totalTime, protocolName) {
     });
 
     const reportOverlay = document.createElement('div');
-    reportOverlay.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15, 23, 42, 0.84); backdrop-filter:blur(6px); z-index:10000; display:flex; justify-content:center; align-items:center; font-family:'Noto Sans TC', sans-serif;";
+    reportOverlay.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15, 23, 42, 0.84); backdrop-filter:blur(6px); z-index:10000; display:flex; justify-content:center; align-items:center; font-family:'Noto Sans TC', sans-serif; user-select:none; -webkit-user-select:none;";
     reportOverlay.innerHTML = [
         '<div style="background:#ffffff; width: 680px; max-width:94vw; max-height: 88vh; border-radius:16px; box-shadow: 0 25px 50px rgba(0,0,0,0.45); display:flex; flex-direction:column; overflow:hidden; border-top: 5px solid #1E75BB;">',
         '    <div style="background:linear-gradient(135deg, #1A365D 0%, #1E75BB 100%); color:white; padding: 20px; text-align:center; border-bottom: 2px solid #B88E28;">',
-        '        <h2 style="margin:0; font-size:21px; font-weight:900; letter-spacing:1px; color:#FFF9DE;">AXP Vision V1.0 雙眼同時視與融像協調練習摘要</h2>',
+        '        <h2 style="margin:0; font-size:21px; font-weight:900; letter-spacing:1px; color:#FFF9DE;">AXP Vision 雙眼同時視與融像協調練習摘要</h2>',
         '        <p style="margin:6px 0 0 0; color:#E2E8F0; font-size:13.5px; font-weight:700;">體驗代號: ' + currentPatientCode + ' ｜ 練習積分: ' + sessionScore + '</p>',
         '    </div>',
         '    <div style="padding: 20px 24px; overflow-y:auto; flex-grow:1; color:#334155;">',
@@ -808,7 +804,7 @@ function showClinicalReport(logs, totalTime, protocolName) {
         '        <h3 style="font-size:14.5px; margin-bottom:10px; color:#1A365D; border-bottom:1.5px solid #e2e8f0; padding-bottom:6px; font-weight:900;">■ 逐次互動反應明細</h3>',
         '        <table style="width:100%; border-collapse: collapse; margin-bottom: 14px;"><thead><tr style="background:#f1f5f9; font-size:12px; color:#475569;"><th style="padding:8px; text-align:center;">時間</th><th style="padding:8px; text-align:center;">雙眼狀態</th><th style="padding:8px; text-align:center;">起始稜鏡</th><th style="padding:8px; text-align:center;">回應稜鏡</th><th style="padding:8px; text-align:center;">反應秒數</th></tr></thead><tbody>' + (tableRowsHTML || '<tr><td colspan="5" style="text-align:center; padding:14px; color:#94a3b8;">本次練習為純視覺跟隨模式（未觸發方向作答）</td></tr>') + '</tbody></table>',
         '        <div style="font-size:11.5px; color:#64748b; background:#f8fafc; padding:10px 14px; border-radius:8px; border:1px solid #e2e8f0; line-height:1.65;">',
-        '            * 系統聲明（Non-SaMD Compliance）：本摘要為日常雙眼視覺協調與空間放鬆練習紀錄，遵循衛福部「非屬醫療器材軟體指引」與《驗光人員法》規範，非屬醫療診斷或斜弱視治療處方。',
+        '            * 系統聲明（Non-SaMD Compliance）：本摘要為日常雙眼視覺協調與空間放鬆練習紀錄，遵循衛福部「非屬醫療器材軟體指引」與《驗光人員法》規範，非屬醫療診斷或醫療處方。',
         '        </div>',
         '    </div>',
         '    <div style="padding: 15px 20px; background:#f8fafc; border-top:1px solid #e2e8f0; text-align:center;">',
@@ -823,6 +819,7 @@ function showClinicalReport(logs, totalTime, protocolName) {
     });
 }
 
+// 寫入 Supabase 獨立欄位 (正式指向全新表名 public.axp_vision)
 async function uploadToSupabase() {
     const finalTime = Math.max(5, totalTimerSec);
     const finalProtocol = activeProtocol ? PROTOCOL_NAMES[activeProtocol] : 'I. 平面融像儲備與 SILO 立體視 (Manual Mode)';
@@ -848,7 +845,7 @@ async function uploadToSupabase() {
     
     try {
         if (totalTimerSec >= 5 || sessionLogs.length > 0) {
-            await supabase.from('training_sessions').insert([{
+            await supabase.from('axp_vision').insert([{
                 duration_sec: finalTime,
                 protocol_name: finalProtocol,
                 raw_data: payloadData,
@@ -897,13 +894,11 @@ function updateUIValues() {
     if (stereoSlider) stereoSlider.value = currentStereo;
 }
 
-// 切換螢幕尺寸時，自動聯動最佳建議觀看距離 (cm) 並即時重算物理像素比例
 if (screenSpecSelect) screenSpecSelect.addEventListener('change', () => {
     const spec = screenSpecSelect.value;
     if (SCREEN_SPEC_CONFIG[spec] && viewDistInput) {
         viewDistInput.value = SCREEN_SPEC_CONFIG[spec].defaultDistCm;
     }
-    // 若選擇平板或 43"~55" 立式觸控大螢幕，自動為用戶開啟觸控模式
     if (spec === 'tablet11' || spec === 'tablet13' || spec === 'touch55') {
         setInputMode('touch');
     }
@@ -929,7 +924,7 @@ if (fillCheckbox) fillCheckbox.addEventListener('change', (e) => { isFilled = e.
 
 function disableAI() {
     if (aiToggle && aiToggle.checked) { aiToggle.checked = false; }
-    if (dynamicModeTag) { dynamicModeTag.innerText = "AXP VISION V1.0｜手動自由調控模式"; dynamicModeTag.style.color = '#f8fafc'; }
+    if (dynamicModeTag) { dynamicModeTag.innerText = "AXP VISION｜手動自由調控模式"; dynamicModeTag.style.color = '#f8fafc'; }
     if (stageIndicatorLabel) stageIndicatorLabel.innerText = "手動自由模式";
     document.querySelectorAll('.proto-btn[data-proto]').forEach(b => b.classList.remove('active-proto'));
     
@@ -1018,7 +1013,6 @@ document.querySelectorAll('.proto-btn[data-proto]').forEach(btn => {
         if (isAIRescueActive) return;
         if (aiToggle) aiToggle.checked = true;
         const maxStages = AIM_MATRIX[code] ? AIM_MATRIX[code].length : 10;
-        // 支援觸控或滑鼠連續點擊同一顆模組鈕自動推進下一 Stage
         if (activeProtocol === code && isRunning) {
             protocolStage = (protocolStage + 1) % maxStages;
         } else {
@@ -1042,7 +1036,6 @@ document.getElementById('btn-stage-next')?.addEventListener('click', () => {
 });
 if (reportBtn) reportBtn.addEventListener('click', uploadToSupabase);
 
-// 切換右側控制面板顯示與隱藏 [E]
 function toggleControlPanel() {
     if (!controlPanel) return;
     const isHidden = controlPanel.style.display === 'none';
@@ -1066,7 +1059,7 @@ if (fullscreenBtn) fullscreenBtn.addEventListener('click', toggleFullScreen);
 if (btnArenaFs) btnArenaFs.addEventListener('click', toggleFullScreen);
 
 // ============================================================================
-// 🎮 V1.0 虛擬十字方向舵 (Touch D-Pad) ＆ 3D 畫布滑動手勢 (Canvas Swipe) 綁定
+// 🎮 虛擬十字方向舵 (Touch D-Pad) ＆ 3D 畫布滑動手勢 (Canvas Swipe) 綁定
 // ============================================================================
 dpadDirBtns.forEach(btn => {
     const triggerDir = (e) => {
@@ -1088,7 +1081,6 @@ if (dpadSpaceBtn) {
     });
 }
 
-// 3D 舞台全畫布滑動手勢 (Swipe Up/Down/Left/Right 免低頭看按鈕直接回應)
 let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
 if (container) {
     container.addEventListener('touchstart', (e) => {
@@ -1106,7 +1098,6 @@ if (container) {
         const absDx = Math.abs(dx);
         const absDy = Math.abs(dy);
 
-        // 若滑動距離超過 24px 且在 600ms 內完成，判定為四向閃爍點方向滑動回應
         if (Math.max(absDx, absDy) >= 24 && dt <= 650) {
             const swipeDir = absDx > absDy ? (dx > 0 ? 'ArrowRight' : 'ArrowLeft') : (dy > 0 ? 'ArrowDown' : 'ArrowUp');
             submitDirectionAnswer(swipeDir);
@@ -1115,7 +1106,7 @@ if (container) {
 }
 
 // ==========================================
-// 動態動畫與嚴格 60s/90s 階段計時迴圈 (100% 封裝呼吸秒數黑盒子)
+// 動態動畫與階段計時迴圈 (100% 封裝呼吸秒數黑盒子)
 // ==========================================
 function animate(time) {
     if (!isRunning) return;
@@ -1129,10 +1120,10 @@ function animate(time) {
     }
     const speedFactor = 40000 / Math.max(1, currentSpeed); phase += dt / speedFactor;
 
-    // 自主神經呼吸指示燈律動（底層維持共振節律，外顯文字 100% 封裝具體秒數黑盒子且零 Emoji）
-    const breathCycle = (time % 10000) / 1000;
-    const isInhale = breathCycle < 4.0;
-    const breathWave = isInhale ? (breathCycle / 4.0) : (1.0 - (breathCycle - 4.0) / 6.0);
+    // 自主神經呼吸指示燈律動（黑盒子封裝黃金比例相位波，不暴露具體秒數）
+    const phaseNorm = (time % 10500) / 10500;
+    const isInhale = phaseNorm < 0.382;
+    const breathWave = isInhale ? (phaseNorm / 0.382) : (1.0 - (phaseNorm - 0.382) / 0.618);
     if (breathIndicator && breathText) {
         breathIndicator.style.transform = 'scale(' + (0.8 + breathWave * 0.6).toFixed(2) + ')';
         breathIndicator.style.backgroundColor = isInhale ? '#2988D6' : '#D4B459';
@@ -1471,7 +1462,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// 支援接收來自外部 Squarespace 座艙外殼之 postMessage 遙控指令
+// 支援接收來自外部 Squarespace 外殼之 postMessage 遙控指令
 window.addEventListener('message', (e) => {
     if (e.data && e.data.type === 'AXP_KEY' && e.data.code) {
         handleKeyCommand(e.data.code, false);
